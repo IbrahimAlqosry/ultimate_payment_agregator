@@ -1,0 +1,108 @@
+<div class="shell">
+  @if (menuOpen()) {
+    <button
+      class="scrim"
+      type="button"
+      (click)="close()"
+      [attr.aria-label]="'nav.close' | transloco"
+    ></button>
+  }
+
+  <aside class="sidebar" id="app-sidebar" [class.open]="menuOpen()">
+    <div class="brand">
+      <img
+        class="flag-bars"
+        src="/brand/flag-bars.svg"
+        width="52.923"
+        height="29.116"
+        alt=""
+      />
+      <div>
+        <p class="wordmark">
+          <strong>Ultimate</strong>
+          <span>pay</span>
+        </p>
+        @if (portal(); as portalLabel) {
+          <p class="portal">{{ portalLabel | transloco }}</p>
+        }
+      </div>
+    </div>
+
+    <nav [attr.aria-label]="'nav.primary' | transloco">
+      @for (link of links(); track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="close()"
+        >
+          <img [src]="'/icons/' + link.icon + '.svg'" width="18" height="18" alt="" />
+          <span>{{ link.label | transloco }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-foot">
+      <a
+        class="settings-link"
+        [routerLink]="settings.path"
+        routerLinkActive="active"
+        (click)="close()"
+      >
+        <img src="/icons/settings.svg" width="18" height="18" alt="" />
+        <span>{{ settings.label | transloco }}</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button
+        class="menu-btn"
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        aria-controls="app-sidebar"
+      >
+        {{ 'nav.menu' | transloco }}
+      </button>
+
+      <label class="top-search">
+        <img src="/icons/search.svg" width="16" height="16" alt="" />
+        <input type="search" [attr.placeholder]="searchKey() | transloco" [attr.aria-label]="searchKey() | transloco" />
+      </label>
+
+      <div class="topbar-actions">
+        <app-language-switch appearance="auth" />
+        <a class="icon-btn" [routerLink]="inbox()" [attr.aria-label]="'nav.notifications' | transloco">
+          <img src="/icons/notif-bell.svg" width="40" height="40" alt="" />
+        </a>
+        <span class="vline" aria-hidden="true"></span>
+        @if (auth.user(); as user) {
+          <div class="who">
+            <span class="avatar" aria-hidden="true">{{ user.avatarInitials }}</span>
+            <div>
+              <strong>{{ user.name }}</strong>
+              @if (user.audience === 'operator') {
+                <p>
+                  {{ 'shell.captionOperator' | transloco: { title: (user.jobTitleKey | transloco) } }}
+                </p>
+              } @else {
+                <p>
+                  {{ 'shell.captionOrg' | transloco: { title: (user.jobTitleKey | transloco), org: user.orgName } }}
+                </p>
+              }
+            </div>
+          </div>
+        }
+        <span class="vline" aria-hidden="true"></span>
+        <button class="icon-btn logout" type="button" (click)="signOut()" [attr.aria-label]="'nav.logout' | transloco">
+          <img src="/icons/logout.svg" width="16" height="16" alt="" />
+        </button>
+      </div>
+    </header>
+    <div class="content" id="main" tabindex="-1">
+      <router-outlet />
+    </div>
+  </div>
+</div>

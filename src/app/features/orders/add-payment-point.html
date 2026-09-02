@@ -1,0 +1,66 @@
+<section class="page">
+  <p class="crumb">{{ 'onboard.pointCrumb' | transloco }}</p>
+  <a class="back-link" routerLink="/my-payment-points">
+    <img src="/icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'onboard.backToPoints' | transloco }}
+  </a>
+
+  <form class="form-card narrow headed" (submit)="onSubmit($event)" novalidate>
+    <div class="card-header">
+      <h1>{{ 'onboard.pointTitle' | transloco }}</h1>
+    </div>
+    <div class="card-body">
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.selectFi' | transloco }}</span>
+        <select [formField]="form.institutionName">
+          <option value="">{{ 'onboard.selectFiPh' | transloco }}</option>
+          @for (fi of fis(); track fi.name) {
+            <option [value]="fi.name">{{ fi.name }}</option>
+          }
+        </select>
+        <app-field-error [state]="form.institutionName()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.pointCode' | transloco }}</span>
+        <input [formField]="form.pointCode" [placeholder]="'onboard.pointCodePh' | transloco" />
+        <app-field-error [state]="form.pointCode()" />
+      </label>
+      <fieldset class="form-field">
+        <legend class="caps">{{ 'onboard.pointType' | transloco }}</legend>
+        <div class="radio-row">
+          <label class="radio-opt">
+            <input type="radio" value="wallet" [formField]="form.kind" />
+            <img
+              [src]="form.kind().value() === 'wallet' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              width="16"
+              height="16"
+              alt=""
+            />
+            {{ 'kind.wallet' | transloco }}
+          </label>
+          <label class="radio-opt">
+            <input type="radio" value="merchant_point" [formField]="form.kind" />
+            <img
+              [src]="form.kind().value() === 'merchant_point' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              width="16"
+              height="16"
+              alt=""
+            />
+            {{ 'kind.merchant_point' | transloco }}
+          </label>
+        </div>
+        <app-field-error [state]="form.kind()" />
+      </fieldset>
+      <p class="note-box">{{ 'onboard.pointNote' | transloco }}</p>
+      @if (apiError()) {
+        <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+      }
+      <div class="form-actions end bare">
+        <a class="btn-cancel" routerLink="/my-payment-points">{{ 'actions.cancel' | transloco }}</a>
+        <button class="cta" type="submit" [disabled]="form().submitting()">
+          {{ (form().submitting() ? 'onboard.submitting' : 'onboard.submitApproval') | transloco }}
+        </button>
+      </div>
+    </div>
+  </form>
+</section>

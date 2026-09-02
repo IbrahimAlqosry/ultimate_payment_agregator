@@ -1,0 +1,119 @@
+<section class="page">
+  <p class="crumb">{{ 'detail.fiCrumb' | transloco }}</p>
+  <header class="page-head">
+    <h1>{{ 'detail.fiTitle' | transloco }}</h1>
+    @if (row(); as fi) {
+      <span
+        class="badge"
+        [class.ok]="fi.status === 'approved'"
+        [class.warn]="fi.status === 'pending'"
+        [class.danger]="fi.status === 'rejected'"
+      >
+        {{ (fi.status === 'approved' ? 'badge.active' : 'badge.' + fi.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
+    @if (row(); as fi) {
+      <article class="detail-card">
+        <dl class="info-grid">
+          <div>
+            <dt>{{ 'onboard.fiName' | transloco }}</dt>
+            <dd>{{ fi.name }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.type' | transloco }}</dt>
+            <dd>{{ ('type.' + fi.type) | transloco }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.license' | transloco }}</dt>
+            <dd>{{ fi.cbyLicense }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.contract' | transloco }}</dt>
+            <dd>{{ fi.contractRef }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.signedDate' | transloco }}</dt>
+            <dd>{{ (fi.signedDate || fi.contractStart) | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.contractExpiry' | transloco }}</dt>
+            <dd>{{ fi.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.feePerRequest' | transloco }}</dt>
+            <dd>{{ fi.feePerRequest != null ? fi.feePerRequest : '—' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.autoRenewal' | transloco }}</dt>
+            <dd>
+              @if (fi.autoRenewal == null) {
+                —
+              } @else {
+                {{ (fi.autoRenewal ? 'common.yes' : 'common.no') | transloco }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.terminationRequested' | transloco }}</dt>
+            <dd>
+              @if (fi.terminationRequested == null) {
+                —
+              } @else {
+                {{ (fi.terminationRequested ? 'common.yes' : 'common.no') | transloco }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.terminationNotice' | transloco }}</dt>
+            <dd>
+              @if (fi.terminationNoticeDate) {
+                {{ fi.terminationNoticeDate | date: 'mediumDate' : undefined : locale.dateLocale() }}
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.city' | transloco }}</dt>
+            <dd>{{ fi.city }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.contactName' | transloco }}</dt>
+            <dd>{{ fi.contactName }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.email' | transloco }}</dt>
+            <dd>{{ fi.email }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.phone' | transloco }}</dt>
+            <dd>{{ fi.phone }}</dd>
+          </div>
+        </dl>
+        @if (fi.status === 'pending' && auth.canApprove('institution')) {
+          <div class="form-actions">
+            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
+            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
+              {{ 'actions.rejectApplication' | transloco }}
+            </button>
+          </div>
+          @if (showReject()) {
+            <div class="reject-panel">
+              <label class="form-field">
+                <span>{{ 'detail.rejectionReason' | transloco }}</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+              </label>
+              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
+                {{ 'actions.confirmReject' | transloco }}
+              </button>
+            </div>
+          }
+        }
+        <a class="cancel-link" routerLink="/institutions">{{ 'actions.backToList' | transloco }}</a>
+      </article>
+    }
+  </app-data-state>
+</section>

@@ -1,0 +1,15 @@
+<section class="status" id="main" tabindex="-1">
+  <header>
+    <span class="mark" aria-hidden="true">م</span>
+    <app-language-switch />
+  </header>
+
+  <p class="code">{{ code() }}</p>
+  <h1>{{ ('status.' + code() + '.title') | transloco }}</h1>
+  <p class="lede">{{ ('status.' + code() + '.message') | transloco }}</p>
+
+  <div class="actions">
+    <a class="btn btn-primary" routerLink="/dashboard">{{ 'status.home' | transloco }}</a>
+    <a class="btn btn-ghost" routerLink="/login">{{ 'status.login' | transloco }}</a>
+  </div>
+</section>

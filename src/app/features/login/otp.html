@@ -1,0 +1,47 @@
+<app-auth-screen>
+  <a class="back-link" routerLink="/login">
+    <img src="/icons/arrow-left.svg" width="16" height="16" alt="" />
+    {{ 'otp.back' | transloco }}
+  </a>
+
+  <app-brand-lockup />
+
+  <header class="auth-head">
+    <h1>{{ 'otp.title' | transloco }}</h1>
+    <p>{{ 'otp.subtitle' | transloco }}</p>
+  </header>
+
+  <form class="auth-form" (submit)="onVerify($event)" novalidate>
+    <div class="otp-row" role="group" [attr.aria-label]="'otp.title' | transloco">
+      @for (digit of digits(); track $index; let i = $index) {
+        <input
+          class="otp-cell"
+          [class.filled]="digit !== ''"
+          [class.is-invalid]="otpForm.code().touched() && otpForm.code().invalid()"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          [value]="digit"
+          (input)="onInput(i, $event)"
+          (keydown)="onKeydown(i, $event)"
+          (paste)="onPaste($event)"
+          (blur)="onBlur()"
+        />
+      }
+    </div>
+    <app-field-error [state]="otpForm.code()" />
+    <p class="otp-demo">{{ 'otp.demoHint' | transloco }}</p>
+
+    @if (apiError()) {
+      <p class="form-error" role="alert">{{ 'otp.invalid' | transloco }}</p>
+    }
+
+    <div class="form-actions otp-actions">
+      <p class="otp-timer">{{ 'otp.expires' | transloco: { time: remaining() } }}</p>
+      <button class="auth-cta" type="submit" [disabled]="otpForm().submitting()">
+        {{ (otpForm().submitting() ? 'otp.verifying' : 'otp.submit') | transloco }}
+      </button>
+      <button class="auth-link" type="button" (click)="resend()">{{ 'otp.resend' | transloco }}</button>
+    </div>
+  </form>
+</app-auth-screen>

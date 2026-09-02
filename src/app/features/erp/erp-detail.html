@@ -1,0 +1,79 @@
+<section class="page">
+  <p class="crumb">{{ 'detail.erpCrumb' | transloco }}</p>
+  <header class="page-head">
+    <h1>{{ 'detail.erpTitle' | transloco }}</h1>
+    @if (row(); as erp) {
+      <span
+        class="badge"
+        [class.ok]="erp.status === 'approved'"
+        [class.warn]="erp.status === 'pending'"
+        [class.danger]="erp.status === 'rejected'"
+      >
+        {{ (erp.status === 'approved' ? 'badge.active' : 'badge.' + erp.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
+    @if (row(); as erp) {
+      <article class="detail-card">
+        <dl class="info-grid">
+          <div>
+            <dt>{{ 'erp.name' | transloco }}</dt>
+            <dd>{{ erp.name }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'erp.company' | transloco }}</dt>
+            <dd>{{ erp.vendor }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.contactName' | transloco }}</dt>
+            <dd>{{ erp.contactName }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.email' | transloco }}</dt>
+            <dd>{{ erp.email }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.contractDate' | transloco }}</dt>
+            <dd>
+              @if (erp.contractDate) {
+                {{ erp.contractDate | date: 'mediumDate' : undefined : locale.dateLocale() }}
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'erp.expiry' | transloco }}</dt>
+            <dd>{{ erp.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'erp.merchants' | transloco }}</dt>
+            <dd>{{ erp.connectedMerchants }}</dd>
+          </div>
+        </dl>
+        @if (erp.status === 'pending' && auth.canApprove('erp')) {
+          <div class="form-actions">
+            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
+            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
+              {{ 'actions.rejectApplication' | transloco }}
+            </button>
+          </div>
+          @if (showReject()) {
+            <div class="reject-panel">
+              <label class="form-field">
+                <span>{{ 'detail.rejectionReason' | transloco }}</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+              </label>
+              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
+                {{ 'actions.confirmReject' | transloco }}
+              </button>
+            </div>
+          }
+        }
+        <a class="cancel-link" routerLink="/erp-systems">{{ 'actions.backToList' | transloco }}</a>
+      </article>
+    }
+  </app-data-state>
+</section>

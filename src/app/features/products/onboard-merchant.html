@@ -1,0 +1,71 @@
+<section class="page">
+  <p class="crumb">{{ 'onboard.merchantCrumb' | transloco }}</p>
+  <header class="page-head">
+    <h1>{{ 'onboard.merchantTitle' | transloco }}</h1>
+  </header>
+
+  <form class="form-card" (submit)="onSubmit($event)" novalidate>
+    <div class="form-grid">
+      <label class="form-field">
+        <span>{{ 'register.legalName' | transloco }}</span>
+        <input [formField]="form.legalName" [placeholder]="'register.legalNamePh' | transloco" />
+        <app-field-error [state]="form.legalName()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.contactName' | transloco }}</span>
+        <input [formField]="form.contactName" [placeholder]="'register.contactNamePh' | transloco" />
+        <app-field-error [state]="form.contactName()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.cr' | transloco }}</span>
+        <input [formField]="form.crNumber" [placeholder]="'register.crPh' | transloco" />
+        <app-field-error [state]="form.crNumber()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.email' | transloco }}</span>
+        <input type="email" [formField]="form.email" [placeholder]="'register.emailPh' | transloco" />
+        <app-field-error [state]="form.email()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.industry' | transloco }}</span>
+        <select [formField]="form.industry">
+          <option value="">{{ 'register.industryPh' | transloco }}</option>
+          <option value="retail">{{ 'register.industries.retail' | transloco }}</option>
+          <option value="health">{{ 'register.industries.health' | transloco }}</option>
+          <option value="fuel">{{ 'register.industries.fuel' | transloco }}</option>
+          <option value="other">{{ 'register.industries.other' | transloco }}</option>
+        </select>
+        <app-field-error [state]="form.industry()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.phone' | transloco }}</span>
+        <input [formField]="form.phone" [placeholder]="'register.phonePh' | transloco" />
+        <app-field-error [state]="form.phone()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.city' | transloco }}</span>
+        <input [formField]="form.city" [placeholder]="'register.cityPh' | transloco" />
+        <app-field-error [state]="form.city()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.erp' | transloco }}</span>
+        <select [formField]="form.erpSystem">
+          <option value="">{{ 'register.erpPh' | transloco }}</option>
+          @for (erp of erps(); track erp) {
+            <option [value]="erp">{{ erp }}</option>
+          }
+        </select>
+        <app-field-error [state]="form.erpSystem()" />
+      </label>
+    </div>
+    @if (apiError()) {
+      <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+    }
+    <div class="form-actions">
+      <button class="cta" type="submit" [disabled]="form().submitting()">
+        {{ (form().submitting() ? 'onboard.submitting' : 'onboard.submitApproval') | transloco }}
+      </button>
+      <a class="cancel-link" routerLink="/merchants">{{ 'actions.cancel' | transloco }}</a>
+    </div>
+  </form>
+</section>

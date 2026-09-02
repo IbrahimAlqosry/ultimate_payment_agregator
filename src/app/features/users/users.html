@@ -1,0 +1,80 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'users.title' | transloco }}</h1>
+    @if (auth.admin()) {
+      <a class="btn btn-primary" routerLink="/operators/new">{{ 'cta.addOperator' | transloco }}</a>
+    }
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'all'" (click)="setTab('all')">
+      {{ 'users.tabAll' | transloco }}
+    </button>
+  </div>
+
+  <div class="filters">
+    <app-search-field placeholderKey="users.search" (queryChange)="onQuery($event)" />
+    <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'users.status' | transloco">
+      <option value="">{{ 'filter.status' | transloco }}</option>
+      <option value="active">{{ 'badge.active' | transloco }}</option>
+      <option value="invited">{{ 'badge.invited' | transloco }}</option>
+    </select>
+  </div>
+
+  <div class="card table-card">
+    <app-data-state
+      [loading]="loading()"
+      [error]="error()"
+      [empty]="filtered().length === 0"
+      emptyKey="users.empty"
+      (retry)="load()"
+    >
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'users.name' | transloco }}</th>
+              <th>{{ 'users.email' | transloco }}</th>
+              <th>{{ 'users.role' | transloco }}</th>
+              <th>{{ 'users.lastLogin' | transloco }}</th>
+              <th>{{ 'users.status' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td>
+                  <strong>{{ row.name }}</strong>
+                </td>
+                <td class="muted">{{ row.email }}</td>
+                <td>
+                  <span class="badge" [class]="roleClass(row.role)">{{ ('role.' + row.role) | transloco }}</span>
+                </td>
+                <td class="muted">{{ row.lastActive | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                <td>
+                  <span class="badge" [class.ok]="row.status === 'active'" [class.warn]="row.status === 'invited'">
+                    {{ ('badge.' + row.status) | transloco }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showingOperators' | transloco: { shown: rows().length, total: filtered().length } }}</p>
+        <div class="pager">
+          <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
+            <img src="/icons/chevron-left.svg" width="14" height="14" alt="" />
+          </button>
+          @for (n of pages(); track n) {
+            <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
+          }
+          <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
+            <img src="/icons/chevron-right.svg" width="14" height="14" alt="" />
+          </button>
+        </div>
+      </footer>
+    </app-data-state>
+  </div>
+</section>

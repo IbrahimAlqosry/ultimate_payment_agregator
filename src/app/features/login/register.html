@@ -1,0 +1,119 @@
+<app-auth-screen [wide]="true">
+  <app-brand-lockup />
+  <header class="auth-head signup-head">
+    <h1>{{ 'register.title' | transloco }}</h1>
+    <p>{{ 'register.subtitle' | transloco }}</p>
+  </header>
+  <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+    <div class="grid-2">
+      <label class="auth-field">
+        <span>{{ 'register.legalName' | transloco }}</span>
+        <div class="input-box">
+          <input [formField]="registerForm.legalName" [placeholder]="'register.legalNamePh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.legalName()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.contactName' | transloco }}</span>
+        <div class="input-box">
+          <input [formField]="registerForm.contactName" [placeholder]="'register.contactNamePh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.contactName()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.cr' | transloco }}</span>
+        <div class="input-box">
+          <input [formField]="registerForm.crNumber" [placeholder]="'register.crPh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.crNumber()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.email' | transloco }}</span>
+        <div class="input-box">
+          <input type="email" [formField]="registerForm.email" [placeholder]="'register.emailPh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.email()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.industry' | transloco }}</span>
+        <div class="input-box">
+          <select [formField]="registerForm.industry">
+            <option value="">{{ 'register.industryPh' | transloco }}</option>
+            <option value="retail">{{ 'register.industries.retail' | transloco }}</option>
+            <option value="health">{{ 'register.industries.health' | transloco }}</option>
+            <option value="fuel">{{ 'register.industries.fuel' | transloco }}</option>
+            <option value="other">{{ 'register.industries.other' | transloco }}</option>
+          </select>
+        </div>
+        <app-field-error [state]="registerForm.industry()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.phone' | transloco }}</span>
+        <div class="input-box">
+          <input [formField]="registerForm.phone" [placeholder]="'register.phonePh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.phone()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.city' | transloco }}</span>
+        <div class="input-box">
+          <input [formField]="registerForm.city" [placeholder]="'register.cityPh' | transloco" />
+        </div>
+        <app-field-error [state]="registerForm.city()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.erp' | transloco }}</span>
+        <div class="input-box">
+          <select [formField]="registerForm.erpSystem">
+            <option value="">{{ 'register.erpPh' | transloco }}</option>
+            <option value="Al-Diwan ERP">Al-Diwan ERP</option>
+            <option value="Tijara Cloud">Tijara Cloud</option>
+            <option value="Mizan Suite">Mizan Suite</option>
+            <option value="Ledger Yemen">Ledger Yemen</option>
+          </select>
+        </div>
+        <app-field-error [state]="registerForm.erpSystem()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.password' | transloco }}</span>
+        <div class="input-box">
+          <input
+            [type]="show() ? 'text' : 'password'"
+            [formField]="registerForm.password"
+            autocomplete="new-password"
+          />
+          <button class="toggle-visibility" type="button" (click)="show.set(!show())">
+            <img [src]="show() ? '/icons/eye.svg' : '/icons/eye-off.svg'" width="18" height="18" alt="" />
+          </button>
+        </div>
+        <app-field-error [state]="registerForm.password()" />
+      </label>
+      <label class="auth-field">
+        <span>{{ 'register.confirm' | transloco }}</span>
+        <div class="input-box">
+          <input
+            [type]="showConfirm() ? 'text' : 'password'"
+            [formField]="registerForm.confirm"
+            autocomplete="new-password"
+          />
+          <button class="toggle-visibility" type="button" (click)="showConfirm.set(!showConfirm())">
+            <img [src]="showConfirm() ? '/icons/eye.svg' : '/icons/eye-off.svg'" width="18" height="18" alt="" />
+          </button>
+        </div>
+        <app-field-error [state]="registerForm.confirm()" />
+      </label>
+    </div>
+    @if (apiError()) {
+      <p class="form-error" role="alert">{{ 'register.invalid' | transloco }}</p>
+    }
+    <div class="form-actions">
+      <button class="auth-cta" type="submit" [disabled]="registerForm().submitting()">
+        {{ (registerForm().submitting() ? 'register.submitting' : 'register.submit') | transloco }}
+      </button>
+      <p class="register-row">
+        <span>{{ 'register.haveAccount' | transloco }}</span>
+        <a class="auth-link strong" routerLink="/login">{{ 'login.submit' | transloco }}</a>
+      </p>
+    </div>
+  </form>
+</app-auth-screen>

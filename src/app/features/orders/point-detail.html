@@ -1,0 +1,88 @@
+<section class="page">
+  <p class="crumb">{{ crumbKey() | transloco }}</p>
+  <a class="back-link" [routerLink]="listPath()">
+    <img src="/icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ backKey() | transloco }}
+  </a>
+  <header class="page-head">
+    <h1>{{ 'detail.pointTitle' | transloco }}</h1>
+    @if (row(); as point) {
+      <span
+        class="badge"
+        [class.ok]="point.status === 'approved'"
+        [class.warn]="point.status === 'pending'"
+        [class.danger]="point.status === 'rejected'"
+      >
+        {{ (point.status === 'pending' ? 'badge.pendingReview' : 'badge.' + point.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
+    @if (row(); as point) {
+      <article class="detail-card">
+        <dl class="info-grid">
+          <div>
+            <dt>{{ 'points.merchant' | transloco }}</dt>
+            <dd>{{ point.merchantName }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'merchants.cr' | transloco }}</dt>
+            <dd>{{ point.merchantCr }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'points.code' | transloco }}</dt>
+            <dd>{{ point.pointCode }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'points.type' | transloco }}</dt>
+            <dd>{{ ('kind.' + point.kind) | transloco }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'detail.linkedAccount' | transloco }}</dt>
+            <dd>{{ point.linkedAccount }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'points.submitted' | transloco }}</dt>
+            <dd>{{ point.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'detail.submittedBy' | transloco }}</dt>
+            <dd>{{ point.submittedBy }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.erp' | transloco }}</dt>
+            <dd>{{ point.erpSystem }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'points.fiName' | transloco }}</dt>
+            <dd>{{ point.institutionName }}</dd>
+          </div>
+        </dl>
+        <p class="warn-note">
+          <img src="/icons/shield-alert.svg" width="16" height="16" alt="" />
+          <span>{{ 'detail.pointWarning' | transloco }}</span>
+        </p>
+        @if (point.status === 'pending' && auth.canApprove('point')) {
+          <div class="form-actions end">
+            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
+              {{ 'actions.rejectRequest' | transloco }}
+            </button>
+            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveRequest' | transloco }}</button>
+          </div>
+          @if (showReject()) {
+            <div class="reject-panel">
+              <label class="form-field">
+                <span>{{ 'detail.rejectionReason' | transloco }}</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+              </label>
+              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
+                {{ 'actions.confirmReject' | transloco }}
+              </button>
+            </div>
+          }
+        }
+      </article>
+    }
+  </app-data-state>
+</section>

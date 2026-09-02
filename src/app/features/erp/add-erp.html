@@ -1,0 +1,51 @@
+<section class="page">
+  <p class="crumb">{{ 'onboard.erpCrumb' | transloco }}</p>
+  <header class="page-head">
+    <h1>{{ 'onboard.erpTitle' | transloco }}</h1>
+  </header>
+
+  <form class="form-card" (submit)="onSubmit($event)" novalidate>
+    <h2 class="section-title">{{ 'onboard.erpDetails' | transloco }}</h2>
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.erpName' | transloco }}</span>
+        <input [formField]="form.name" [placeholder]="'onboard.erpNamePh' | transloco" />
+        <app-field-error [state]="form.name()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'erp.company' | transloco }}</span>
+        <input [formField]="form.vendor" [placeholder]="'onboard.erpVendorPh' | transloco" />
+        <app-field-error [state]="form.vendor()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'register.contactName' | transloco }}</span>
+        <input [formField]="form.contactName" />
+        <app-field-error [state]="form.contactName()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'register.email' | transloco }}</span>
+        <input type="email" [formField]="form.email" />
+        <app-field-error [state]="form.email()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.contractDate' | transloco }}</span>
+        <input type="date" [formField]="form.contractDate" />
+        <app-field-error [state]="form.contractDate()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'erp.expiry' | transloco }}</span>
+        <input type="date" [formField]="form.contractExpiry" />
+        <app-field-error [state]="form.contractExpiry()" />
+      </label>
+    </div>
+    @if (apiError()) {
+      <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+    }
+    <div class="form-actions">
+      <button class="cta" type="submit" [disabled]="form().submitting()">
+        {{ (form().submitting() ? 'onboard.submitting' : 'onboard.submitApproval') | transloco }}
+      </button>
+      <a class="cancel-link" routerLink="/erp-systems">{{ 'actions.cancel' | transloco }}</a>
+    </div>
+  </form>
+</section>

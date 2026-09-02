@@ -1,0 +1,269 @@
+<section class="dash">
+  @if (auth.user()?.audience === 'operator') {
+    <header class="dash-head">
+      <h1>{{ 'dashboard.title' | transloco }}</h1>
+      <div class="time-filters" role="tablist" [attr.aria-label]="'dashboard.range.label' | transloco">
+        @for (range of ranges; track range.id) {
+          <button
+            type="button"
+            role="tab"
+            [class.active]="timeRange() === range.id"
+            [attr.aria-selected]="timeRange() === range.id"
+            (click)="timeRange.set(range.id)"
+          >
+            {{ range.key | transloco }}
+          </button>
+        }
+      </div>
+    </header>
+  } @else if (auth.user()?.audience === 'merchant') {
+    <header class="dash-head">
+      <h1>{{ 'dashboard.title' | transloco }}</h1>
+      <p class="overview">{{ 'dashboard.overviewMerchant' | transloco: { org: auth.user()?.orgName } }}</p>
+    </header>
+  } @else {
+    <header class="dash-head dash-head-stack">
+      <h1>{{ 'dashboard.title' | transloco }}</h1>
+      <p class="overview">{{ 'dashboard.overviewFi' | transloco: { org: auth.user()?.orgName } }}</p>
+    </header>
+  }
+
+  <app-data-state [loading]="loading()" [error]="error()" (retry)="load()">
+    @if (data(); as dash) {
+      @if (auth.user()?.audience === 'operator') {
+        <div class="kpis">
+          <a class="card kpi" routerLink="/merchants">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.pendingMerchants' | transloco }}</span>
+              <i class="dot dot-green" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.pendingMerchantApprovals }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/institutions">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.pendingFis' | transloco }}</span>
+              <i class="dot dot-forest" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.pendingFiApprovals }}</strong>
+          </a>
+          <article class="card kpi">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.pendingErps' | transloco }}</span>
+              <i class="dot dot-warn" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.pendingErpApprovals }}</strong>
+          </article>
+          <article class="card kpi">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.activeMerchants' | transloco }}</span>
+              <i class="dot dot-olive" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.activeMerchants }}</strong>
+          </article>
+        </div>
+
+        <div class="charts">
+          <article class="card sla">
+            <h2>{{ 'dashboard.slaTitle' | transloco }}</h2>
+            <div class="sla-row">
+              <div class="donut donut-lg" [style.--pct]="dash.slaRate" aria-hidden="true">
+                <div class="donut-label">
+                  <strong>{{ dash.slaRate }}%</strong>
+                  <span>{{ 'dashboard.slaOnTime' | transloco }}</span>
+                </div>
+              </div>
+              <div class="sla-legend">
+                <div>
+                  <p class="legend-kicker">{{ 'dashboard.slaTarget' | transloco }}</p>
+                  <p class="legend-value">{{ 'dashboard.slaTargetValue' | transloco }}</p>
+                </div>
+                <div class="legend-rows">
+                  <p>
+                    <i class="swatch swatch-green" aria-hidden="true"></i>
+                    {{ 'dashboard.slaOnTimeApprovals' | transloco: { count: dash.slaOnTimeCount } }}
+                  </p>
+                  <p>
+                    <i class="swatch swatch-warn" aria-hidden="true"></i>
+                    {{ 'dashboard.slaOverdueApprovals' | transloco: { count: dash.slaOverdueCount } }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="card week">
+            <h2>{{ 'dashboard.week' | transloco }}</h2>
+            <div class="bars" role="img" [attr.aria-label]="'dashboard.week' | transloco">
+              @for (value of dash.weeklyActivity; track $index) {
+                <div class="bar-col">
+                  <div
+                    class="bar"
+                    [class.hl]="$index === highlightIndex"
+                    [style.height]="barHeight(value, dash.weeklyActivity)"
+                  ></div>
+                  <span>{{ weekKeys[$index] | transloco }}</span>
+                </div>
+              }
+            </div>
+          </article>
+        </div>
+      } @else if (auth.user()?.audience === 'merchant') {
+        <div class="kpis">
+          <a class="card kpi" routerLink="/my-payment-points">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.activePoints' | transloco }}</span>
+              <i class="dot dot-green" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.activePaymentPoints }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/my-payment-points">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.pendingPoints' | transloco }}</span>
+              <i class="dot dot-warn" aria-hidden="true"></i>
+            </div>
+            <strong>{{ dash.pendingPaymentPoints }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/my-integration-user">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.integrationUser' | transloco }}</span>
+              <i class="dot dot-green" aria-hidden="true"></i>
+            </div>
+            <span class="badge" [class.ok]="dash.integrationUserStatus === 'active'">
+              {{ ('badge.' + dash.integrationUserStatus) | transloco }}
+            </span>
+          </a>
+          <a class="card kpi" routerLink="/notification-delivery">
+            <div class="kpi-top">
+              <span>{{ 'dashboard.kpi.notificationUser' | transloco }}</span>
+              <i class="dot dot-green" aria-hidden="true"></i>
+            </div>
+            <span class="badge" [class.ok]="dash.notificationUserStatus === 'approved'">
+              {{ ('badge.' + dash.notificationUserStatus) | transloco }}
+            </span>
+          </a>
+        </div>
+
+        <article class="card table-card fill">
+          <h2>{{ 'dashboard.recentNotes' | transloco }}</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-date">{{ 'notes.date' | transloco }}</th>
+                  <th class="col-point">{{ 'notes.point' | transloco }}</th>
+                  <th class="col-amount">{{ 'notes.amountYer' | transloco }}</th>
+                  <th>{{ 'notes.invoice' | transloco }}</th>
+                  <th class="col-status num">{{ 'notes.status' | transloco }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of dash.recentNotifications; track row.id) {
+                  <tr>
+                    <td class="muted">{{ row.occurredAt | date: 'yyyy-MM-dd' }}</td>
+                    <td class="strong">{{ row.pointCode }}</td>
+                    <td class="amount">{{ row.amount | number }} {{ row.currency }}</td>
+                    <td class="muted">{{ row.invoice }}</td>
+                    <td class="num">
+                      <span
+                        class="badge"
+                        [class.ok]="row.status === 'completed'"
+                        [class.warn]="row.status === 'pending'"
+                        [class.danger]="row.status === 'failed'"
+                      >
+                        {{ ('badge.' + row.status) | transloco }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </article>
+      } @else {
+        <div class="kpis">
+          <a class="card kpi" routerLink="/pp-approvals">
+            <span>{{ 'dashboard.kpi.pendingPp' | transloco }}</span>
+            <strong>{{ dash.pendingPpApprovals }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/all-payment-points">
+            <span>{{ 'dashboard.kpi.approvedPp' | transloco }}</span>
+            <strong>{{ dash.approvedPaymentPoints }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/notifications">
+            <span>{{ 'dashboard.kpi.notesMonth' | transloco }}</span>
+            <strong>{{ dash.notificationsThisMonth | number }}</strong>
+          </a>
+          <a class="card kpi" routerLink="/integration-user">
+            <span>{{ 'dashboard.kpi.integrationActive' | transloco }}</span>
+            <span class="badge" [class.ok]="dash.integrationUserStatus === 'active'">
+              {{ ('badge.' + dash.integrationUserStatus) | transloco }}
+            </span>
+          </a>
+        </div>
+
+        <div class="fi-bottom">
+          <article class="card sla sla-fixed">
+            <h2>{{ 'dashboard.slaTitle' | transloco }}</h2>
+            <div class="sla-row sla-row-sm">
+              <div class="donut donut-sm" [style.--pct]="dash.slaRate" aria-hidden="true">
+                <div class="donut-label">
+                  <strong>{{ dash.slaRate }}%</strong>
+                  <span>{{ 'dashboard.slaOnTime' | transloco }}</span>
+                </div>
+              </div>
+              <div class="sla-legend">
+                <div>
+                  <p class="legend-kicker">{{ 'dashboard.slaTarget' | transloco }}</p>
+                  <p class="legend-value">{{ 'dashboard.slaTargetValue' | transloco }}</p>
+                </div>
+                <div>
+                  <p class="sla-count">
+                    {{
+                      'dashboard.slaApprovedOf'
+                        | transloco: { approved: dash.slaApprovedCount, total: dash.slaTotalCount }
+                    }}
+                  </p>
+                  <p class="muted small">{{ 'dashboard.slaProcessed' | transloco }}</p>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="card table-card fill">
+            <h2>{{ 'dashboard.recentActivity' | transloco }}</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-date-sm">{{ 'activity.date' | transloco }}</th>
+                    <th class="col-activity">{{ 'activity.activity' | transloco }}</th>
+                    <th>{{ 'activity.merchant' | transloco }}</th>
+                    <th class="col-status num">{{ 'activity.status' | transloco }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of dash.recentActivity; track row.id) {
+                    <tr>
+                      <td class="muted">{{ row.at | date: 'yyyy-MM-dd' }}</td>
+                      <td class="strong">{{ row.activityKey | transloco }}</td>
+                      <td>{{ row.merchant }}</td>
+                      <td class="num">
+                        <span
+                          class="badge"
+                          [class.ok]="row.status === 'completed'"
+                          [class.info]="row.status === 'delivered'"
+                          [class.warn]="row.status === 'pending'"
+                          [class.danger]="row.status === 'rejected'"
+                        >
+                          {{ ('badge.' + row.status) | transloco }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      }
+    }
+  </app-data-state>
+</section>

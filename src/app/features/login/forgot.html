@@ -1,0 +1,27 @@
+<app-auth-screen>
+  <app-brand-lockup />
+  <header class="auth-head">
+    <h1>{{ 'forgot.title' | transloco }}</h1>
+    <p>{{ 'forgot.subtitle' | transloco }}</p>
+  </header>
+  <form class="auth-form" (submit)="onSubmit($event)" novalidate>
+    <label class="auth-field">
+      <span>{{ 'forgot.email' | transloco }}</span>
+      <div class="input-box">
+        <input
+          type="email"
+          [formField]="forgotForm.email"
+          autocomplete="email"
+          [placeholder]="'forgot.placeholder' | transloco"
+        />
+      </div>
+      <app-field-error [state]="forgotForm.email()" />
+    </label>
+    <div class="form-actions">
+      <button class="auth-cta" type="submit" [disabled]="forgotForm().submitting()">
+        {{ (forgotForm().submitting() ? 'forgot.sending' : 'forgot.submit') | transloco }}
+      </button>
+      <a class="auth-link strong" routerLink="/login">{{ 'forgot.back' | transloco }}</a>
+    </div>
+  </form>
+</app-auth-screen>

@@ -1,0 +1,110 @@
+<section class="page">
+  <p class="crumb">{{ 'onboard.fiCrumb' | transloco }}</p>
+  <header class="page-head">
+    <h1>{{ 'onboard.fiTitle' | transloco }}</h1>
+  </header>
+
+  <form class="form-card" (submit)="onSubmit($event)" novalidate>
+    <div class="form-grid">
+      <label class="form-field">
+        <span>{{ 'onboard.fiName' | transloco }}</span>
+        <input [formField]="form.name" [placeholder]="'onboard.fiNamePh' | transloco" />
+        <app-field-error [state]="form.name()" />
+      </label>
+      <fieldset class="form-field">
+        <legend>{{ 'onboard.fiType' | transloco }}</legend>
+        <div class="radio-row">
+          <label class="radio-opt">
+            <input type="radio" value="bank" [formField]="form.type" />
+            <img
+              [src]="form.type().value() === 'bank' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              width="16"
+              height="16"
+              alt=""
+            />
+            {{ 'type.bank' | transloco }}
+          </label>
+          <label class="radio-opt">
+            <input type="radio" value="wallet" [formField]="form.type" />
+            <img
+              [src]="form.type().value() === 'wallet' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              width="16"
+              height="16"
+              alt=""
+            />
+            {{ 'onboard.digitalWallet' | transloco }}
+          </label>
+        </div>
+        <app-field-error [state]="form.type()" />
+      </fieldset>
+      <label class="form-field">
+        <span>{{ 'onboard.cbyLicense' | transloco }}</span>
+        <input [formField]="form.cbyLicense" [placeholder]="'onboard.cbyLicensePh' | transloco" />
+        <app-field-error [state]="form.cbyLicense()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'onboard.contractRef' | transloco }}</span>
+        <input [formField]="form.contractRef" [placeholder]="'onboard.contractRefPh' | transloco" />
+        <app-field-error [state]="form.contractRef()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'onboard.signedDate' | transloco }}</span>
+        <input type="date" [formField]="form.signedDate" />
+        <app-field-error [state]="form.signedDate()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'institutions.contractExpiry' | transloco }}</span>
+        <input type="date" [formField]="form.contractExpiry" />
+        <app-field-error [state]="form.contractExpiry()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'onboard.feePerRequest' | transloco }}</span>
+        <input type="number" [formField]="form.feePerRequest" [placeholder]="'onboard.feePh' | transloco" />
+        <app-field-error [state]="form.feePerRequest()" />
+      </label>
+      <div class="form-field">
+        <span>{{ 'onboard.contractFlags' | transloco }}</span>
+        <div class="check-row">
+          <label class="check-opt">
+            <input type="checkbox" [formField]="form.autoRenewal" />
+            <span class="check-box" aria-hidden="true"></span>
+            {{ 'onboard.autoRenewal' | transloco }}
+          </label>
+          <label class="check-opt">
+            <input type="checkbox" [formField]="form.terminationRequested" />
+            <span class="check-box" aria-hidden="true"></span>
+            {{ 'onboard.terminationRequested' | transloco }}
+          </label>
+        </div>
+      </div>
+      <label class="form-field">
+        <span>{{ 'onboard.terminationNotice' | transloco }}</span>
+        <input type="date" [formField]="form.terminationNoticeDate" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.contactName' | transloco }}</span>
+        <input [formField]="form.contactName" [placeholder]="'onboard.fiContactPh' | transloco" />
+        <app-field-error [state]="form.contactName()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.email' | transloco }}</span>
+        <input type="email" [formField]="form.email" [placeholder]="'onboard.fiEmailPh' | transloco" />
+        <app-field-error [state]="form.email()" />
+      </label>
+      <label class="form-field">
+        <span>{{ 'register.phone' | transloco }}</span>
+        <input [formField]="form.phone" [placeholder]="'register.phonePh' | transloco" />
+        <app-field-error [state]="form.phone()" />
+      </label>
+    </div>
+    @if (apiError()) {
+      <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+    }
+    <div class="form-actions">
+      <button class="cta" type="submit" [disabled]="form().submitting()">
+        {{ (form().submitting() ? 'onboard.submitting' : 'onboard.submitApproval') | transloco }}
+      </button>
+      <a class="cancel-link" routerLink="/institutions">{{ 'actions.cancel' | transloco }}</a>
+    </div>
+  </form>
+</section>

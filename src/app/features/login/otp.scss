@@ -1,0 +1,47 @@
+.otp-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.otp-cell {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #dcd5d5;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1c1d;
+  background: #fff;
+  padding: 0;
+}
+
+.otp-cell.filled,
+.otp-cell:focus {
+  border: 2px solid #1fa64d;
+}
+
+.otp-cell.is-invalid {
+  border-color: #b42318;
+}
+
+.otp-timer {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e67e22;
+}
+
+.otp-demo {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7e7676;
+}
+
+.otp-actions {
+  gap: 12px;
+}

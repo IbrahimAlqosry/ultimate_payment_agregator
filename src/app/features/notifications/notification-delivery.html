@@ -1,0 +1,69 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'notes.settingsTitle' | transloco }}</h1>
+    @if (saved(); as webhook) {
+      <span class="badge" [class.ok]="webhook.status === 'approved'" [class.warn]="webhook.status === 'pending'">
+        {{ ('badge.' + webhook.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="false" (retry)="load()">
+    <form class="form-card webhook-card" (submit)="onSubmit($event)" novalidate>
+      <div class="card-header">
+        <h2>{{ 'notes.webhookTitle' | transloco }}</h2>
+      </div>
+      <div class="card-body">
+        <label class="form-field">
+          <span class="caps">{{ 'notes.endpoint' | transloco }}</span>
+          <input [formField]="form.endpointUrl" autocomplete="off" />
+          <app-field-error [state]="form.endpointUrl()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'notes.port' | transloco }}</span>
+          <input [formField]="form.port" inputmode="numeric" />
+          <app-field-error [state]="form.port()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'notes.authType' | transloco }}</span>
+          <select [formField]="form.authType">
+            <option value="bearer">{{ 'notes.bearer' | transloco }}</option>
+            <option value="oauth2">{{ 'notes.oauth2' | transloco }}</option>
+          </select>
+        </label>
+        @if (oauth()) {
+          <label class="form-field">
+            <span class="caps">{{ 'notes.accessToken' | transloco }}</span>
+            <div class="secret-input">
+              <input [formField]="form.accessToken" [type]="showSecret() ? 'text' : 'password'" autocomplete="off" />
+              <button class="show-btn" type="button" (click)="showSecret.update((open) => !open)">
+                {{ (showSecret() ? 'notes.hide' : 'notes.show') | transloco }}
+              </button>
+            </div>
+          </label>
+        } @else {
+          <label class="form-field">
+            <span class="caps">{{ 'notes.username' | transloco }}</span>
+            <input [formField]="form.username" autocomplete="off" />
+          </label>
+          <label class="form-field">
+            <span class="caps">{{ 'notes.password' | transloco }}</span>
+            <div class="secret-input">
+              <input [formField]="form.password" [type]="showSecret() ? 'text' : 'password'" autocomplete="off" />
+              <button class="show-btn" type="button" (click)="showSecret.update((open) => !open)">
+                {{ (showSecret() ? 'notes.hide' : 'notes.show') | transloco }}
+              </button>
+            </div>
+          </label>
+        }
+        <p class="note-box">{{ 'notes.webhookNote' | transloco }}</p>
+        <div class="form-actions end">
+          <button class="btn-reset" type="button" (click)="reset()">{{ 'notes.resetSaved' | transloco }}</button>
+          <button class="cta" type="submit" [disabled]="form().submitting() || auth.readOnly()">
+            {{ (form().submitting() ? 'notes.updating' : 'notes.updateEndpoint') | transloco }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </app-data-state>
+</section>

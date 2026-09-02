@@ -1,0 +1,111 @@
+.auth-screen {
+  --auth-green: #1fa64d;
+  --auth-green-dark: #188a3f;
+  --auth-ink: #1c1c1d;
+  --auth-muted: #7e7676;
+  --auth-label: #444445;
+  --auth-line: #dcd5d5;
+  --auth-track: #ede8e8;
+  --auth-bg: #efe8e8;
+  --auth-orange: #e67e22;
+
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 48px 16px 32px;
+  background: var(--auth-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.accents {
+  pointer-events: none;
+}
+
+.accent {
+  position: absolute;
+  width: 263px;
+  height: 263px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accent > .bar,
+.accent {
+  transform-origin: center;
+}
+
+.accent-tl {
+  top: -60px;
+  left: -80px;
+}
+
+.accent-br {
+  right: -30px;
+  bottom: -100px;
+}
+
+.accent-tl,
+.accent-br {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  opacity: 0.15;
+  transform: rotate(45deg);
+}
+
+.bar {
+  display: block;
+  border-radius: 8px;
+}
+
+.bar-lg {
+  width: 300px;
+  height: 40px;
+}
+
+.bar-sm {
+  width: 200px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.green {
+  background: #1fa64d;
+}
+
+.forest {
+  background: #29684a;
+}
+
+.olive {
+  background: #1f2d01;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: min(460px, 100%);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 12px rgba(0, 0, 0, 0.05);
+}
+
+.wide .auth-card {
+  width: min(760px, 100%);
+}
+
+@media (max-width: 520px) {
+  .auth-card {
+    padding: 28px 20px;
+    gap: 24px;
+  }
+}
