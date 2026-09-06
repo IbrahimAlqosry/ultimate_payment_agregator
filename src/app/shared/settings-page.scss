@@ -19,9 +19,28 @@
   width: 100%;
 }
 
+.settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.merchant-settings {
+  width: 100%;
+}
+
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
 .settings-card {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 12px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
   display: flex;
@@ -34,13 +53,26 @@
 }
 
 .settings-card.narrow {
-  flex: 0 1 400px;
-  width: min(400px, 100%);
+  flex: 0 1 480px;
+  width: min(480px, 100%);
 }
 
 .settings-card.contact {
-  flex: 0 1 420px;
-  width: min(420px, 100%);
+  flex: 0 1 480px;
+  width: min(480px, 100%);
+}
+
+.settings-card.outlined {
+  border: 1px solid #dcd5d5;
+  box-shadow: none;
+  gap: 20px;
+  padding: 24px;
+}
+
+.settings-card.outlined h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .settings-card.full {
@@ -65,6 +97,18 @@
   padding: 24px 32px 32px;
 }
 
+.card-body.padded {
+  padding: 32px;
+  gap: 24px;
+}
+
+.card-body.padded h2,
+.settings-card.flush h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .caps {
   font-size: 11px;
   font-weight: 700;
@@ -84,8 +128,7 @@
   min-width: 180px;
 }
 
-.locked-input,
-.secret-input {
+.locked-input {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -94,30 +137,42 @@
   border: 1px solid #dcd5d5;
   border-radius: 8px;
   background: #f7f5f5;
+  color: #1c1c1d;
+  font-size: 13px;
 }
 
-.locked-input input,
-.secret-input input {
+.locked-input img {
+  flex-shrink: 0;
+}
+
+.settings-card .form-field input:not([type='radio']):not([type='checkbox']) {
+  font-size: 13px;
+}
+
+.form-field .locked-input input:not([type='radio']):not([type='checkbox']) {
+  width: auto;
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   border: 0;
+  border-radius: 0;
   padding: 12px 0;
   background: transparent;
-}
-
-.locked-input input:focus-visible,
-.secret-input input:focus-visible {
-  outline: none;
   box-shadow: none;
 }
 
-.locked-input {
-  color: #7e7676;
+.form-field input[type='password']::-ms-reveal,
+.form-field input[type='password']::-webkit-credentials-auto-fill-button {
+  display: none;
 }
 
-.role-value {
-  color: #c0392b;
-  font-weight: 700;
+.role-badge {
+  background: #fdf2f2;
+  color: #eb5757;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .rules-list {
@@ -133,8 +188,54 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #444445;
+  font-size: 12px;
+  color: #1c1c1d;
+}
+
+.rules-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #dcd5d5;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.rules-hint p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1c1c1d;
+}
+
+.rules-hint ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rules-hint li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #7e7676;
+}
+
+.rules-hint li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1fa64d;
+  flex-shrink: 0;
 }
 
 .pref-row {
@@ -208,24 +309,29 @@
   transform: translateX(-20px);
 }
 
-.form-actions.end {
-  justify-content: flex-end;
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
   border-top: 0;
   padding-top: 8px;
 }
 
-.form-actions.stretch .cta {
-  width: 100%;
+.form-actions.end {
+  justify-content: flex-end;
 }
 
 .cta.full {
   width: 100%;
 }
 
+.settings-card.flush .form-actions {
+  padding-top: 0;
+}
+
 .diagnostics {
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid #f0eaea;
+  margin-top: 0;
 }
 
 .diagnostics h3 {
@@ -246,8 +352,19 @@
   }
 
   .settings-card.narrow,
-  .settings-card.contact {
+  .settings-card.contact,
+  .settings-col {
     width: 100%;
     flex: 1 1 auto;
+  }
+
+  .field-row > * {
+    flex: 1 1 100%;
+  }
+
+  .card-header,
+  .card-body,
+  .card-body.padded {
+    padding-inline: 16px;
   }
 }

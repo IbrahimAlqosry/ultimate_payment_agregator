@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'erp.title' | transloco }}</h1>
-    @if (auth.canMutate()) {
+    @if (tab() === 'all' && auth.canMutate()) {
       <a class="btn btn-primary" routerLink="/erp-systems/new">{{ 'cta.addErp' | transloco }}</a>
     }
   </header>
@@ -17,15 +17,17 @@
     </button>
   </div>
 
-  <div class="filters">
-    <app-search-field placeholderKey="erp.search" (queryChange)="onQuery($event)" />
-    <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'erp.status' | transloco">
-      <option value="">{{ 'filter.status' | transloco }}</option>
-      <option value="approved">{{ 'badge.active' | transloco }}</option>
-      <option value="pending">{{ 'badge.pending' | transloco }}</option>
-      <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
-    </select>
-  </div>
+  @if (tab() === 'all') {
+    <div class="filters">
+      <app-search-field [seed]="query" placeholderKey="erp.search" (queryChange)="onQuery($event)" />
+      <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'erp.status' | transloco">
+        <option value="">{{ 'filter.status' | transloco }}</option>
+        <option value="approved">{{ 'badge.active' | transloco }}</option>
+        <option value="pending">{{ 'badge.pending' | transloco }}</option>
+        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
+      </select>
+    </div>
+  }
 
   <div class="card table-card">
     <app-data-state
@@ -66,11 +68,8 @@
                 <td class="muted">{{ row.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
                 <td>
                   <app-approval-actions
-                    [show]="row.status === 'pending' && auth.canApprove('erp')"
+                    [variant]="row.status === 'pending' ? 'review' : 'manage'"
                     [viewHref]="'/erp-systems/' + row.id"
-                    viewKey="actions.view"
-                    (approve)="decide(row.id, 'approved')"
-                    (reject)="decide(row.id, 'rejected')"
                   />
                 </td>
               </tr>
@@ -82,13 +81,13 @@
         <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
         <div class="pager">
           <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-            <img src="/icons/chevron-left.svg" width="14" height="14" alt="" />
+            <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
           </button>
           @for (n of pages(); track n) {
             <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
           }
           <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-            <img src="/icons/chevron-right.svg" width="14" height="14" alt="" />
+            <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
           </button>
         </div>
       </footer>

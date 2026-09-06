@@ -2,7 +2,11 @@
   "brand": {
     "name": "Ultimate pay",
     "tagline": "Yemen's unified ERP & Bank gateway",
-    "pay": "pay"
+    "slogan": "We don't sell a service, we build a future.",
+    "pay": "pay",
+    "hubErp": "ERP",
+    "hubBank": "Bank",
+    "hubMerchant": "Merchant"
   },
   "login": {
     "title": "Log In",
@@ -21,7 +25,7 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "demoTitle": "Demo accounts",
-    "demoHint": "Click a person to fill email and password. Then log in. Dummy OTP is 123456.",
+    "demoHint": "Tap a user to fill the form. The password stays hidden until you show it.",
     "demoPassword": "Password",
     "role": {
       "operator": "Platform Operator",
@@ -147,7 +151,10 @@
     "searchMerchant": "Search transactions, invoices...",
     "searchFi": "Search payment points, merchants...",
     "captionOperator": "{{title}} (Platform Operator)",
-    "captionOrg": "{{title}} — {{org}}"
+    "captionOrg": "{{title}} — {{org}}",
+    "logoutTitle": "Sign out",
+    "logoutBody": "You can sign back in at any time.",
+    "logoutConfirm": "Sign out"
   },
   "title": {
     "admin": "Admin",
@@ -226,6 +233,8 @@
     "approve": "Approve",
     "reject": "Reject",
     "view": "View",
+    "manage": "Manage",
+    "edit": "Edit",
     "review": "Review",
     "search": "Search",
     "column": "Actions",
@@ -250,7 +259,27 @@
     "status": "Status",
     "lastActive": "Last active",
     "tabAll": "All Operators",
-    "lastLogin": "Last Login"
+    "tabPermissions": "Screen Permissions",
+    "tabLogs": "Operators Log Reports",
+    "adminOnly": "ADMIN ONLY CONFIGURATION",
+    "operatorRole": "Operator / Role",
+    "modMerchants": "Merchant Mgmt",
+    "modFi": "FI Mgmt",
+    "modErp": "ERP List",
+    "modIntegration": "Integration Requests",
+    "modReports": "Reports",
+    "logAt": "Timestamp",
+    "logAction": "Action",
+    "logScreen": "Module / Screen",
+    "logSuccess": "Success",
+    "emptyLogs": "No operator log events yet.",
+    "lastLogin": "Last Login",
+    "editTitle": "Edit {{name}}",
+    "statusLabel": "Status",
+    "deactivate": "Deactivate this operator",
+    "saveChanges": "Save Changes",
+    "resetDefaults": "Reset to Defaults",
+    "savePermissions": "Save Permissions"
   },
   "products": {
     "title": "Merchants",
@@ -267,7 +296,7 @@
   "merchants": {
     "title": "Merchant Management",
     "intro": "Self-service and operator-assisted onboardings. Login is blocked until maker-checker approval. CR number is enough to approve in MVP1 — no documents required.",
-    "search": "Search by name or CR...",
+    "search": "Search name, CR, city, or ERP",
     "empty": "No merchants match that search.",
     "cr": "CR Number",
     "name": "Legal name",
@@ -277,7 +306,9 @@
     "city": "City",
     "points": "Points",
     "status": "Status",
-    "onboarded": "Onboarded Date"
+    "onboarded": "Onboarded Date",
+    "submitted": "Submitted Date",
+    "maker": "Submitted By"
   },
   "orders": {
     "title": "Payment points",
@@ -333,33 +364,57 @@
     "banner": "Only approved ERP systems appear in merchant sign-up."
   },
   "requests": {
-    "title": "Integration user requests",
+    "title": "Integration User Requests",
+    "crumb": "Integration User Requests",
     "intro": "API users requested by merchants, banks, wallets, or ERP vendors. Maker submits; Checker or Admin approves.",
     "search": "Search requester, organisation, or email",
     "empty": "No integration requests match that search.",
     "requester": "Requester",
     "org": "Organisation",
     "kind": "Kind",
+    "code": "Request ID",
+    "entity": "Entity",
+    "type": "Request Type",
+    "pendingBadge": "{{count}} pending",
     "email": "Email",
     "submitted": "Submitted",
     "status": "Status",
     "kinds": {
       "merchant": "Merchant",
       "institution": "Financial institution",
-      "erp": "ERP"
+      "erp": "ERP",
+      "credential": "Credential Rotation",
+      "detail": "Detail Change"
     }
   },
   "reports": {
-    "title": "Reports / audit log",
+    "title": "Reports & Audit Log",
     "intro": "Dummy trail of maker-checker actions, FI approvals, and merchant requests.",
     "search": "Search actor, action, or entity",
     "empty": "No audit events match that search.",
-    "at": "When",
+    "at": "Timestamp",
     "actor": "Actor",
     "role": "Role",
     "action": "Action",
     "entity": "Entity",
-    "detail": "Detail"
+    "detail": "Detail",
+    "from": "From",
+    "to": "To",
+    "eventType": "Event Type",
+    "allEvents": "All Events",
+    "apply": "Apply Filters",
+    "export": "Export CSV",
+    "ip": "IP Address",
+    "event": "Event Type",
+    "description": "Description",
+    "performedBy": "Performed By",
+    "showing": "Showing {{shown}} of {{total}} events",
+    "types": {
+      "login": "Login",
+      "approval": "Approval",
+      "modification": "Modification",
+      "rejection": "Rejection"
+    }
   },
   "notes": {
     "merchantTitle": "Notification delivery",
@@ -371,8 +426,8 @@
     "authType": "Authentication Type",
     "bearer": "Bearer Token",
     "oauth2": "OAuth 2.0",
-    "username": "ERP Username",
-    "password": "ERP Password",
+    "clientId": "Client ID",
+    "clientSecret": "Client Secret",
     "accessToken": "Access Token",
     "show": "Show",
     "hide": "Hide",
@@ -398,7 +453,10 @@
     "amount": "Amount",
     "amountYer": "Amount (YER)",
     "invoice": "Invoice Ref",
-    "status": "Status"
+    "status": "Status",
+    "notification": "Notification",
+    "channel": "Channel",
+    "sentAt": "Sent At"
   },
   "activity": {
     "date": "Date",
@@ -501,6 +559,7 @@
     "ruleReuse": "Cannot reuse last 5 passwords",
     "opRule8": "At least 8 characters long",
     "opRuleMix": "Include numbers and special symbols (!@#$)",
+    "passwordRequirements": "Password requirements:",
     "emailNotif": "Email Notifications",
     "emailNotifHint": "Receive approvals pending checker and audit warning emails.",
     "smsNotif": "SMS Notifications",
@@ -521,7 +580,9 @@
     "contract": "Contract",
     "city": "City",
     "status": "Status",
-    "contractExpiry": "Contract Expiry"
+    "contractExpiry": "Contract Expiry",
+    "submitted": "Submitted Date",
+    "contact": "Contact Person"
   },
   "status": {
     "home": "Go to dashboard",
@@ -553,17 +614,23 @@
   },
   "list": {
     "allMerchants": "All Merchants",
-    "allInstitutions": "All Institutions",
+    "allInstitutions": "All Financial Institutions",
     "pendingCount": "Pending Approvals ({{count}})",
     "showing": "Showing {{shown}} of {{total}}",
     "allErps": "All ERP Systems",
     "allPoints": "All Payment Points",
-    "showingOperators": "Showing {{shown}} of {{total}} platform operators"
+    "showingOperators": "Showing {{shown}} of {{total}} platform operators",
+    "showingPending": "Showing {{shown}} of {{total}} pending applications"
   },
   "filter": {
     "status": "Status",
+    "statusAll": "Status: All",
     "city": "City",
-    "erp": "ERP System"
+    "erp": "ERP System",
+    "clear": "Clear",
+    "apply": "Apply Filter",
+    "fromDate": "From Date",
+    "toDate": "To Date"
   },
   "common": {
     "loading": "Loading…",
@@ -597,9 +664,16 @@
     "merchant": "Merchant",
     "institution": "Financial Institution"
   },
+  "channel": {
+    "sms": "SMS",
+    "email": "Email",
+    "webhook": "Webhook"
+  },
   "kind": {
     "wallet": "Wallet Number",
-    "merchant_point": "Merchant Point Number"
+    "merchant_point": "Merchant Point Number",
+    "pos": "POS",
+    "ecommerce": "E-commerce"
   },
   "type": {
     "bank": "Bank",
@@ -612,6 +686,8 @@
     "out_of_stock": "Rejected",
     "pending": "Pending",
     "pendingReview": "Pending Review",
+    "pendingChecker": "Pending Checker",
+    "pendingApproval": "Pending Approval",
     "approved": "Approved",
     "rejected": "Rejected",
     "completed": "Completed",
@@ -658,6 +734,9 @@
     "fiSubmitted": "Institution is waiting on a checker. Only approved banks and wallets show in merchant onboarding.",
     "erpSubmitted": "ERP connector is queued for review. It stays off the sign-up list until approved.",
     "operatorInvited": "Invite sent. They'll show as Invited until their first login.",
+    "operatorUpdated": "Operator details are saved.",
+    "permissionsSaved": "Screen permissions are saved.",
+    "saveFailed": "Could not save those changes. Try again.",
     "pointSubmitted": "Payment point is with the bank. They have one working day to approve.",
     "approved": {
       "merchant": "Merchant is live. Their ERP can start routing payments.",
@@ -718,6 +797,13 @@
     "roleAdmin": "Full system configurations",
     "operatorError": "Invite failed. Use an @aggregator.ye email and fill every field.",
     "continue": "Continue",
+    "back": "Back",
+    "step2Title": "Set Screen Permissions",
+    "step2Hint": "Choose which screens this operator can open. You can copy permissions from an existing operator.",
+    "copyPermissions": "Copy permissions from",
+    "copyPh": "Select an operator",
+    "screenPermissions": "Screen Permissions",
+    "sendInvite": "Send Invitation",
     "pointTitle": "Add Payment Point",
     "pointCrumb": "My Payment Points > Add Payment Point",
     "backToPoints": "Back to My Payment Points",
@@ -747,6 +833,82 @@
     "linkedAccount": "Linked Bank Account/Wallet",
     "rejectionReason": "Rejection Reason",
     "pointWarning": "Verify the wallet/account number matches the merchant's registered bank details before approving.",
-    "missing": "This record could not be found."
+    "missing": "This record could not be found.",
+    "tabProfile": "Profile",
+    "tabPoints": "Payment Points",
+    "tabIntegration": "Integration User",
+    "tabFiProfile": "Institution Profile",
+    "tabFees": "Settlements & Fees Log",
+    "tabApi": "API Integration Parameters",
+    "merchantAllCrumb": "Merchant Management > All Merchants > ",
+    "fiAllCrumb": "Financial Institution Management > All FIs > ",
+    "emptyPoints": "No payment points are linked to this merchant yet.",
+    "emptySettlements": "No settlement records for this institution yet.",
+    "settledAt": "Settled",
+    "fee": "Fee",
+    "tabMerchantDetails": "Merchant Details",
+    "tabNotification": "Notification Delivery",
+    "tabFiDetails": "Institution Details",
+    "tabConnected": "Connected Merchants",
+    "address": "Address",
+    "approvedBy": "Approved By",
+    "agreedFee": "Agreed Fee",
+    "autoRenewalYes": "Yes — auto-renews at expiry",
+    "lastDelivery": "Last Delivery",
+    "successRate": "Success Rate",
+    "pointName": "Point Name",
+    "pointId": "Point ID",
+    "location": "Location",
+    "erpDetails": "System Details",
+    "integrationType": "Integration Type",
+    "contractNumber": "Contract Number",
+    "emptyConnected": "No merchants are connected to this institution yet.",
+    "merchantName": "Merchant Name",
+    "connectedSince": "Connected Since",
+    "transactions": "Transactions"
+  },
+  "inbox": {
+    "title": "Notifications",
+    "viewAll": "View All",
+    "empty": "No notifications yet.",
+    "minutesAgo": "{{n}} min ago",
+    "hoursAgo": "{{n}} hours ago",
+    "daysAgo": "{{n}} days ago",
+    "merchantPending": {
+      "title": "Merchant awaiting review",
+      "body": "{{name}} is waiting for checker approval."
+    },
+    "fiExpiring": {
+      "title": "FI contract needs attention",
+      "body": "{{name}} has a pending or expiring contract."
+    },
+    "erpResubmitted": {
+      "title": "ERP resubmitted",
+      "body": "{{name}} was sent back for review."
+    },
+    "roleRequest": {
+      "title": "Operator invite pending",
+      "body": "{{name}} has not completed first login."
+    },
+    "auditFlag": {
+      "title": "Unusual login flagged",
+      "body": "A console login from {{ip}} was logged."
+    },
+    "paymentReceived": {
+      "title": "Payment notification received",
+      "body": "Invoice {{invoice}} was posted to your ERP endpoint."
+    },
+    "pointApproved": {
+      "title": "Payment point approved",
+      "body": "Point {{code}} is now active."
+    },
+    "pointPending": {
+      "title": "Payment point awaiting you",
+      "body": "{{name}} submitted a point that needs approval."
+    },
+    "noteDelivered": {
+      "title": "Notification delivered",
+      "body": "Invoice {{invoice}} was delivered successfully."
+    }
   }
 }

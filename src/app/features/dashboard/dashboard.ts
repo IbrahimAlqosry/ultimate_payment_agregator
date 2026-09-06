@@ -58,4 +58,15 @@ export class Dashboard {
     const max = Math.max(...series, 1);
     return `${Math.round((value / max) * 100)}%`;
   }
+
+  scaled(value: number): number {
+    const factor: Record<DashRange, number> = {
+      hour: 0.12,
+      day: 0.35,
+      today: 0.5,
+      week: 1,
+      month: 2.1,
+    };
+    return Math.max(0, Math.round(value * factor[this.timeRange()]));
+  }
 }

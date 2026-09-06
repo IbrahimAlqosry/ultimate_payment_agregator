@@ -35,6 +35,8 @@ export interface PageTab {
       gap: 24px;
       border-bottom: 1px solid #e6e6e6;
       margin-bottom: 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .page-tab {
       border: 0;
@@ -45,6 +47,8 @@ export interface PageTab {
       color: #737373;
       cursor: pointer;
       position: relative;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .page-tab.active {
       font-weight: 600;

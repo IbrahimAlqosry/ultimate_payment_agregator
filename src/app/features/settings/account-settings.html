@@ -10,76 +10,77 @@
 
   <app-data-state [loading]="loading()" [error]="error()" [empty]="!profile()" emptyKey="settings.empty" (retry)="load()">
     @if (profile(); as user) {
+      <div class="settings-stack">
       @if (user.audience === 'merchant' && user.merchant) {
-        <div class="settings-split">
-          <form class="settings-card grow" (submit)="onMerchant($event)" novalidate>
-            <div class="card-header">
-              <h2>{{ 'settings.businessProfile' | transloco }}</h2>
-            </div>
-            <div class="card-body">
-              <label class="form-field">
-                <span class="caps">{{ 'settings.businessName' | transloco }}</span>
-                <input [formField]="merchantForm.businessName" />
-                <app-field-error [state]="merchantForm.businessName()" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.crNumber' | transloco }}</span>
-                <div class="locked-input">
-                  <img src="/icons/lock.svg" width="14" height="14" alt="" />
-                  <input [value]="merchantForm.crNumber().value()" readonly />
-                </div>
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.erpSystem' | transloco }}</span>
-                <div class="locked-input">
-                  <img src="/icons/lock.svg" width="14" height="14" alt="" />
-                  <input [value]="merchantForm.erpSystem().value()" readonly />
-                </div>
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.address' | transloco }}</span>
-                <input [formField]="merchantForm.address" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.officePhone' | transloco }}</span>
-                <input [formField]="merchantForm.officePhone" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.businessEmail' | transloco }}</span>
-                <input [formField]="merchantForm.businessEmail" />
-              </label>
-              <div class="form-actions stretch">
+        <form class="merchant-settings" (submit)="onMerchant($event)" novalidate>
+          <div class="settings-split">
+            <div class="settings-card grow">
+              <div class="card-header">
+                <h2>{{ 'settings.businessProfile' | transloco }}</h2>
+              </div>
+              <div class="card-body">
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.businessName' | transloco }}</span>
+                  <input [formField]="merchantForm.businessName" />
+                  <app-field-error [state]="merchantForm.businessName()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.crNumber' | transloco }}</span>
+                  <div class="locked-input">
+                    <img src="icons/lock.svg" width="14" height="14" alt="" />
+                    <span>{{ merchantForm.crNumber().value() }}</span>
+                  </div>
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.erpSystem' | transloco }}</span>
+                  <div class="locked-input">
+                    <img src="icons/lock.svg" width="14" height="14" alt="" />
+                    <span>{{ merchantForm.erpSystem().value() }}</span>
+                  </div>
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.address' | transloco }}</span>
+                  <input [formField]="merchantForm.address" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.officePhone' | transloco }}</span>
+                  <input [formField]="merchantForm.officePhone" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.businessEmail' | transloco }}</span>
+                  <input [formField]="merchantForm.businessEmail" />
+                </label>
                 <button class="cta full" type="submit" [disabled]="merchantForm().submitting() || auth.readOnly()">
                   {{ 'settings.updateProfile' | transloco }}
                 </button>
               </div>
             </div>
-          </form>
 
-          <form class="settings-card contact" (submit)="onMerchant($event)" novalidate>
-            <div class="card-header">
-              <h2>{{ 'settings.contactPerson' | transloco }}</h2>
+            <div class="settings-card contact">
+              <div class="card-header">
+                <h2>{{ 'settings.contactPerson' | transloco }}</h2>
+              </div>
+              <div class="card-body">
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.fullName' | transloco }}</span>
+                  <input [formField]="merchantForm.contactName" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.rolePosition' | transloco }}</span>
+                  <input [formField]="merchantForm.contactRole" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.personalPhone' | transloco }}</span>
+                  <input [formField]="merchantForm.contactPhone" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.personalEmail' | transloco }}</span>
+                  <input [formField]="merchantForm.contactEmail" />
+                </label>
+              </div>
             </div>
-            <div class="card-body">
-              <label class="form-field">
-                <span class="caps">{{ 'settings.fullName' | transloco }}</span>
-                <input [formField]="merchantForm.contactName" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.rolePosition' | transloco }}</span>
-                <input [formField]="merchantForm.contactRole" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.personalPhone' | transloco }}</span>
-                <input [formField]="merchantForm.contactPhone" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.personalEmail' | transloco }}</span>
-                <input [formField]="merchantForm.contactEmail" />
-              </label>
-            </div>
-          </form>
-        </div>
+          </div>
+        </form>
 
         <form class="settings-card full" (submit)="onPassword($event)" novalidate>
           <div class="card-header">
@@ -132,99 +133,107 @@
                 <input [formField]="passwordForm.confirm" type="password" autocomplete="new-password" />
                 <app-field-error [state]="passwordForm.confirm()" />
               </label>
-              <div class="form-actions stretch">
-                <button class="cta full" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
+              <div class="form-actions">
+                <button class="cta" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
                   {{ 'settings.updatePassword' | transloco }}
                 </button>
               </div>
             </div>
           </form>
-          <article class="settings-card narrow">
-            <div class="card-header">
-              <h2>{{ 'settings.rulesTitle' | transloco }}</h2>
-            </div>
-            <div class="card-body">
-              <p class="page-intro">{{ 'settings.rulesIntro' | transloco }}</p>
-              <ul class="rules-list">
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.rule12' | transloco }}
-                </li>
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.ruleUpper' | transloco }}
-                </li>
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.ruleNumber' | transloco }}
-                </li>
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.ruleSpecial' | transloco }}
-                </li>
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.ruleReuse' | transloco }}
-                </li>
-              </ul>
-            </div>
+          <article class="settings-card narrow outlined">
+            <h2>{{ 'settings.rulesTitle' | transloco }}</h2>
+            <p class="page-intro">{{ 'settings.rulesIntro' | transloco }}</p>
+            <ul class="rules-list">
+              <li>
+                <img src="icons/check-circle.svg" width="14" height="14" alt="" />
+                {{ 'settings.rule12' | transloco }}
+              </li>
+              <li>
+                <img src="icons/check-circle.svg" width="14" height="14" alt="" />
+                {{ 'settings.ruleUpper' | transloco }}
+              </li>
+              <li>
+                <img src="icons/check-circle.svg" width="14" height="14" alt="" />
+                {{ 'settings.ruleNumber' | transloco }}
+              </li>
+              <li>
+                <img src="icons/check-circle.svg" width="14" height="14" alt="" />
+                {{ 'settings.ruleSpecial' | transloco }}
+              </li>
+              <li>
+                <img src="icons/check-circle.svg" width="14" height="14" alt="" />
+                {{ 'settings.ruleReuse' | transloco }}
+              </li>
+            </ul>
           </article>
         </div>
       } @else {
         <div class="settings-split">
-          <form class="settings-card grow" (submit)="onOperator($event)" novalidate>
-            <div class="card-header">
-              <h2>{{ 'settings.profileInfo' | transloco }}</h2>
-            </div>
-            <div class="card-body">
-              <label class="form-field">
-                <span class="caps">{{ 'settings.fullName' | transloco }}</span>
-                <input [formField]="operatorForm.name" />
-                <app-field-error [state]="operatorForm.name()" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.emailAddress' | transloco }}</span>
-                <div class="locked-input">
-                  <img src="/icons/lock.svg" width="14" height="14" alt="" />
-                  <input [value]="user.email" readonly />
+          <div class="settings-col">
+            <form class="settings-card flush" (submit)="onOperator($event)" novalidate>
+              <div class="card-body padded">
+                <h2>{{ 'settings.profileInfo' | transloco }}</h2>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.fullName' | transloco }}</span>
+                  <input [formField]="operatorForm.name" />
+                  <app-field-error [state]="operatorForm.name()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.emailAddress' | transloco }}</span>
+                  <div class="locked-input">
+                    <img src="icons/lock.svg" width="14" height="14" alt="" />
+                    <span>{{ user.email }}</span>
+                  </div>
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.role' | transloco }}</span>
+                  <div class="locked-input">
+                    <span class="role-badge">{{ ('role.' + user.role) | transloco }}</span>
+                  </div>
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.phoneNumber' | transloco }}</span>
+                  <input [formField]="operatorForm.phone" />
+                </label>
+                <div class="form-actions end">
+                  <button class="cta" type="submit" [disabled]="operatorForm().submitting() || auth.readOnly()">
+                    {{ 'settings.updateProfile' | transloco }}
+                  </button>
                 </div>
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.role' | transloco }}</span>
-                <div class="locked-input">
-                  <img src="/icons/lock.svg" width="14" height="14" alt="" />
-                  <input class="role-value" [value]="('role.' + user.role) | transloco" readonly />
-                </div>
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.phoneNumber' | transloco }}</span>
-                <input [formField]="operatorForm.phone" />
-              </label>
-              <div class="form-actions end">
-                <button class="cta" type="submit" [disabled]="operatorForm().submitting() || auth.readOnly()">
-                  {{ 'settings.updateProfile' | transloco }}
-                </button>
+                @if (auth.readOnly()) {
+                  <p class="muted">{{ 'settings.readerNote' | transloco }}</p>
+                }
               </div>
-              @if (auth.readOnly()) {
-                <p class="muted">{{ 'settings.readerNote' | transloco }}</p>
-              }
-              <div class="diagnostics">
-                <h3>{{ 'dashboard.errors' | transloco }}</h3>
-                <p class="muted">{{ 'dashboard.errorsIntro' | transloco }}</p>
-                <div class="error-actions">
-                  <button class="btn btn-ghost" type="button" (click)="simulate(401)">{{ 'http.401' | transloco }}</button>
-                  <button class="btn btn-ghost" type="button" (click)="simulate(404)">{{ 'http.404' | transloco }}</button>
-                  <button class="btn btn-ghost" type="button" (click)="simulate(501)">{{ 'http.501' | transloco }}</button>
-                  <button class="btn btn-ghost" type="button" (click)="simulate(503)">{{ 'http.503' | transloco }}</button>
+            </form>
+            <article class="settings-card flush">
+              <div class="card-body padded">
+                <h2>{{ 'settings.notifPrefs' | transloco }}</h2>
+                <div class="pref-row">
+                  <div>
+                    <strong>{{ 'settings.emailNotif' | transloco }}</strong>
+                    <span>{{ 'settings.emailNotifHint' | transloco }}</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" [checked]="emailOn()" (change)="onEmail($event)" />
+                    <i></i>
+                  </label>
+                </div>
+                <div class="pref-row">
+                  <div>
+                    <strong>{{ 'settings.smsNotif' | transloco }}</strong>
+                    <span>{{ 'settings.smsNotifHint' | transloco }}</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" [checked]="smsOn()" (change)="onSms($event)" />
+                    <i></i>
+                  </label>
                 </div>
               </div>
-            </div>
-          </form>
-          <form class="settings-card narrow" (submit)="onPassword($event)" novalidate>
-            <div class="card-header">
+            </article>
+          </div>
+          <form class="settings-card flush narrow" (submit)="onPassword($event)" novalidate>
+            <div class="card-body padded">
               <h2>{{ 'settings.changePassword' | transloco }}</h2>
-            </div>
-            <div class="card-body">
               <label class="form-field">
                 <span class="caps">{{ 'settings.currentPassword' | transloco }}</span>
                 <input [formField]="passwordForm.current" type="password" autocomplete="current-password" />
@@ -240,52 +249,33 @@
                 <input [formField]="passwordForm.confirm" type="password" autocomplete="new-password" />
                 <app-field-error [state]="passwordForm.confirm()" />
               </label>
-              <ul class="rules-list">
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.opRule8' | transloco }}
-                </li>
-                <li>
-                  <img src="/icons/check-circle.svg" width="14" height="14" alt="" />
-                  {{ 'settings.opRuleMix' | transloco }}
-                </li>
-              </ul>
-              <div class="form-actions stretch">
-                <button class="cta full" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
-                  {{ 'settings.updatePassword' | transloco }}
-                </button>
+              <div class="rules-hint">
+                <p>{{ 'settings.passwordRequirements' | transloco }}</p>
+                <ul>
+                  <li>{{ 'settings.opRule8' | transloco }}</li>
+                  <li>{{ 'settings.opRuleMix' | transloco }}</li>
+                </ul>
               </div>
+              <button class="cta full" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
+                {{ 'settings.updatePassword' | transloco }}
+              </button>
             </div>
           </form>
         </div>
-        <article class="settings-card full">
-          <div class="card-header">
-            <h2>{{ 'settings.notifPrefs' | transloco }}</h2>
-          </div>
-          <div class="card-body">
-            <div class="pref-row">
-              <div>
-                <strong>{{ 'settings.emailNotif' | transloco }}</strong>
-                <span>{{ 'settings.emailNotifHint' | transloco }}</span>
-              </div>
-              <label class="switch">
-                <input type="checkbox" [checked]="emailOn()" (change)="onEmail($event)" />
-                <i></i>
-              </label>
-            </div>
-            <div class="pref-row">
-              <div>
-                <strong>{{ 'settings.smsNotif' | transloco }}</strong>
-                <span>{{ 'settings.smsNotifHint' | transloco }}</span>
-              </div>
-              <label class="switch">
-                <input type="checkbox" [checked]="smsOn()" (change)="onSms($event)" />
-                <i></i>
-              </label>
+        <article class="settings-card full flush diagnostics">
+          <div class="card-body padded">
+            <h3>{{ 'dashboard.errors' | transloco }}</h3>
+            <p class="muted">{{ 'dashboard.errorsIntro' | transloco }}</p>
+            <div class="error-actions">
+              <button class="btn btn-ghost" type="button" (click)="simulate(401)">{{ 'http.401' | transloco }}</button>
+              <button class="btn btn-ghost" type="button" (click)="simulate(404)">{{ 'http.404' | transloco }}</button>
+              <button class="btn btn-ghost" type="button" (click)="simulate(501)">{{ 'http.501' | transloco }}</button>
+              <button class="btn btn-ghost" type="button" (click)="simulate(503)">{{ 'http.503' | transloco }}</button>
             </div>
           </div>
         </article>
       }
+      </div>
     }
   </app-data-state>
 </section>

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { FormField, email, form, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -25,9 +25,12 @@ export class Login {
 
   readonly apiError = signal(false);
   readonly showPassword = signal(false);
+  readonly swapping = signal(false);
   readonly audience = signal<Audience>('operator');
-  readonly accounts = DEMO_ACCOUNTS;
   readonly demoPassword = DEMO_PASSWORD;
+  readonly visibleAccounts = computed(() =>
+    DEMO_ACCOUNTS.filter((account) => account.audience === this.audience()),
+  );
 
   readonly loginForm = form(signal({ email: '', password: '' }), (p) => {
     required(p.email);
@@ -41,15 +44,29 @@ export class Login {
     { id: 'institution', label: 'login.role.institution' },
   ];
 
+  private swapTimer = 0;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => window.clearTimeout(this.swapTimer));
+  }
+
   selectAudience(audience: Audience): void {
-    this.audience.set(audience);
-    this.apiError.set(false);
+    if (audience === this.audience()) {
+      return;
+    }
+    window.clearTimeout(this.swapTimer);
+    this.swapping.set(true);
+    this.swapTimer = window.setTimeout(() => {
+      this.audience.set(audience);
+      this.apiError.set(false);
+      window.requestAnimationFrame(() => this.swapping.set(false));
+    }, 160);
   }
 
   useAccount(account: (typeof DEMO_ACCOUNTS)[number]): void {
     this.selectAudience(account.audience);
     this.loginForm().reset({ email: account.email, password: account.password });
-    this.showPassword.set(true);
+    this.showPassword.set(false);
   }
 
   async onSubmit(event: Event): Promise<void> {

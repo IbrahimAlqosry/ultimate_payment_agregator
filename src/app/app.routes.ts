@@ -66,6 +66,26 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/pending').then((m) => m.Pending),
   },
   {
+    path: '401',
+    loadComponent: () => import('./features/status/status').then((m) => m.Status),
+    data: { code: 401 },
+  },
+  {
+    path: '404',
+    loadComponent: () => import('./features/status/status').then((m) => m.Status),
+    data: { code: 404 },
+  },
+  {
+    path: '501',
+    loadComponent: () => import('./features/status/status').then((m) => m.Status),
+    data: { code: 501 },
+  },
+  {
+    path: '503',
+    loadComponent: () => import('./features/status/status').then((m) => m.Status),
+    data: { code: 503 },
+  },
+  {
     path: '',
     canMatch: [authMatch],
     canActivate: [authGuard],
@@ -201,6 +221,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
       },
       {
+        path: 'all-payment-points/:id',
+        title: 'detail.pointTitle',
+        ...institutionOnly,
+        loadComponent: () => import('./features/orders/point-detail').then((m) => m.PointDetail),
+      },
+      {
         path: 'all-payment-points',
         title: 'nav.allPoints',
         ...institutionOnly,
@@ -248,26 +274,6 @@ export const routes: Routes = [
       { path: 'products', redirectTo: 'merchants' },
       { path: 'users', redirectTo: 'operators' },
     ],
-  },
-  {
-    path: '401',
-    loadComponent: () => import('./features/status/status').then((m) => m.Status),
-    data: { code: 401 },
-  },
-  {
-    path: '404',
-    loadComponent: () => import('./features/status/status').then((m) => m.Status),
-    data: { code: 404 },
-  },
-  {
-    path: '501',
-    loadComponent: () => import('./features/status/status').then((m) => m.Status),
-    data: { code: 501 },
-  },
-  {
-    path: '503',
-    loadComponent: () => import('./features/status/status').then((m) => m.Status),
-    data: { code: 503 },
   },
   {
     path: '**',

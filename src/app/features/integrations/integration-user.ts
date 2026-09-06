@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { afterNextRender, Component, computed, ElementRef, inject, Injector, OnInit, signal, viewChild } from '@angular/core';
 import { FormField, form, required, submit } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
@@ -8,10 +8,11 @@ import { IntegrationCredentials } from '@core/models';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 import { FieldError } from '@shared/field-error';
+import { SecretField } from '@shared/secret-field';
 
 @Component({
   selector: 'app-integration-user',
-  imports: [FormField, TranslocoPipe, DataState, FieldError],
+  imports: [FormField, TranslocoPipe, DataState, FieldError, SecretField],
   templateUrl: './integration-user.html',
   styleUrl: '../../shared/form-page.scss',
   styles: `
@@ -66,7 +67,6 @@ import { FieldError } from '@shared/field-error';
       color: #7e7676;
     }
 
-    .secret-input,
     .readonly-box {
       display: flex;
       align-items: center;
@@ -78,16 +78,6 @@ import { FieldError } from '@shared/field-error';
       border-radius: 8px;
       background: #f7f5f5;
       font-size: 13px;
-    }
-
-    .show-btn {
-      border: 0;
-      background: transparent;
-      color: #1fa64d;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 0;
     }
 
     .change-btn {
@@ -103,6 +93,29 @@ import { FieldError } from '@shared/field-error';
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    .change-btn:hover:not(:disabled) {
+      background: #f7f5f5;
+    }
+
+    .change-btn.active {
+      border-color: #1fa64d;
+      color: #1fa64d;
+      background: #f3faf5;
+    }
+
+    .change-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .request-actions {
+      gap: 12px;
+    }
+
+    .request-actions .cta {
+      flex: 1 1 auto;
     }
 
     .request-card textarea {
@@ -169,16 +182,21 @@ import { FieldError } from '@shared/field-error';
       color: #1fa64d;
     }
 
+    .outline-btn.active {
+      border-color: #1fa64d;
+      color: #1fa64d;
+      background: #f3faf5;
+    }
+
+    .outline-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .hint {
       margin: -8px 0 8px;
       font-size: 12px;
       color: #7e7676;
-    }
-
-    .show-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
     }
 
     .confirm {
@@ -200,25 +218,49 @@ import { FieldError } from '@shared/field-error';
 export class IntegrationUserPage implements OnInit {
   private readonly api = inject(AtlasApi);
   private readonly toast = inject(ToastService);
+  private readonly injector = inject(Injector);
   readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly row = signal<IntegrationCredentials | null>(null);
-  readonly showUser = signal(false);
   readonly showPass = signal(false);
   readonly requesting = signal(false);
   readonly confirmRegen = signal(false);
   readonly regenBusy = signal(false);
   readonly merchant = computed(() => this.auth.user()?.audience === 'merchant');
+  private readonly reasonField = viewChild<ElementRef<HTMLTextAreaElement>>('reasonField');
 
   readonly requestForm = form(signal({ reason: '' }), (p) => {
     required(p.reason);
   });
 
   ngOnInit(): void {
-    this.requesting.set(this.merchant());
     this.load();
+  }
+
+  startRequest(): void {
+    if (this.auth.readOnly()) {
+      return;
+    }
+    this.confirmRegen.set(false);
+    const alreadyOpen = this.requesting();
+    this.requesting.set(true);
+    const focusReason = () => {
+      const field = this.reasonField()?.nativeElement;
+      field?.focus();
+      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    if (alreadyOpen) {
+      focusReason();
+      return;
+    }
+    afterNextRender(focusReason, { injector: this.injector });
+  }
+
+  cancelRequest(): void {
+    this.requestForm().reset({ reason: '' });
+    this.requesting.set(false);
   }
 
   load(): void {
@@ -243,7 +285,7 @@ export class IntegrationUserPage implements OnInit {
         await firstValueFrom(this.api.requestCredentialChange(this.requestForm.reason().value()));
         this.toast.ok('toast.changeRequested');
         this.requestForm().reset({ reason: '' });
-        this.requesting.set(this.merchant());
+        this.requesting.set(false);
       } catch {
         /* interceptor */
       }

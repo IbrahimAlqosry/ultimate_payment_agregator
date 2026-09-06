@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { AtlasApi } from '@core/http/atlas-api';
@@ -12,14 +13,20 @@ import { SearchField } from '@shared/search-field';
 
 @Component({
   selector: 'app-integration-requests',
-  imports: [TranslocoPipe, DatePipe, DataState, SearchField, ApprovalActions],
+  imports: [TranslocoPipe, DatePipe, FormsModule, DataState, SearchField, ApprovalActions],
   template: `
     <section class="page">
       <header class="page-head">
-        <h1>{{ 'requests.title' | transloco }}</h1>
+        <div>
+          <p class="crumb">{{ 'requests.crumb' | transloco }}</p>
+          <div class="title-row">
+            <h1>{{ 'requests.title' | transloco }}</h1>
+            <span class="badge warn">{{ 'requests.pendingBadge' | transloco: { count: pendingCount() } }}</span>
+          </div>
+        </div>
       </header>
       <div class="filters">
-        <app-search-field placeholderKey="requests.search" (queryChange)="onQuery($event)" />
+        <app-search-field [seed]="query" placeholderKey="requests.search" (queryChange)="onQuery($event)" />
       </div>
       <div class="card table-card">
         <app-data-state
@@ -33,22 +40,26 @@ import { SearchField } from '@shared/search-field';
             <table>
               <thead>
                 <tr>
-                  <th>{{ 'requests.requester' | transloco }}</th>
-                  <th>{{ 'requests.org' | transloco }}</th>
-                  <th>{{ 'requests.kind' | transloco }}</th>
-                  <th>{{ 'requests.email' | transloco }}</th>
+                  <th>{{ 'requests.code' | transloco }}</th>
+                  <th>{{ 'requests.entity' | transloco }}</th>
+                  <th>{{ 'requests.type' | transloco }}</th>
                   <th>{{ 'requests.submitted' | transloco }}</th>
                   <th>{{ 'requests.status' | transloco }}</th>
-                  <th></th>
+                  <th class="num">{{ 'actions.column' | transloco }}</th>
                 </tr>
               </thead>
               <tbody>
                 @for (row of rows(); track row.id) {
                   <tr>
-                    <td><span class="table-link">{{ row.requester }}</span></td>
+                    <td>
+                      <strong>{{ row.code }}</strong>
+                    </td>
                     <td>{{ row.organization }}</td>
-                    <td class="muted">{{ ('requests.kinds.' + row.kind) | transloco }}</td>
-                    <td class="muted">{{ row.email }}</td>
+                    <td>
+                      <span class="badge" [class.warn]="row.kind === 'credential'" [class.ok]="row.kind !== 'credential'">
+                        {{ ('requests.kinds.' + row.kind) | transloco }}
+                      </span>
+                    </td>
                     <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
                     <td>
                       <span
@@ -57,14 +68,15 @@ import { SearchField } from '@shared/search-field';
                         [class.warn]="row.status === 'pending'"
                         [class.danger]="row.status === 'rejected'"
                       >
-                        {{ ('badge.' + row.status) | transloco }}
+                        {{ (row.status === 'pending' ? 'badge.pendingApproval' : 'badge.' + row.status) | transloco }}
                       </span>
                     </td>
                     <td>
                       <app-approval-actions
+                        variant="decide"
                         [show]="row.status === 'pending' && auth.canApprove('integration')"
                         (approve)="decide(row.id, 'approved')"
-                        (reject)="decide(row.id, 'rejected')"
+                        (reject)="askReject(row)"
                       />
                     </td>
                   </tr>
@@ -75,6 +87,28 @@ import { SearchField } from '@shared/search-field';
         </app-data-state>
       </div>
     </section>
+
+    @if (rejecting(); as row) {
+      <div class="overlay-modal">
+        <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+        <article class="overlay-panel" role="dialog" aria-modal="true">
+          <header class="overlay-head">
+            <h2>{{ 'actions.reject' | transloco }} — {{ row.organization }}</h2>
+            <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
+          </header>
+          <label class="form-field">
+            <span>{{ 'detail.rejectionReason' | transloco }}</span>
+            <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+          </label>
+          <div class="overlay-actions">
+            <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+            <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+              {{ 'actions.confirmReject' | transloco }}
+            </button>
+          </div>
+        </article>
+      </div>
+    }
   `,
 })
 export class IntegrationRequests {
@@ -85,10 +119,16 @@ export class IntegrationRequests {
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly rows = signal<IntegrationRequest[]>([]);
+  readonly rejecting = signal<IntegrationRequest | null>(null);
+  readonly reason = signal('');
   query = '';
 
   constructor() {
     this.load();
+  }
+
+  pendingCount(): number {
+    return this.rows().filter((row) => row.status === 'pending').length;
   }
 
   onQuery(query: string): void {
@@ -113,12 +153,32 @@ export class IntegrationRequests {
     });
   }
 
+  askReject(row: IntegrationRequest): void {
+    this.reason.set('');
+    this.rejecting.set(row);
+  }
+
+  cancelReject(): void {
+    this.rejecting.set(null);
+    this.reason.set('');
+  }
+
+  confirmReject(): void {
+    const row = this.rejecting();
+    if (!row || !this.reason().trim()) {
+      return;
+    }
+    this.decide(row.id, 'rejected');
+    this.cancelReject();
+  }
+
   decide(id: string, decision: 'approved' | 'rejected'): void {
     this.api.decide('integration', id, decision).subscribe({
       next: () => {
         this.toast.decision('integration', decision);
         this.load(true);
       },
+      error: () => this.toast.fail('toast.saveFailed'),
     });
   }
 }

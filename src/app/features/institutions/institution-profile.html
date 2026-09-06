@@ -18,42 +18,42 @@
               <span class="caps">{{ 'profile.licenseNumber' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ fi.cbyLicense }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.contractStart' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ (fi.contractStart || fi.contractExpiry) | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.contractExpiry' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ fi.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.institutionType' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ (fi.type === 'bank' ? 'profile.commercialBank' : 'type.wallet') | transloco }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.regulatory' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ fi.regulatoryAuthority || ('profile.cby' | transloco) }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.swift' | transloco }}</span>
               <div class="locked-input">
                 <span>{{ fi.swiftCode || '—' }}</span>
-                <img src="/icons/lock.svg" width="14" height="14" alt="" />
+                <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
           </div>

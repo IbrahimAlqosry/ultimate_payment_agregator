@@ -35,11 +35,14 @@ export class PointDetail implements OnInit {
   }
 
   listPath(): string {
-    const audience = this.auth.user()?.audience;
-    if (audience === 'merchant') {
+    const url = this.router.url.split('?')[0];
+    if (url.startsWith('/my-payment-points')) {
       return '/my-payment-points';
     }
-    if (audience === 'institution') {
+    if (url.startsWith('/all-payment-points')) {
+      return '/all-payment-points';
+    }
+    if (url.startsWith('/pp-approvals')) {
       return '/pp-approvals';
     }
     return '/payment-points';
@@ -50,7 +53,10 @@ export class PointDetail implements OnInit {
   }
 
   backKey(): string {
-    return this.auth.user()?.audience === 'institution' ? 'detail.backToPending' : 'onboard.backToPoints';
+    if (this.auth.user()?.audience === 'institution') {
+      return this.router.url.startsWith('/all-payment-points') ? 'actions.backToList' : 'detail.backToPending';
+    }
+    return 'onboard.backToPoints';
   }
 
   load(): void {

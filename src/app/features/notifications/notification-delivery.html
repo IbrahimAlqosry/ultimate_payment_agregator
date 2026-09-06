@@ -33,27 +33,24 @@
         </label>
         @if (oauth()) {
           <label class="form-field">
-            <span class="caps">{{ 'notes.accessToken' | transloco }}</span>
-            <div class="secret-input">
-              <input [formField]="form.accessToken" [type]="showSecret() ? 'text' : 'password'" autocomplete="off" />
-              <button class="show-btn" type="button" (click)="showSecret.update((open) => !open)">
-                {{ (showSecret() ? 'notes.hide' : 'notes.show') | transloco }}
-              </button>
-            </div>
+            <span class="caps">{{ 'notes.clientId' | transloco }}</span>
+            <input [formField]="form.clientId" autocomplete="off" />
+            <app-field-error [state]="form.clientId()" />
+          </label>
+          <label class="form-field">
+            <span class="caps">{{ 'notes.clientSecret' | transloco }}</span>
+            <app-secret-field>
+              <input [formField]="form.clientSecret" type="text" autocomplete="off" spellcheck="false" />
+            </app-secret-field>
+            <app-field-error [state]="form.clientSecret()" />
           </label>
         } @else {
           <label class="form-field">
-            <span class="caps">{{ 'notes.username' | transloco }}</span>
-            <input [formField]="form.username" autocomplete="off" />
-          </label>
-          <label class="form-field">
-            <span class="caps">{{ 'notes.password' | transloco }}</span>
-            <div class="secret-input">
-              <input [formField]="form.password" [type]="showSecret() ? 'text' : 'password'" autocomplete="off" />
-              <button class="show-btn" type="button" (click)="showSecret.update((open) => !open)">
-                {{ (showSecret() ? 'notes.hide' : 'notes.show') | transloco }}
-              </button>
-            </div>
+            <span class="caps">{{ 'notes.accessToken' | transloco }}</span>
+            <app-secret-field>
+              <input [formField]="form.accessToken" type="text" autocomplete="off" spellcheck="false" />
+            </app-secret-field>
+            <app-field-error [state]="form.accessToken()" />
           </label>
         }
         <p class="note-box">{{ 'notes.webhookNote' | transloco }}</p>

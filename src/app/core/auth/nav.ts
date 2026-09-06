@@ -36,6 +36,16 @@ export function inboxPath(audience: Audience | undefined): string {
   return '/reports';
 }
 
+export function searchPath(audience: Audience | undefined): string {
+  if (audience === 'merchant') {
+    return '/my-payment-points';
+  }
+  if (audience === 'institution') {
+    return '/all-payment-points';
+  }
+  return '/merchants';
+}
+
 export function navLinks(user: AuthUser | null): NavLink[] {
   if (!user) {
     return [];
@@ -64,6 +74,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
   const links: NavLink[] = [
     { path: '/dashboard', label: 'nav.dashboard', icon: 'layout-dashboard' },
     { path: '/merchants', label: 'nav.merchantMgmt', icon: 'users-2' },
+    { path: '/payment-points', label: 'nav.points', icon: 'credit-card' },
     { path: '/institutions', label: 'nav.fiMgmt', icon: 'building' },
     { path: '/erp-systems', label: 'nav.erpList', icon: 'cpu' },
     { path: '/integration-requests', label: 'nav.integrationRequests', icon: 'git-pull-request' },
@@ -103,13 +114,13 @@ export function allowedAudiencesForPath(path: string): Audience[] | null {
     '/institution-profile',
   ];
 
-  if (operatorOnly.includes(normalized)) {
+  if (operatorOnly.some((base) => normalized === base || normalized.startsWith(`${base}/`))) {
     return ['operator'];
   }
-  if (merchantOnly.includes(normalized)) {
+  if (merchantOnly.some((base) => normalized === base || normalized.startsWith(`${base}/`))) {
     return ['merchant'];
   }
-  if (institutionOnly.includes(normalized)) {
+  if (institutionOnly.some((base) => normalized === base || normalized.startsWith(`${base}/`))) {
     return ['institution'];
   }
   return null;

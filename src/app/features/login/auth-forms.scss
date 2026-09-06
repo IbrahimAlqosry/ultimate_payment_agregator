@@ -51,30 +51,64 @@
 }
 
 .role-switch {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
   padding: 3px;
   background: #ede8e8;
   border-radius: 10px;
-  overflow: hidden;
+}
+
+.role-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  inset-inline-start: 3px;
+  z-index: 0;
+  width: calc((100% - 6px) / 3);
+  border-radius: 8px;
+  background: #1fa64d;
+  pointer-events: none;
+  transition: transform 0.32s cubic-bezier(0.45, 0.05, 0.2, 1);
+}
+
+.role-switch[data-audience='merchant'] .role-thumb {
+  transform: translateX(100%);
+}
+
+.role-switch[data-audience='institution'] .role-thumb {
+  transform: translateX(200%);
+}
+
+:host-context([dir='rtl']) .role-switch[data-audience='merchant'] .role-thumb {
+  transform: translateX(-100%);
+}
+
+:host-context([dir='rtl']) .role-switch[data-audience='institution'] .role-thumb {
+  transform: translateX(-200%);
 }
 
 .role-switch button {
-  flex: 1 1 0;
+  position: relative;
+  z-index: 1;
   border: 0;
   background: transparent;
   color: #444445;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
-  padding: 8px 12px;
+  padding: 8px 8px;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
 }
 
 .role-switch button.active {
-  background: #1fa64d;
+  background: transparent;
   color: #fff;
   font-weight: 500;
 }
@@ -121,7 +155,7 @@
 }
 
 .input-box:has(select) {
-  background-image: url('/icons/chevron-down.svg');
+  background-image: url('../../../../public/icons/chevron-down.svg');
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 16px 16px;
@@ -290,13 +324,9 @@
     flex: 1 1 100%;
   }
 
-  .role-switch {
-    flex-wrap: wrap;
-  }
-
   .role-switch button {
-    flex: 1 1 40%;
-    white-space: normal;
+    font-size: 11px;
+    padding: 8px 4px;
   }
 }
 
@@ -304,9 +334,9 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: 4px;
-  border-top: 1px solid #ece7e7;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #dcd5d5;
 }
 
 .demo-accounts header {
@@ -322,20 +352,30 @@
   color: #1c1c1d;
 }
 
-.demo-accounts header p {
+.demo-secret {
   margin: 0;
   font-size: 12px;
   color: #7e7676;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-.demo-secret code {
+.demo-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7e7676;
+}
+
+.demo-keys code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 700;
   color: #1c1c1d;
   background: #efe8e8;
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
 }
 
@@ -343,9 +383,29 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s ease;
+}
+
+.demo-accounts ul.out {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-thumb,
+  .demo-accounts ul {
+    transition: none;
+  }
+}
+
+.demo-accounts ul:has(> li:only-child) {
+  grid-template-columns: 1fr;
 }
 
 .demo-accounts button {
@@ -354,14 +414,18 @@
   gap: 10px;
   align-items: center;
   text-align: start;
-  border: 1px solid #ece7e7;
+  border: 1px solid #dcd5d5;
   background: #fff;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
   cursor: pointer;
 }
 
-.demo-accounts button:hover,
+.demo-accounts button:hover {
+  border-color: #1fa64d;
+  background: #f7fbf8;
+}
+
 .demo-accounts button.active {
   border-color: #1fa64d;
   background: #f3fbf6;
@@ -378,6 +442,12 @@
   font-weight: 800;
   background: #efe8e8;
   color: #1c1c1d;
+  flex-shrink: 0;
+}
+
+.demo-accounts button.active .demo-avatar {
+  background: #1fa64d;
+  color: #fff;
 }
 
 .demo-copy {
@@ -389,11 +459,23 @@
 }
 
 .demo-copy strong {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: #1c1c1d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.demo-copy span {
+.demo-role {
+  font-size: 12px;
+  color: #444445;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.demo-email {
   font-size: 11px;
   color: #7e7676;
   white-space: nowrap;
@@ -401,15 +483,8 @@
   text-overflow: ellipsis;
 }
 
-.demo-email {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.demo-role {
-  font-size: 10px;
-  font-weight: 700;
-  color: #1fa64d;
-  text-align: end;
-  max-width: 7.5rem;
-  line-height: 1.25;
+@media (max-width: 520px) {
+  .demo-accounts ul {
+    grid-template-columns: 1fr;
+  }
 }

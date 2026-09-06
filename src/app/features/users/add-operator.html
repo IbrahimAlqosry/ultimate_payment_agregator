@@ -1,53 +1,88 @@
 <section class="page">
   <p class="crumb">{{ 'onboard.operatorCrumb' | transloco }}</p>
   <header class="page-head">
-    <h1>{{ 'onboard.operatorTitle' | transloco }}</h1>
+    <h1>{{ (step() === 1 ? 'onboard.operatorTitle' : 'onboard.step2Title') | transloco }}</h1>
   </header>
 
-  <form class="form-card narrow" (submit)="onSubmit($event)" novalidate>
-    <p class="info-banner">
-      <img src="/icons/info.svg" width="16" height="16" alt="" />
-      <span>{{ 'onboard.operatorDomain' | transloco }}</span>
-    </p>
-    <label class="form-field">
-      <span class="caps">{{ 'onboard.fullName' | transloco }}</span>
-      <input [formField]="form.name" [placeholder]="'onboard.fullNamePh' | transloco" />
-      <app-field-error [state]="form.name()" />
-    </label>
-    <label class="form-field">
-      <span class="caps">{{ 'onboard.workEmail' | transloco }}</span>
-      <input type="email" [formField]="form.email" [placeholder]="'onboard.workEmailPh' | transloco" />
-      <app-field-error [state]="form.email()" />
-    </label>
-    <fieldset class="form-field">
-      <legend class="caps">{{ 'onboard.assignRole' | transloco }}</legend>
-      <div class="role-grid">
-        @for (option of roles; track option.id) {
-          <label class="role-option" [class.active]="form.role().value() === option.id" [class.admin]="option.id === 'admin'">
-            <span class="role-check">
-              <input
-                type="checkbox"
-                [checked]="form.role().value() === option.id"
-                (change)="selectRole(option.id)"
-              />
-            </span>
-            <span class="role-copy">
-              <strong>{{ option.titleKey | transloco }}</strong>
-              <span>{{ option.hintKey | transloco }}</span>
-            </span>
-          </label>
-        }
+  @if (step() === 1) {
+    <form class="form-card narrow" (submit)="goNext($event)" novalidate>
+      <p class="info-banner">
+        <img src="icons/info.svg" width="16" height="16" alt="" />
+        <span>{{ 'onboard.operatorDomain' | transloco }}</span>
+      </p>
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.fullName' | transloco }}</span>
+        <input [formField]="form.name" [placeholder]="'onboard.fullNamePh' | transloco" />
+        <app-field-error [state]="form.name()" />
+      </label>
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.workEmail' | transloco }}</span>
+        <input type="email" [formField]="form.email" [placeholder]="'onboard.workEmailPh' | transloco" />
+        <app-field-error [state]="form.email()" />
+      </label>
+      <fieldset class="form-field">
+        <legend class="caps">{{ 'onboard.assignRole' | transloco }}</legend>
+        <div class="role-grid">
+          @for (option of roles; track option.id) {
+            <label class="role-option" [class.active]="form.role().value() === option.id" [class.admin]="option.id === 'admin'">
+              <span class="role-check">
+                <input
+                  type="checkbox"
+                  [checked]="form.role().value() === option.id"
+                  (change)="selectRole(option.id)"
+                />
+              </span>
+              <span class="role-copy">
+                <strong>{{ option.titleKey | transloco }}</strong>
+                <span>{{ option.hintKey | transloco }}</span>
+              </span>
+            </label>
+          }
+        </div>
+        <app-field-error [state]="form.role()" />
+      </fieldset>
+      <div class="form-actions end">
+        <a class="btn-cancel" routerLink="/operators">{{ 'actions.cancel' | transloco }}</a>
+        <button class="cta" type="submit">{{ 'onboard.continue' | transloco }}</button>
       </div>
-      <app-field-error [state]="form.role()" />
-    </fieldset>
-    @if (apiError()) {
-      <p class="form-error" role="alert">{{ 'onboard.operatorError' | transloco }}</p>
-    }
-    <div class="form-actions end">
-      <a class="btn-cancel" routerLink="/operators">{{ 'actions.cancel' | transloco }}</a>
-      <button class="cta" type="submit" [disabled]="form().submitting()">
-        {{ (form().submitting() ? 'onboard.submitting' : 'onboard.continue') | transloco }}
-      </button>
-    </div>
-  </form>
+    </form>
+  } @else {
+    <form class="form-card narrow" (submit)="onSubmit($event)" novalidate>
+      <p class="info-banner">{{ 'onboard.step2Hint' | transloco }}</p>
+      <label class="form-field">
+        <span class="caps">{{ 'onboard.copyPermissions' | transloco }}</span>
+        <select class="filter" [value]="copyFrom()" (change)="onCopy($event)">
+          <option value="">{{ 'onboard.copyPh' | transloco }}</option>
+          @for (row of operators(); track row.id) {
+            <option [value]="row.id">{{ row.name }}</option>
+          }
+        </select>
+      </label>
+      <fieldset class="form-field">
+        <legend class="caps">{{ 'onboard.screenPermissions' | transloco }}</legend>
+        <div class="role-grid">
+          @for (mod of modules; track mod.id) {
+            <label class="role-option" [class.active]="screens().includes(mod.id)">
+              <span class="role-check">
+                <input type="checkbox" [checked]="screens().includes(mod.id)" (change)="toggleScreen(mod.id)" />
+              </span>
+              <span class="role-copy">
+                <strong>{{ mod.labelKey | transloco }}</strong>
+              </span>
+            </label>
+          }
+        </div>
+      </fieldset>
+      @if (apiError()) {
+        <p class="form-error" role="alert">{{ 'onboard.operatorError' | transloco }}</p>
+      }
+      <div class="form-actions end">
+        <a class="btn-cancel" routerLink="/operators">{{ 'actions.cancel' | transloco }}</a>
+        <button class="btn-cancel" type="button" (click)="back()">{{ 'onboard.back' | transloco }}</button>
+        <button class="cta" type="submit" [disabled]="form().submitting()">
+          {{ (form().submitting() ? 'onboard.submitting' : 'onboard.sendInvite') | transloco }}
+        </button>
+      </div>
+    </form>
+  }
 </section>

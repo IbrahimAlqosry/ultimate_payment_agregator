@@ -1,4 +1,6 @@
 <a class="skip-link" href="#main">{{ 'common.skip' | transloco }}</a>
-<app-http-progress />
+@if (loading.covering()) {
+  <app-page-loader cover />
+}
 <router-outlet />
 <app-toast-host />

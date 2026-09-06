@@ -1,23 +1,25 @@
 import { Component } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-brand-lockup',
+  imports: [TranslocoPipe],
   template: `
     <div class="brand-lockup">
       <div class="logo-row">
         <img
           class="flag-bars"
-          src="/brand/flag-bars.svg"
+          src="brand/flag-bars.svg"
           width="52.923"
           height="29.116"
           alt=""
         />
-        <p class="wordmark">
+        <p class="wordmark" dir="ltr">
           <strong>Ultimate</strong>
           <span>pay</span>
         </p>
       </div>
-      <p class="slogan">لا نبيع خدمة، بل نبني مستقبلاً</p>
+      <p class="slogan">{{ 'brand.slogan' | transloco }}</p>
     </div>
   `,
   styles: `
@@ -46,6 +48,8 @@ import { Component } from '@angular/core';
       font-size: 24px;
       line-height: 1.2;
       white-space: nowrap;
+      direction: ltr;
+      unicode-bidi: isolate;
     }
     .wordmark strong {
       font-weight: 800;

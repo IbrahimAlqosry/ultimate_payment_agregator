@@ -41,6 +41,13 @@
   max-width: 1080px;
 }
 
+.empty-copy {
+  margin: 0;
+  padding: 24px;
+  color: #7e7676;
+  font-size: 14px;
+}
+
 .form-card.narrow {
   max-width: 680px;
 }
@@ -132,7 +139,7 @@
 
 .form-field select {
   appearance: none;
-  background-image: url('/icons/chevron-down.svg');
+  background-image: url('../../../public/icons/chevron-down.svg');
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 16px 16px;
@@ -154,6 +161,33 @@
   outline: none;
   border-color: #1fa64d;
   box-shadow: 0 0 0 3px rgba(31, 166, 77, 0.18);
+}
+
+.form-field app-secret-field input:not([type='radio']):not([type='checkbox']) {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.form-field app-secret-field input:not([type='radio']):not([type='checkbox']):focus-visible {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.form-field app-secret-field:not(.is-open) input {
+  -webkit-text-security: disc;
+}
+
+.form-field app-secret-field input::-ms-reveal,
+.form-field app-secret-field input::-webkit-credentials-auto-fill-button {
+  display: none;
 }
 
 .form-field:has(.radio-row) {
@@ -276,6 +310,10 @@
   cursor: pointer;
 }
 
+.cta:hover:not(:disabled) {
+  background: #188a3f;
+}
+
 .cta:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -283,6 +321,10 @@
 
 .cta-danger {
   background: #c0392b;
+}
+
+.cta-danger:hover:not(:disabled) {
+  background: #a93226;
 }
 
 .ghost-link,
@@ -323,6 +365,10 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.btn-reject:hover {
+  background: #fdeded;
 }
 
 .info-grid {
@@ -522,11 +568,20 @@
 
   .form-card,
   .detail-card {
-    padding: 20px;
+    padding: 20px 16px;
   }
 
   .form-card.headed .card-header,
   .form-card.headed .card-body {
-    padding: 20px;
+    padding: 20px 16px;
+  }
+
+  .form-actions {
+    align-items: stretch;
+  }
+
+  .form-actions .cta,
+  .form-actions .btn {
+    flex: 1 1 auto;
   }
 }

@@ -1,7 +1,7 @@
 <section class="page">
   <p class="crumb">{{ 'onboard.pointCrumb' | transloco }}</p>
   <a class="back-link" routerLink="/my-payment-points">
-    <img src="/icons/arrow-left.svg" width="14" height="14" alt="" />
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
     {{ 'onboard.backToPoints' | transloco }}
   </a>
 
@@ -31,7 +31,7 @@
           <label class="radio-opt">
             <input type="radio" value="wallet" [formField]="form.kind" />
             <img
-              [src]="form.kind().value() === 'wallet' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              [src]="form.kind().value() === 'wallet' ? 'icons/radio-on.svg' : 'icons/radio-off.svg'"
               width="16"
               height="16"
               alt=""
@@ -41,7 +41,7 @@
           <label class="radio-opt">
             <input type="radio" value="merchant_point" [formField]="form.kind" />
             <img
-              [src]="form.kind().value() === 'merchant_point' ? '/icons/radio-on.svg' : '/icons/radio-off.svg'"
+              [src]="form.kind().value() === 'merchant_point' ? 'icons/radio-on.svg' : 'icons/radio-off.svg'"
               width="16"
               height="16"
               alt=""

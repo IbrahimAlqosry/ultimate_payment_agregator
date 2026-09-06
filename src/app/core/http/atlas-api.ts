@@ -17,15 +17,18 @@ import {
   IntegrationCredentials,
   IntegrationRequest,
   IntegrationUser,
+  InboxItem,
   Merchant,
   MerchantDraft,
   NotificationWebhook,
   Operator,
   OperatorDraft,
+  OperatorUpdate,
   PaymentNotification,
   PaymentPoint,
   PaymentPointDraft,
   PointScope,
+  Settlement,
 } from '@core/models';
 import { apiUrl } from './api-url';
 
@@ -57,6 +60,10 @@ export class AtlasApi {
 
   createOperator(payload: OperatorDraft) {
     return this.http.post<Operator>(apiUrl('/operators'), payload);
+  }
+
+  updateOperator(id: string, payload: OperatorUpdate) {
+    return this.http.put<Operator>(apiUrl(`/operators/${id}`), payload);
   }
 
   merchants(q = '', extras: Pick<ListQuery, 'status' | 'city' | 'erp'> = {}) {
@@ -131,9 +138,30 @@ export class AtlasApi {
     return this.http.get<PaymentNotification[]>(apiUrl('/notifications'), { params });
   }
 
-  audit(q = '') {
-    const params = q ? new HttpParams().set('q', q) : undefined;
+  audit(q = '', extras: { from?: string; to?: string; type?: string } = {}) {
+    let params = new HttpParams();
+    if (q) {
+      params = params.set('q', q);
+    }
+    if (extras.from) {
+      params = params.set('from', extras.from);
+    }
+    if (extras.to) {
+      params = params.set('to', extras.to);
+    }
+    if (extras.type && extras.type !== 'all') {
+      params = params.set('type', extras.type);
+    }
     return this.http.get<AuditEvent[]>(apiUrl('/audit'), { params });
+  }
+
+  inbox() {
+    return this.http.get<InboxItem[]>(apiUrl('/inbox'));
+  }
+
+  settlements(institution = '') {
+    const params = institution ? new HttpParams().set('institution', institution) : undefined;
+    return this.http.get<Settlement[]>(apiUrl('/settlements'), { params });
   }
 
   profile() {

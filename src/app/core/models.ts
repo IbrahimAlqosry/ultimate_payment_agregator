@@ -8,7 +8,19 @@ export type PointKind = 'wallet' | 'merchant_point';
 export type PointStatus = 'pending' | 'approved' | 'rejected';
 export type IntegrationStatus = 'active' | 'pending' | 'inactive';
 export type NotificationDeliveryStatus = 'completed' | 'pending' | 'failed';
-export type RequestKind = 'merchant' | 'institution' | 'erp';
+export type RequestKind = 'merchant' | 'institution' | 'erp' | 'credential' | 'detail';
+export type AuditEventType = 'login' | 'approval' | 'modification' | 'rejection';
+export type OperatorStatus = 'active' | 'invited' | 'inactive';
+export type NotificationChannel = 'sms' | 'email' | 'webhook';
+export type ScreenModule =
+  | 'dashboard'
+  | 'merchants'
+  | 'institutions'
+  | 'erp'
+  | 'integration'
+  | 'operators'
+  | 'reports'
+  | 'settings';
 export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration';
 export type PointScope = 'all' | 'mine' | 'institution' | 'pending';
 
@@ -30,8 +42,9 @@ export interface Operator {
   email: string;
   role: OperatorRole;
   city: string;
-  status: 'active' | 'invited';
+  status: OperatorStatus;
   lastActive: string;
+  screens?: ScreenModule[];
 }
 
 export interface Merchant {
@@ -48,6 +61,8 @@ export interface Merchant {
   email: string;
   phone: string;
   submittedBy: string;
+  address?: string;
+  approvedBy?: string;
 }
 
 export interface Institution {
@@ -71,6 +86,7 @@ export interface Institution {
   regulatoryAuthority?: string;
   swiftCode?: string;
   department?: string;
+  agreedFee?: string;
 }
 
 export interface PaymentPoint {
@@ -89,6 +105,8 @@ export interface PaymentPoint {
   linkedAccount: string;
   actionedAt?: string;
   actionedBy?: string;
+  pointName?: string;
+  location?: string;
 }
 
 export interface ErpSystem {
@@ -102,10 +120,15 @@ export interface ErpSystem {
   contractExpiry: string;
   contactName: string;
   email: string;
+  integrationType?: string;
+  contractNumber?: string;
+  approvedBy?: string;
+  onboardedAt?: string;
 }
 
 export interface IntegrationRequest {
   id: string;
+  code: string;
   requester: string;
   organization: string;
   kind: RequestKind;
@@ -121,9 +144,9 @@ export interface NotificationWebhook {
   endpointUrl: string;
   port: string;
   authType: WebhookAuthType;
-  username: string;
-  password: string;
   accessToken: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 export interface IntegrationCredentials {
@@ -154,6 +177,8 @@ export interface PaymentNotification {
   currency: CurrencyCode;
   invoice: string;
   status: NotificationDeliveryStatus;
+  channel?: NotificationChannel;
+  title?: string;
 }
 
 export interface AuditEvent {
@@ -164,6 +189,21 @@ export interface AuditEvent {
   action: string;
   entity: string;
   detail: string;
+  screen?: string;
+  result?: 'success' | 'failed';
+  eventType?: AuditEventType;
+  ipAddress?: string;
+}
+
+export interface Settlement {
+  id: string;
+  institutionName: string;
+  merchantName: string;
+  occurredAt: string;
+  amount: number;
+  fee: number;
+  currency: CurrencyCode;
+  status: NotificationDeliveryStatus;
 }
 
 export interface MerchantAccountDetails {
@@ -309,6 +349,25 @@ export interface OperatorDraft {
   name: string;
   email: string;
   role: OperatorRole;
+  screens?: ScreenModule[];
+}
+
+export interface OperatorUpdate {
+  name: string;
+  role: OperatorRole;
+  status: OperatorStatus;
+  screens?: ScreenModule[];
+}
+
+export interface InboxItem {
+  id: string;
+  audience: Audience;
+  titleKey: string;
+  bodyKey: string;
+  params?: Record<string, string>;
+  at: string;
+  unread: boolean;
+  href: string;
 }
 
 export interface PaymentPointDraft {

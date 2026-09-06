@@ -24,11 +24,11 @@ import { DataState } from '@shared/data-state';
           <div class="date-row">
             <span class="date-box">
               <input type="date" [value]="from()" (change)="onFrom($event)" />
-              <img src="/icons/calendar.svg" width="14" height="14" alt="" />
+              <img src="icons/calendar.svg" width="14" height="14" alt="" />
             </span>
             <span class="date-box">
               <input type="date" [value]="to()" (change)="onTo($event)" />
-              <img src="/icons/calendar.svg" width="14" height="14" alt="" />
+              <img src="icons/calendar.svg" width="14" height="14" alt="" />
             </span>
           </div>
         </label>
@@ -41,6 +41,7 @@ import { DataState } from '@shared/data-state';
             <option value="failed">{{ 'badge.failed' | transloco }}</option>
           </select>
         </label>
+        <button class="btn btn-ghost" type="button" (click)="clear()">{{ 'filter.clear' | transloco }}</button>
         <button class="btn btn-primary" type="button" (click)="apply()">{{ 'notes.applyFilters' | transloco }}</button>
       </div>
 
@@ -206,6 +207,13 @@ export class NotificationsPage {
     this.appliedFrom.set(this.from());
     this.appliedTo.set(this.to());
     this.appliedStatus.set(this.status());
+  }
+
+  clear(): void {
+    this.from.set('');
+    this.to.set('');
+    this.status.set('');
+    this.apply();
   }
 
   onFrom(event: Event): void {

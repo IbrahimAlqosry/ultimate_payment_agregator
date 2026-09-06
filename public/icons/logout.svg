@@ -1,15 +1,16 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="icon" clip-path="url(#clip0_0_6)">
-<line id="Line" x1="6.75" y1="7.25" x2="15.25" y2="7.25" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-<line id="Line_2" x1="13.0607" y1="5" x2="14.8284" y2="6.76777" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-<line id="Line_3" x1="12" y1="9.93934" x2="13.7678" y2="8.17157" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-<line id="Line_4" x1="2.75" y1="0.25" x2="7.25" y2="0.25" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-<line id="Line_5" x1="2.75" y1="0.25" x2="1.2501" y2="14.25" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-<line id="Line_6" x1="2.75" y1="14.25" x2="7.25" y2="14.25" stroke="#993333" stroke-width="1.5" stroke-linecap="round"/>
-</g>
-<defs>
-<clipPath id="clip0_0_6">
-<rect width="16" height="16" fill="white"/>
-</clipPath>
-</defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path
+    d="M6 2.25H3.75A1.5 1.5 0 0 0 2.25 3.75v8.5A1.5 1.5 0 0 0 3.75 13.75H6"
+    stroke="#993333"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M10.5 11.25 13.75 8 10.5 4.75M13.75 8H6"
+    stroke="#993333"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

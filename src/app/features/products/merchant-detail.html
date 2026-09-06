@@ -1,7 +1,20 @@
 <section class="page">
-  <p class="crumb">{{ 'detail.merchantCrumb' | transloco }}</p>
+  <p class="crumb">
+    @if (row(); as merchant) {
+      {{ (merchant.status === 'pending' ? 'detail.merchantCrumb' : 'detail.merchantAllCrumb') | transloco }}
+      @if (merchant.status !== 'pending') {
+        {{ merchant.legalName }}
+      }
+    } @else {
+      {{ 'detail.merchantCrumb' | transloco }}
+    }
+  </p>
+  <a class="back-link" routerLink="/merchants">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'actions.backToList' | transloco }}
+  </a>
   <header class="page-head">
-    <h1>{{ 'detail.merchantTitle' | transloco }}</h1>
+    <h1>{{ row()?.legalName || ('detail.merchantTitle' | transloco) }}</h1>
     @if (row(); as merchant) {
       <span
         class="badge"
@@ -14,78 +27,230 @@
     }
   </header>
 
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'profile'" (click)="tab.set('profile')">
+      {{ 'detail.tabMerchantDetails' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'points'" (click)="tab.set('points')">
+      {{ 'detail.tabPoints' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'notifications'" (click)="tab.set('notifications')">
+      {{ 'detail.tabNotification' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'integration'" (click)="tab.set('integration')">
+      {{ 'detail.tabIntegration' | transloco }}
+    </button>
+  </div>
+
   <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
     @if (row(); as merchant) {
-      <article class="detail-card">
-        <dl class="info-grid">
-          <div>
-            <dt>{{ 'register.legalName' | transloco }}</dt>
-            <dd>{{ merchant.legalName }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'merchants.cr' | transloco }}</dt>
-            <dd>{{ merchant.crNumber }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.industry' | transloco }}</dt>
-            <dd>{{ industryLabel(merchant.industry) | transloco }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.city' | transloco }}</dt>
-            <dd>{{ merchant.city }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.contactName' | transloco }}</dt>
-            <dd>{{ merchant.contactName }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.email' | transloco }}</dt>
-            <dd>{{ merchant.email }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.phone' | transloco }}</dt>
-            <dd>{{ merchant.phone }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'register.erp' | transloco }}</dt>
-            <dd>{{ merchant.erpSystem }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'merchants.onboarded' | transloco }}</dt>
-            <dd>{{ merchant.onboardedAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'detail.submittedBy' | transloco }}</dt>
-            <dd>{{ merchant.submittedBy }}</dd>
-          </div>
-        </dl>
+      @if (tab() === 'profile') {
+        <article class="detail-card">
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'register.legalName' | transloco }}</dt>
+              <dd>{{ merchant.legalName }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'merchants.cr' | transloco }}</dt>
+              <dd>{{ merchant.crNumber }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'register.industry' | transloco }}</dt>
+              <dd>{{ industryLabel(merchant.industry) | transloco }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'register.contactName' | transloco }}</dt>
+              <dd>{{ merchant.contactName }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'register.email' | transloco }}</dt>
+              <dd>{{ merchant.email }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'register.phone' | transloco }}</dt>
+              <dd>{{ merchant.phone }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'detail.address' | transloco }}</dt>
+              <dd>{{ merchant.address || merchant.city }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'register.erp' | transloco }}</dt>
+              <dd>{{ merchant.erpSystem }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'merchants.onboarded' | transloco }}</dt>
+              <dd>{{ merchant.onboardedAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'detail.approvedBy' | transloco }}</dt>
+              <dd>{{ merchant.approvedBy || merchant.submittedBy }}</dd>
+            </div>
+          </dl>
 
-        <p class="warn-note">
-          <img src="/icons/shield-alert.svg" width="16" height="16" alt="" />
-          <span>{{ 'detail.merchantWarning' | transloco }}</span>
-        </p>
+          @if (merchant.status === 'pending') {
+            <p class="warn-note">
+              <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
+              <span>{{ 'detail.merchantWarning' | transloco }}</span>
+            </p>
+          }
 
-        @if (merchant.status === 'pending' && auth.canApprove('merchant')) {
-          <div class="form-actions">
-            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
-            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
-              {{ 'actions.rejectApplication' | transloco }}
-            </button>
-          </div>
-          @if (showReject()) {
-            <div class="reject-panel">
-              <label class="form-field">
-                <span>{{ 'detail.rejectionReason' | transloco }}</span>
-                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
-              </label>
-              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
-                {{ 'actions.confirmReject' | transloco }}
+          @if (merchant.status === 'pending' && auth.canApprove('merchant')) {
+            <div class="form-actions">
+              <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
+              <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
+                {{ 'actions.rejectApplication' | transloco }}
               </button>
             </div>
+            @if (showReject()) {
+              <div class="reject-panel">
+                <label class="form-field">
+                  <span>{{ 'detail.rejectionReason' | transloco }}</span>
+                  <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+                </label>
+                <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
+                  {{ 'actions.confirmReject' | transloco }}
+                </button>
+              </div>
+            }
           }
-        }
-        <a class="cancel-link" routerLink="/merchants">{{ 'actions.backToList' | transloco }}</a>
-      </article>
+          <a class="cancel-link" routerLink="/merchants">{{ 'actions.backToList' | transloco }}</a>
+        </article>
+      } @else if (tab() === 'points') {
+        <div class="card table-card">
+          @if (points().length === 0) {
+            <p class="empty-copy">{{ 'detail.emptyPoints' | transloco }}</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{{ 'detail.pointName' | transloco }}</th>
+                    <th>{{ 'detail.pointId' | transloco }}</th>
+                    <th>{{ 'detail.location' | transloco }}</th>
+                    <th>{{ 'points.type' | transloco }}</th>
+                    <th>{{ 'points.status' | transloco }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (point of points(); track point.id) {
+                    <tr>
+                      <td>
+                        <a class="table-link" [routerLink]="['/payment-points', point.id]">{{
+                          point.pointName || point.pointCode
+                        }}</a>
+                      </td>
+                      <td class="muted">{{ point.pointCode }}</td>
+                      <td>{{ point.location || merchant.city }}</td>
+                      <td>{{ pointType(point) | transloco }}</td>
+                      <td>
+                        <span
+                          class="badge"
+                          [class.ok]="point.status === 'approved'"
+                          [class.warn]="point.status === 'pending'"
+                          [class.danger]="point.status === 'rejected'"
+                        >
+                          {{ (point.status === 'approved' ? 'badge.active' : 'badge.' + point.status) | transloco }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      } @else if (tab() === 'notifications') {
+        <article class="detail-card">
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'detail.lastDelivery' | transloco }}</dt>
+              <dd>
+                @if (lastDelivery(); as note) {
+                  {{ note.occurredAt | date: 'medium' : undefined : locale.dateLocale() }}
+                } @else {
+                  —
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ 'detail.successRate' | transloco }}</dt>
+              <dd>
+                @if (successRate() != null) {
+                  {{ successRate() }}%
+                } @else {
+                  —
+                }
+              </dd>
+            </div>
+          </dl>
+          @if (notes().length === 0) {
+            <p class="empty-copy">{{ 'notes.empty' | transloco }}</p>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{{ 'notes.notification' | transloco }}</th>
+                    <th>{{ 'notes.channel' | transloco }}</th>
+                    <th>{{ 'notes.sentAt' | transloco }}</th>
+                    <th>{{ 'notes.status' | transloco }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (note of notes(); track note.id) {
+                    <tr>
+                      <td>{{ note.title || note.invoice }}</td>
+                      <td>{{ ('channel.' + (note.channel || 'webhook')) | transloco }}</td>
+                      <td class="muted">{{ note.occurredAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                      <td>
+                        <span
+                          class="badge"
+                          [class.ok]="note.status === 'completed'"
+                          [class.warn]="note.status === 'pending'"
+                          [class.danger]="note.status === 'failed'"
+                        >
+                          {{ (note.status === 'completed' ? 'badge.delivered' : 'badge.' + note.status) | transloco }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </article>
+      } @else {
+        <article class="detail-card">
+          @if (integration(); as user) {
+            <dl class="info-grid">
+              <div>
+                <dt>{{ 'integration.username' | transloco }}</dt>
+                <dd>{{ user.username }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'users.status' | transloco }}</dt>
+                <dd>
+                  <span class="badge" [class.ok]="user.status === 'active'" [class.warn]="user.status === 'pending'">
+                    {{ ('badge.' + user.status) | transloco }}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt>{{ 'integration.scopes' | transloco }}</dt>
+                <dd>{{ user.scopes }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'integration.lastUsed' | transloco }}</dt>
+                <dd>{{ user.lastUsed | date: 'medium' : undefined : locale.dateLocale() }}</dd>
+              </div>
+            </dl>
+          } @else {
+            <p class="empty-copy">{{ 'integration.empty' | transloco }}</p>
+          }
+        </article>
+      }
     }
   </app-data-state>
 </section>

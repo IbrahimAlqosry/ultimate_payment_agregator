@@ -32,34 +32,34 @@
     @if (data(); as dash) {
       @if (auth.user()?.audience === 'operator') {
         <div class="kpis">
-          <a class="card kpi" routerLink="/merchants">
+          <a class="card kpi" routerLink="/merchants" [queryParams]="{ tab: 'pending' }">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.pendingMerchants' | transloco }}</span>
               <i class="dot dot-green" aria-hidden="true"></i>
             </div>
             <strong>{{ dash.pendingMerchantApprovals }}</strong>
           </a>
-          <a class="card kpi" routerLink="/institutions">
+          <a class="card kpi" routerLink="/institutions" [queryParams]="{ tab: 'pending' }">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.pendingFis' | transloco }}</span>
               <i class="dot dot-forest" aria-hidden="true"></i>
             </div>
             <strong>{{ dash.pendingFiApprovals }}</strong>
           </a>
-          <article class="card kpi">
+          <a class="card kpi" routerLink="/erp-systems" [queryParams]="{ tab: 'pending' }">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.pendingErps' | transloco }}</span>
               <i class="dot dot-warn" aria-hidden="true"></i>
             </div>
             <strong>{{ dash.pendingErpApprovals }}</strong>
-          </article>
-          <article class="card kpi">
+          </a>
+          <a class="card kpi" routerLink="/merchants">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.activeMerchants' | transloco }}</span>
               <i class="dot dot-olive" aria-hidden="true"></i>
             </div>
-            <strong>{{ dash.activeMerchants }}</strong>
-          </article>
+            <strong>{{ scaled(dash.activeMerchants) }}</strong>
+          </a>
         </div>
 
         <div class="charts">
@@ -80,11 +80,11 @@
                 <div class="legend-rows">
                   <p>
                     <i class="swatch swatch-green" aria-hidden="true"></i>
-                    {{ 'dashboard.slaOnTimeApprovals' | transloco: { count: dash.slaOnTimeCount } }}
+                    {{ 'dashboard.slaOnTimeApprovals' | transloco: { count: scaled(dash.slaOnTimeCount) } }}
                   </p>
                   <p>
                     <i class="swatch swatch-warn" aria-hidden="true"></i>
-                    {{ 'dashboard.slaOverdueApprovals' | transloco: { count: dash.slaOverdueCount } }}
+                    {{ 'dashboard.slaOverdueApprovals' | transloco: { count: scaled(dash.slaOverdueCount) } }}
                   </p>
                 </div>
               </div>
@@ -108,14 +108,14 @@
         </div>
       } @else if (auth.user()?.audience === 'merchant') {
         <div class="kpis">
-          <a class="card kpi" routerLink="/my-payment-points">
+          <a class="card kpi" routerLink="/my-payment-points" [queryParams]="{ status: 'approved' }">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.activePoints' | transloco }}</span>
               <i class="dot dot-green" aria-hidden="true"></i>
             </div>
             <strong>{{ dash.activePaymentPoints }}</strong>
           </a>
-          <a class="card kpi" routerLink="/my-payment-points">
+          <a class="card kpi" routerLink="/my-payment-points" [queryParams]="{ status: 'pending' }">
             <div class="kpi-top">
               <span>{{ 'dashboard.kpi.pendingPoints' | transloco }}</span>
               <i class="dot dot-warn" aria-hidden="true"></i>
@@ -159,7 +159,11 @@
                 @for (row of dash.recentNotifications; track row.id) {
                   <tr>
                     <td class="muted">{{ row.occurredAt | date: 'yyyy-MM-dd' }}</td>
-                    <td class="strong">{{ row.pointCode }}</td>
+                    <td>
+                      <a class="table-link" routerLink="/my-payment-points" [queryParams]="{ q: row.pointCode }">{{
+                        row.pointCode
+                      }}</a>
+                    </td>
                     <td class="amount">{{ row.amount | number }} {{ row.currency }}</td>
                     <td class="muted">{{ row.invoice }}</td>
                     <td class="num">
@@ -184,7 +188,7 @@
             <span>{{ 'dashboard.kpi.pendingPp' | transloco }}</span>
             <strong>{{ dash.pendingPpApprovals }}</strong>
           </a>
-          <a class="card kpi" routerLink="/all-payment-points">
+          <a class="card kpi" routerLink="/all-payment-points" [queryParams]="{ status: 'approved' }">
             <span>{{ 'dashboard.kpi.approvedPp' | transloco }}</span>
             <strong>{{ dash.approvedPaymentPoints }}</strong>
           </a>
@@ -244,7 +248,15 @@
                     <tr>
                       <td class="muted">{{ row.at | date: 'yyyy-MM-dd' }}</td>
                       <td class="strong">{{ row.activityKey | transloco }}</td>
-                      <td>{{ row.merchant }}</td>
+                      <td>
+                        <a
+                          class="table-link"
+                          [routerLink]="row.status === 'pending' ? '/pp-approvals' : '/all-payment-points'"
+                          [queryParams]="{ q: row.merchant }"
+                        >
+                          {{ row.merchant }}
+                        </a>
+                      </td>
                       <td class="num">
                         <span
                           class="badge"

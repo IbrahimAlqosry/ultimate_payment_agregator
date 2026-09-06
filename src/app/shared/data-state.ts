@@ -1,15 +1,13 @@
 import { Component, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { PageLoader } from '@shared/page-loader';
 
 @Component({
   selector: 'app-data-state',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, PageLoader],
   template: `
     @if (loading()) {
-      <div class="state state-loading" role="status">
-        <span class="spinner" aria-hidden="true"></span>
-        {{ 'common.loading' | transloco }}
-      </div>
+      <app-page-loader />
     } @else if (error()) {
       <div class="state" role="alert">
         <p>{{ 'common.error' | transloco }}</p>

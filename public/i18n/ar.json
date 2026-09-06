@@ -2,7 +2,11 @@
   "brand": {
     "name": "Ultimate pay",
     "tagline": "بوابة اليمن الموحدة لأنظمة ERP والبنوك",
-    "pay": "pay"
+    "slogan": "لا نبيع خدمة، بل نبني مستقبلاً",
+    "pay": "pay",
+    "hubErp": "ERP",
+    "hubBank": "بنك",
+    "hubMerchant": "تاجر"
   },
   "login": {
     "title": "تسجيل الدخول",
@@ -21,7 +25,7 @@
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور",
     "demoTitle": "حسابات تجريبية",
-    "demoHint": "اضغط اسماً لتعبئة البريد وكلمة المرور، ثم سجّل الدخول. رمز التحقق التجريبي 123456.",
+    "demoHint": "اضغط على مستخدم لتعبئة النموذج. تبقى كلمة المرور مخفية حتى تظهرها بنفسك.",
     "demoPassword": "كلمة المرور",
     "role": {
       "operator": "مشغل المنصة",
@@ -134,7 +138,7 @@
     "notifications": "الإشعارات",
     "integrationUser": "مستخدم الربط",
     "institutionProfile": "ملف المؤسسة",
-    "logout": "خروج",
+    "logout": "تسجيل الخروج",
     "menu": "فتح القائمة",
     "close": "إغلاق القائمة",
     "primary": "الرئيسية"
@@ -147,7 +151,10 @@
     "searchMerchant": "ابحث عن معاملات، فواتير...",
     "searchFi": "ابحث عن نقاط دفع، تجار...",
     "captionOperator": "{{title}} (مشغّل المنصة)",
-    "captionOrg": "{{title}} — {{org}}"
+    "captionOrg": "{{title}} — {{org}}",
+    "logoutTitle": "تسجيل الخروج",
+    "logoutBody": "يمكنك تسجيل الدخول مرة أخرى في أي وقت.",
+    "logoutConfirm": "تسجيل الخروج"
   },
   "title": {
     "admin": "مدير",
@@ -226,6 +233,8 @@
     "approve": "اعتماد",
     "reject": "رفض",
     "view": "عرض",
+    "manage": "إدارة",
+    "edit": "تعديل",
     "review": "مراجعة",
     "search": "بحث",
     "column": "إجراءات",
@@ -250,7 +259,27 @@
     "status": "الحالة",
     "lastActive": "آخر نشاط",
     "tabAll": "كل المشغّلين",
-    "lastLogin": "آخر دخول"
+    "tabPermissions": "صلاحيات الشاشات",
+    "tabLogs": "سجل عمليات المشغّلين",
+    "adminOnly": "إعداد للمدير فقط",
+    "operatorRole": "المشغّل / الدور",
+    "modMerchants": "إدارة التجار",
+    "modFi": "إدارة المؤسسات",
+    "modErp": "قائمة ERP",
+    "modIntegration": "طلبات الربط",
+    "modReports": "التقارير",
+    "logAt": "الوقت",
+    "logAction": "الإجراء",
+    "logScreen": "الوحدة / الشاشة",
+    "logSuccess": "نجاح",
+    "emptyLogs": "لا توجد أحداث في سجل المشغّلين بعد.",
+    "lastLogin": "آخر دخول",
+    "editTitle": "تعديل {{name}}",
+    "statusLabel": "الحالة",
+    "deactivate": "إيقاف هذا المشغّل",
+    "saveChanges": "حفظ التغييرات",
+    "resetDefaults": "إعادة الإعدادات الافتراضية",
+    "savePermissions": "حفظ الصلاحيات"
   },
   "products": {
     "title": "التجار",
@@ -277,7 +306,9 @@
     "city": "المدينة",
     "points": "النقاط",
     "status": "الحالة",
-    "onboarded": "تاريخ التسجيل"
+    "onboarded": "تاريخ التسجيل",
+    "submitted": "تاريخ التقديم",
+    "maker": "مقدَّم بواسطة"
   },
   "orders": {
     "title": "نقاط الدفع",
@@ -334,23 +365,30 @@
   },
   "requests": {
     "title": "طلبات مستخدمي الربط",
+    "crumb": "طلبات مستخدمي الربط",
     "intro": "مستخدمو واجهة برمجية يطلبهم التجار أو البنوك أو المحافظ أو مورّدو ERP. الصانع يقدّم والمدقق أو المدير يعتمد.",
     "search": "ابحث بالطالب أو المنشأة أو البريد",
     "empty": "لا توجد طلبات تطابق هذا البحث.",
     "requester": "الطالب",
     "org": "المنشأة",
     "kind": "النوع",
+    "code": "معرّف الطلب",
+    "entity": "الكيان",
+    "type": "نوع الطلب",
+    "pendingBadge": "{{count}} معلّق",
     "email": "البريد",
     "submitted": "التقديم",
     "status": "الحالة",
     "kinds": {
       "merchant": "تاجر",
       "institution": "مؤسسة مالية",
-      "erp": "نظام ERP"
+      "erp": "نظام ERP",
+      "credential": "تدوير بيانات الاعتماد",
+      "detail": "تغيير التفاصيل"
     }
   },
   "reports": {
-    "title": "التقارير / سجل التدقيق",
+    "title": "التقارير وسجل التدقيق",
     "intro": "أثر تجريبي لإجراءات صانع-مدقق واعتمادات المؤسسات وطلبات التجار.",
     "search": "ابحث بالممثل أو الإجراء أو الكيان",
     "empty": "لا توجد أحداث تطابق هذا البحث.",
@@ -359,7 +397,24 @@
     "role": "الدور",
     "action": "الإجراء",
     "entity": "الكيان",
-    "detail": "التفصيل"
+    "detail": "التفصيل",
+    "from": "من",
+    "to": "إلى",
+    "eventType": "نوع الحدث",
+    "allEvents": "كل الأحداث",
+    "apply": "تطبيق المرشحات",
+    "export": "تصدير CSV",
+    "ip": "عنوان IP",
+    "event": "نوع الحدث",
+    "description": "الوصف",
+    "performedBy": "نفّذه",
+    "showing": "عرض {{shown}} من {{total}} أحداث",
+    "types": {
+      "login": "دخول",
+      "approval": "اعتماد",
+      "modification": "تعديل",
+      "rejection": "رفض"
+    }
   },
   "notes": {
     "merchantTitle": "تسليم الإشعارات",
@@ -371,8 +426,8 @@
     "authType": "نوع المصادقة",
     "bearer": "رمز Bearer",
     "oauth2": "OAuth 2.0",
-    "username": "اسم مستخدم ERP",
-    "password": "كلمة مرور ERP",
+    "clientId": "معرّف العميل",
+    "clientSecret": "سر العميل",
     "accessToken": "رمز الوصول",
     "show": "إظهار",
     "hide": "إخفاء",
@@ -398,7 +453,10 @@
     "amount": "المبلغ",
     "amountYer": "المبلغ (ريال يمني)",
     "invoice": "مرجع الفاتورة",
-    "status": "الحالة"
+    "status": "الحالة",
+    "notification": "الإشعار",
+    "channel": "القناة",
+    "sentAt": "وقت الإرسال"
   },
   "activity": {
     "date": "التاريخ",
@@ -501,6 +559,7 @@
     "ruleReuse": "لا يمكن إعادة استخدام آخر ٥ كلمات مرور",
     "opRule8": "٨ أحرف على الأقل",
     "opRuleMix": "تتضمن أرقاماً ورموزاً خاصة (!@#$)",
+    "passwordRequirements": "متطلبات كلمة المرور:",
     "emailNotif": "إشعارات البريد",
     "emailNotifHint": "استلام تنبيهات الاعتمادات المعلّقة وتحذيرات التدقيق.",
     "smsNotif": "إشعارات الرسائل",
@@ -521,7 +580,9 @@
     "contract": "العقد",
     "city": "المدينة",
     "status": "الحالة",
-    "contractExpiry": "انتهاء العقد"
+    "contractExpiry": "انتهاء العقد",
+    "submitted": "تاريخ التقديم",
+    "contact": "جهة الاتصال"
   },
   "status": {
     "home": "إلى لوحة التحكم",
@@ -553,17 +614,23 @@
   },
   "list": {
     "allMerchants": "كل التجار",
-    "allInstitutions": "كل المؤسسات",
+    "allInstitutions": "جميع المؤسسات المالية",
     "pendingCount": "اعتمادات معلّقة ({{count}})",
     "showing": "عرض {{shown}} من {{total}}",
     "allErps": "كل أنظمة ERP",
     "allPoints": "كل نقاط الدفع",
-    "showingOperators": "عرض {{shown}} من {{total}} مشغّل منصة"
+    "showingOperators": "عرض {{shown}} من {{total}} مشغّل منصة",
+    "showingPending": "عرض {{shown}} من {{total}} طلبات معلّقة"
   },
   "filter": {
     "status": "الحالة",
+    "statusAll": "الحالة: الكل",
     "city": "المدينة",
-    "erp": "نظام ERP"
+    "erp": "نظام ERP",
+    "clear": "مسح",
+    "apply": "تطبيق التصفية",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ"
   },
   "common": {
     "loading": "جارٍ التحميل…",
@@ -597,9 +664,16 @@
     "merchant": "تاجر",
     "institution": "مؤسسة مالية"
   },
+  "channel": {
+    "sms": "رسالة نصية",
+    "email": "بريد",
+    "webhook": "ويب هوك"
+  },
   "kind": {
     "wallet": "رقم المحفظة",
-    "merchant_point": "رقم نقطة التاجر"
+    "merchant_point": "رقم نقطة التاجر",
+    "pos": "نقطة بيع",
+    "ecommerce": "تجارة إلكترونية"
   },
   "type": {
     "bank": "بنك",
@@ -612,6 +686,8 @@
     "out_of_stock": "مرفوض",
     "pending": "معلّق",
     "pendingReview": "بانتظار المراجعة",
+    "pendingChecker": "بانتظار المدقق",
+    "pendingApproval": "بانتظار الاعتماد",
     "approved": "معتمد",
     "rejected": "مرفوض",
     "completed": "مكتمل",
@@ -658,6 +734,9 @@
     "fiSubmitted": "المؤسسة بانتظار المدقق. تظهر البنوك والمحافظ المعتمدة فقط في تسجيل التجار.",
     "erpSubmitted": "موصّل ERP في قائمة المراجعة. يبقى خارج قائمة التسجيل حتى الاعتماد.",
     "operatorInvited": "أُرسلت الدعوة. سيظهر كمدعو حتى أول تسجيل دخول.",
+    "operatorUpdated": "حُفظت بيانات المشغّل.",
+    "permissionsSaved": "حُفظت صلاحيات الشاشات.",
+    "saveFailed": "تعذر حفظ التغييرات. حاول مرة أخرى.",
     "pointSubmitted": "نقطة الدفع لدى البنك. لديهم يوم عمل واحد للاعتماد.",
     "approved": {
       "merchant": "التاجر أصبح نشطاً. يمكن لنظام ERP لديه بدء توجيه المدفوعات.",
@@ -718,6 +797,13 @@
     "roleAdmin": "إعدادات النظام كاملة",
     "operatorError": "تعذرت الدعوة. استخدم بريداً على @aggregator.ye واملأ كل الحقول.",
     "continue": "متابعة",
+    "back": "رجوع",
+    "step2Title": "تعيين صلاحيات الشاشات",
+    "step2Hint": "اختر الشاشات التي يمكن لهذا المشغّل فتحها. يمكنك نسخ الصلاحيات من مشغّل موجود.",
+    "copyPermissions": "نسخ الصلاحيات من",
+    "copyPh": "اختر مشغّلاً",
+    "screenPermissions": "صلاحيات الشاشات",
+    "sendInvite": "إرسال الدعوة",
     "pointTitle": "إضافة نقطة دفع",
     "pointCrumb": "نقاط الدفع الخاصة بي > إضافة نقطة دفع",
     "backToPoints": "العودة إلى نقاط الدفع",
@@ -747,6 +833,82 @@
     "linkedAccount": "الحساب البنكي / المحفظة المرتبطة",
     "rejectionReason": "سبب الرفض",
     "pointWarning": "تحقق من أن رقم المحفظة أو الحساب يطابق بيانات التاجر المسجّلة قبل الاعتماد.",
-    "missing": "تعذر العثور على هذا السجل."
+    "missing": "تعذر العثور على هذا السجل.",
+    "tabProfile": "الملف الشخصي",
+    "tabPoints": "نقاط الدفع",
+    "tabIntegration": "مستخدم التكامل",
+    "tabFiProfile": "الملف الشخصي للمؤسسة",
+    "tabFees": "سجل التسويات والعمولات",
+    "tabApi": "معلمات الربط (API)",
+    "merchantAllCrumb": "إدارة التجار > جميع التجار > ",
+    "fiAllCrumb": "إدارة المؤسسات المالية > جميع المؤسسات > ",
+    "emptyPoints": "لا توجد نقاط دفع مرتبطة بهذا التاجر بعد.",
+    "emptySettlements": "لا توجد تسويات لهذه المؤسسة بعد.",
+    "settledAt": "التسوية",
+    "fee": "العمولة",
+    "tabMerchantDetails": "تفاصيل التاجر",
+    "tabNotification": "تسليم الإشعارات",
+    "tabFiDetails": "تفاصيل المؤسسة",
+    "tabConnected": "التجار المرتبطون",
+    "address": "العنوان",
+    "approvedBy": "اعتمده",
+    "agreedFee": "الرسوم المتفق عليها",
+    "autoRenewalYes": "نعم — يتجدد تلقائياً عند الانتهاء",
+    "lastDelivery": "آخر تسليم",
+    "successRate": "معدل النجاح",
+    "pointName": "اسم النقطة",
+    "pointId": "معرّف النقطة",
+    "location": "الموقع",
+    "erpDetails": "تفاصيل النظام",
+    "integrationType": "نوع الربط",
+    "contractNumber": "رقم العقد",
+    "emptyConnected": "لا يوجد تجار مرتبطون بهذه المؤسسة بعد.",
+    "merchantName": "اسم التاجر",
+    "connectedSince": "مرتبط منذ",
+    "transactions": "المعاملات"
+  },
+  "inbox": {
+    "title": "الإشعارات",
+    "viewAll": "عرض الكل",
+    "empty": "لا توجد إشعارات بعد.",
+    "minutesAgo": "منذ {{n}} د",
+    "hoursAgo": "منذ {{n}} ساعة",
+    "daysAgo": "منذ {{n}} يوم",
+    "merchantPending": {
+      "title": "تاجر بانتظار المراجعة",
+      "body": "{{name}} بانتظار اعتماد المدقق."
+    },
+    "fiExpiring": {
+      "title": "عقد مؤسسة يحتاج انتباهاً",
+      "body": "{{name}} لديه عقد معلّق أو قارب على الانتهاء."
+    },
+    "erpResubmitted": {
+      "title": "أُعيد تقديم نظام ERP",
+      "body": "أُرسل {{name}} للمراجعة."
+    },
+    "roleRequest": {
+      "title": "دعوة مشغّل معلّقة",
+      "body": "{{name}} لم يُكمل أول تسجيل دخول."
+    },
+    "auditFlag": {
+      "title": "دخول غير معتاد",
+      "body": "سُجّل دخول إلى لوحة التحكم من {{ip}}."
+    },
+    "paymentReceived": {
+      "title": "استُلم إشعار دفع",
+      "body": "نُشرت الفاتورة {{invoice}} إلى نقطة نهاية نظام ERP."
+    },
+    "pointApproved": {
+      "title": "اعتُمدت نقطة الدفع",
+      "body": "النقطة {{code}} أصبحت نشطة."
+    },
+    "pointPending": {
+      "title": "نقطة دفع بانتظارك",
+      "body": "قدّم {{name}} نقطة تحتاج اعتماداً."
+    },
+    "noteDelivered": {
+      "title": "سُلّم الإشعار",
+      "body": "سُلّمت الفاتورة {{invoice}} بنجاح."
+    }
   }
 }

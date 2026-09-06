@@ -1,11 +1,11 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { AtlasApi } from '@core/http/atlas-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { ToastService } from '@core/notifications/toast.service';
 import { PaymentPoint, PointScope } from '@core/models';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
@@ -22,18 +22,25 @@ type PointLayout = 'merchant' | 'fi-pending' | 'fi-all' | 'operator';
 })
 export class Orders {
   private readonly api = inject(AtlasApi);
-  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly locale = inject(LocaleService);
 
-  readonly scope = input<PointScope>('all');
-  readonly titleKey = input('points.title');
+  private readonly routeData = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
+  readonly scope = computed<PointScope>(() => (this.routeData()['scope'] as PointScope | undefined) ?? 'all');
+  readonly titleKey = computed(() => (this.routeData()['titleKey'] as string | undefined) ?? 'points.title');
 
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly all = signal<PaymentPoint[]>([]);
   readonly tab = signal<ListTab>('all');
   readonly statusFilter = signal('');
+  readonly statusDraft = signal('');
+  readonly fromDraft = signal('');
+  readonly toDraft = signal('');
+  readonly appliedFrom = signal('');
+  readonly appliedTo = signal('');
   readonly page = signal(1);
   readonly pageSize = 8;
   query = '';
@@ -64,6 +71,20 @@ export class Orders {
     if (status) {
       rows = rows.filter((row) => row.status === status);
     }
+    if (this.layout() === 'fi-all') {
+      const from = this.appliedFrom();
+      const to = this.appliedTo();
+      rows = rows.filter((row) => {
+        const day = row.submittedAt.slice(0, 10);
+        if (from && day < from) {
+          return false;
+        }
+        if (to && day > to) {
+          return false;
+        }
+        return true;
+      });
+    }
     return rows;
   });
   readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
@@ -77,6 +98,17 @@ export class Orders {
   });
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.query = params.get('q') ?? '';
+      const tab = params.get('tab');
+      if (tab === 'pending' || tab === 'all') {
+        this.tab.set(tab);
+      }
+      this.statusFilter.set(params.get('status') ?? '');
+      this.statusDraft.set(params.get('status') ?? '');
+      this.page.set(1);
+      this.load(true);
+    });
     effect(() => {
       this.scope();
       untracked(() => this.load());
@@ -92,11 +124,46 @@ export class Orders {
   setTab(tab: ListTab): void {
     this.tab.set(tab);
     this.page.set(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+    });
   }
 
   onStatus(event: Event): void {
     this.statusFilter.set((event.target as HTMLSelectElement).value);
     this.page.set(1);
+  }
+
+  onStatusDraft(event: Event): void {
+    this.statusDraft.set((event.target as HTMLSelectElement).value);
+  }
+
+  applyFilters(): void {
+    this.appliedFrom.set(this.fromDraft());
+    this.appliedTo.set(this.toDraft());
+    this.page.set(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { status: this.statusDraft() || null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  clearFilters(): void {
+    this.statusDraft.set('');
+    this.statusFilter.set('');
+    this.fromDraft.set('');
+    this.toDraft.set('');
+    this.appliedFrom.set('');
+    this.appliedTo.set('');
+    this.page.set(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { status: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   goTo(page: number): void {
@@ -119,15 +186,6 @@ export class Orders {
       error: () => {
         this.loading.set(false);
         this.error.set(true);
-      },
-    });
-  }
-
-  decide(id: string, decision: 'approved' | 'rejected'): void {
-    this.api.decide('point', id, decision).subscribe({
-      next: () => {
-        this.toast.decision('point', decision);
-        this.load(true);
       },
     });
   }

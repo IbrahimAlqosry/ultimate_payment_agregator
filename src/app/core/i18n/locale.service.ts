@@ -13,6 +13,7 @@ export class LocaleService {
   readonly lang = signal<AppLang>(this.readInitial());
   readonly isRtl = computed(() => this.lang() === 'ar');
   readonly dateLocale = computed(() => (this.lang() === 'ar' ? 'ar' : 'en-US'));
+  private switching = false;
 
   constructor() {
     this.apply(this.lang());
@@ -25,11 +26,32 @@ export class LocaleService {
   }
 
   setLang(lang: AppLang): void {
-    localStorage.setItem(LANG_KEY, lang);
-    this.lang.set(lang);
-    this.apply(lang);
-    this.transloco.setActiveLang(lang);
-    this.appRef.tick();
+    if (lang === this.lang() || this.switching) {
+      return;
+    }
+
+    const swap = () => {
+      localStorage.setItem(LANG_KEY, lang);
+      this.lang.set(lang);
+      this.apply(lang);
+      this.transloco.setActiveLang(lang);
+      this.appRef.tick();
+      this.switching = false;
+    };
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      swap();
+      return;
+    }
+
+    this.switching = true;
+    document.documentElement.classList.add('locale-fading');
+    window.setTimeout(() => {
+      swap();
+      window.requestAnimationFrame(() => {
+        document.documentElement.classList.remove('locale-fading');
+      });
+    }, 180);
   }
 
   private readInitial(): AppLang {

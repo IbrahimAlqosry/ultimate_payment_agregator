@@ -14,7 +14,7 @@
           autocomplete="new-password"
         />
         <button class="toggle-visibility" type="button" (click)="show.set(!show())">
-          <img [src]="show() ? '/icons/eye.svg' : '/icons/eye-off.svg'" width="18" height="18" alt="" />
+          <img [src]="show() ? 'icons/eye.svg' : 'icons/eye-off.svg'" width="18" height="18" alt="" />
         </button>
       </div>
       <app-field-error [state]="resetForm.password()" />
@@ -28,7 +28,7 @@
           autocomplete="new-password"
         />
         <button class="toggle-visibility" type="button" (click)="showConfirm.set(!showConfirm())">
-          <img [src]="showConfirm() ? '/icons/eye.svg' : '/icons/eye-off.svg'" width="18" height="18" alt="" />
+          <img [src]="showConfirm() ? 'icons/eye.svg' : 'icons/eye-off.svg'" width="18" height="18" alt="" />
         </button>
       </div>
       <app-field-error [state]="resetForm.confirm()" />

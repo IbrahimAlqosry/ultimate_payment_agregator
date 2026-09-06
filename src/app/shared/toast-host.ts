@@ -27,7 +27,7 @@ import { ToastKind, ToastService } from '@core/notifications/toast.service';
             (click)="toasts.dismiss(toast.id)"
             [attr.aria-label]="'common.dismiss' | transloco"
           >
-            <img src="/icons/circle-x.svg" width="16" height="16" alt="" />
+            <img src="icons/circle-x.svg" width="16" height="16" alt="" />
           </button>
         </div>
       }
@@ -36,13 +36,16 @@ import { ToastKind, ToastService } from '@core/notifications/toast.service';
   styles: `
     .toast-host {
       position: fixed;
-      inset-block-end: 20px;
-      inset-inline-end: 20px;
+      inset-block-end: max(20px, env(safe-area-inset-bottom, 0px));
+      inset-inline-end: max(12px, env(safe-area-inset-right, 0px));
+      inset-inline-start: max(12px, env(safe-area-inset-left, 0px));
       z-index: 80;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: min(380px, calc(100vw - 32px));
+      width: auto;
+      max-width: 380px;
+      margin-inline-start: auto;
       pointer-events: none;
     }
 
@@ -141,11 +144,11 @@ export class ToastHost {
 
   iconFor(kind: ToastKind): string {
     if (kind === 'success') {
-      return '/icons/check-circle.svg';
+      return 'icons/check-circle.svg';
     }
     if (kind === 'error') {
-      return '/icons/shield-alert.svg';
+      return 'icons/shield-alert.svg';
     }
-    return '/icons/bell.svg';
+    return 'icons/bell.svg';
   }
 }

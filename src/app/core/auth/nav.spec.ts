@@ -1,5 +1,5 @@
 import { canApprove, canManageOperators, isReadOnly } from './access';
-import { inboxPath, navLinks, portalKey, searchPlaceholderKey } from './nav';
+import { inboxPath, navLinks, portalKey, searchPath, searchPlaceholderKey } from './nav';
 import { AuthUser } from '@core/models';
 
 const admin: AuthUser = {
@@ -66,6 +66,7 @@ describe('role access', () => {
 describe('navLinks', () => {
   it('hides platform operators from non-admin operators', () => {
     expect(navLinks(admin).some((link) => link.path === '/operators')).toBe(true);
+    expect(navLinks(admin).some((link) => link.path === '/payment-points')).toBe(true);
     expect(navLinks(maker).some((link) => link.path === '/operators')).toBe(false);
     expect(navLinks(checker).some((link) => link.path === '/operators')).toBe(false);
     expect(navLinks(reader).some((link) => link.path === '/operators')).toBe(false);
@@ -89,5 +90,8 @@ describe('navLinks', () => {
     expect(portalKey('institution')).toBe('shell.fiPortal');
     expect(searchPlaceholderKey('operator')).toBe('shell.searchOperator');
     expect(inboxPath('merchant')).toBe('/notification-delivery');
+    expect(searchPath('operator')).toBe('/merchants');
+    expect(searchPath('merchant')).toBe('/my-payment-points');
+    expect(searchPath('institution')).toBe('/all-payment-points');
   });
 });

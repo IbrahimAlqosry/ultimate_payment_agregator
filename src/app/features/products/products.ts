@@ -1,11 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
 import { AtlasApi } from '@core/http/atlas-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { ToastService } from '@core/notifications/toast.service';
 import { ApprovalStatus, Merchant } from '@core/models';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
@@ -20,7 +19,8 @@ type ListTab = 'all' | 'pending';
 })
 export class Products {
   private readonly api = inject(AtlasApi);
-  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly locale = inject(LocaleService);
 
@@ -65,7 +65,15 @@ export class Products {
   });
 
   constructor() {
-    this.load();
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab === 'pending' || tab === 'all') {
+        this.tab.set(tab);
+      }
+      this.query = params.get('q') ?? '';
+      this.page.set(1);
+      this.load();
+    });
   }
 
   onQuery(query: string): void {
@@ -77,6 +85,11 @@ export class Products {
   setTab(tab: ListTab): void {
     this.tab.set(tab);
     this.page.set(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+    });
   }
 
   onStatus(event: Event): void {
@@ -118,15 +131,6 @@ export class Products {
       error: () => {
         this.loading.set(false);
         this.error.set(true);
-      },
-    });
-  }
-
-  decide(id: string, decision: 'approved' | 'rejected'): void {
-    this.api.decide('merchant', id, decision).subscribe({
-      next: () => {
-        this.toast.decision('merchant', decision);
-        this.load(true);
       },
     });
   }

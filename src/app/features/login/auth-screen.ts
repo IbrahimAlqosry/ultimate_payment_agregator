@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { afterNextRender, Component, inject, Injector, input } from '@angular/core';
+import { LoadingService } from '@core/http/loading.service';
 import { LanguageSwitch } from '@shared/language-switch';
 
 @Component({
@@ -19,11 +20,19 @@ import { LanguageSwitch } from '@shared/language-switch';
       <div class="auth-card" id="main">
         <ng-content />
       </div>
-      <app-language-switch appearance="auth" />
+      <div class="auth-lang">
+        <app-language-switch appearance="auth" />
+      </div>
     </section>
   `,
   styleUrl: './auth-screen.scss',
 })
 export class AuthScreen {
+  private readonly loading = inject(LoadingService);
+  private readonly injector = inject(Injector);
   readonly wide = input(false);
+
+  constructor() {
+    afterNextRender(() => this.loading.uncover(), { injector: this.injector });
+  }
 }

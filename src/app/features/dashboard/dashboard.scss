@@ -35,7 +35,6 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
-  white-space: nowrap;
 }
 
 .overview {
@@ -97,6 +96,11 @@
   text-decoration: none;
   color: inherit;
   border: 0;
+  cursor: pointer;
+}
+
+a.kpi:hover {
+  background: #f3faf5;
 }
 
 .kpi-top {
@@ -456,6 +460,14 @@
   .fi-bottom,
   .dash-head {
     flex-wrap: wrap;
+  }
+
+  .dash-head {
+    align-items: stretch;
+  }
+
+  .dash-head h1 {
+    font-size: 1.25rem;
   }
 
   .kpi {

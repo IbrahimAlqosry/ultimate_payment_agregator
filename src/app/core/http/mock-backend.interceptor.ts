@@ -21,6 +21,7 @@ import {
   NotificationWebhook,
   OperatorDraft,
   OperatorRole,
+  OperatorUpdate,
   OtpStartResponse,
   PasswordChange,
   PaymentPointDraft,
@@ -38,14 +39,17 @@ import {
   CREDENTIALS,
   ERPS,
   INSTITUTIONS,
+  INBOX,
   INTEGRATION_REQUESTS,
   INTEGRATION_USERS,
   MERCHANTS,
   MERCHANT_WEBHOOK,
   OPERATORS,
   PAYMENT_POINTS,
+  SETTLEMENTS,
   profileFor,
   scopedNotifications,
+  resolvePointScope,
   scopedPoints,
 } from './mock-data';
 
@@ -398,10 +402,35 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       city: 'Sana’a',
       status: 'invited' as const,
       lastActive: new Date().toISOString(),
+      screens: body.screens,
     };
     OPERATORS.unshift(row);
     audit(user, 'Invited operator', row.name, row.email);
     return ok(row, 201);
+  }
+
+  const operatorId = resourceId(path, 'operators');
+  if (req.method === 'PUT' && operatorId) {
+    if (!canManageOperators(user)) {
+      return fail(403, 'FORBIDDEN');
+    }
+    const row = OPERATORS.find((item) => item.id === operatorId);
+    if (!row) {
+      return fail(404, 'NOT_FOUND');
+    }
+    const body = req.body as OperatorUpdate;
+    row.name = body.name?.trim() || row.name;
+    if ((['admin', 'maker', 'checker', 'reader'] as OperatorRole[]).includes(body.role)) {
+      row.role = body.role;
+    }
+    if (body.status === 'active' || body.status === 'invited' || body.status === 'inactive') {
+      row.status = body.status;
+    }
+    if (body.screens) {
+      row.screens = body.screens;
+    }
+    audit(user, 'Updated operator', row.name, row.role);
+    return ok(row);
   }
 
   const merchantId = resourceId(path, 'merchants');
@@ -534,10 +563,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (req.method === 'GET' && (path === apiUrl('/payment-points') || path === apiUrl('/orders'))) {
-    const scope = req.params.get('scope') ?? 'all';
-    if (scope === 'all' && user.audience !== 'operator') {
-      return fail(403, 'FORBIDDEN');
-    }
+    const scope = resolvePointScope(user, req.params.get('scope') ?? 'all');
     const status = query(req, 'status');
     let rows = scopedPoints(user, scope, query(req, 'q'));
     if (status && status !== 'all') {
@@ -674,9 +700,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       endpointUrl: body.endpointUrl,
       port: body.port,
       authType: body.authType === 'oauth2' ? 'oauth2' : 'bearer',
-      username: body.username,
-      password: body.password,
       accessToken: body.accessToken,
+      clientId: body.clientId,
+      clientSecret: body.clientSecret,
     });
     return ok(webhookStore);
   }
@@ -710,15 +736,40 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return ok(row);
   }
 
+  if (req.method === 'GET' && path === apiUrl('/settlements')) {
+    const org = query(req, 'institution');
+    const rows = org ? SETTLEMENTS.filter((row) => row.institutionName.toLowerCase() === org) : SETTLEMENTS;
+    return ok(rows);
+  }
+
   if (req.method === 'GET' && path === apiUrl('/audit')) {
     if (user.audience !== 'operator') {
       return fail(403, 'FORBIDDEN');
     }
     const q = query(req, 'q');
-    const rows = AUDIT_LOG.filter((row) =>
-      matches([row.actor, row.role, row.action, row.entity, row.detail], q),
-    );
+    const from = query(req, 'from');
+    const to = query(req, 'to');
+    const type = query(req, 'type');
+    const rows = AUDIT_LOG.filter((row) => {
+      if (q && !matches([row.actor, row.role, row.action, row.entity, row.detail, row.eventType ?? ''], q)) {
+        return false;
+      }
+      if (type && type !== 'all' && row.eventType !== type) {
+        return false;
+      }
+      if (from && row.at.slice(0, 10) < from) {
+        return false;
+      }
+      if (to && row.at.slice(0, 10) > to) {
+        return false;
+      }
+      return true;
+    });
     return ok(rows);
+  }
+
+  if (req.method === 'GET' && path === apiUrl('/inbox')) {
+    return ok(INBOX.filter((row) => row.audience === user.audience));
   }
 
   if (req.method === 'POST' && path === apiUrl('/approvals')) {

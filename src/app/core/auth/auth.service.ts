@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs';
 import { canApprove, canManageOperators, canMutate, isReadOnly } from '@core/auth/access';
 import { apiUrl } from '@core/http/api-url';
+import { LoadingService } from '@core/http/loading.service';
 import { ApprovalEntity, Audience, AuthUser, LoginResponse, MerchantSignup, OtpStartResponse } from '@core/models';
 import { decodeJwtPayload } from './jwt';
 
@@ -33,6 +34,7 @@ interface OtpChallenge {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly loading = inject(LoadingService);
 
   readonly token = signal<string | null>(this.readStoredToken());
   readonly user = computed(() => this.decode(this.token()));
@@ -83,6 +85,9 @@ export class AuthService {
   }
 
   logout(redirect = true): void {
+    if (redirect) {
+      this.loading.cover();
+    }
     localStorage.removeItem(TOKEN_KEY);
     this.clearChallenge();
     this.token.set(null);

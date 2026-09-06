@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'merchants.title' | transloco }}</h1>
-    @if (auth.canMutate()) {
+    @if (tab() === 'all' && auth.canMutate()) {
       <a class="btn btn-primary" routerLink="/merchants/new">{{ 'cta.onboardMerchant' | transloco }}</a>
     }
   </header>
@@ -15,27 +15,29 @@
     </button>
   </div>
 
-  <div class="filters">
-    <app-search-field placeholderKey="merchants.search" (queryChange)="onQuery($event)" />
-    <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'merchants.status' | transloco">
-      <option value="">{{ 'filter.status' | transloco }}</option>
-      <option value="approved">{{ 'badge.active' | transloco }}</option>
-      <option value="pending">{{ 'badge.pending' | transloco }}</option>
-      <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
-    </select>
-    <select class="filter" [value]="cityFilter()" (change)="onCity($event)" [attr.aria-label]="'merchants.city' | transloco">
-      <option value="">{{ 'filter.city' | transloco }}</option>
-      @for (city of cities(); track city) {
-        <option [value]="city">{{ city }}</option>
-      }
-    </select>
-    <select class="filter" [value]="erpFilter()" (change)="onErp($event)" [attr.aria-label]="'merchants.erp' | transloco">
-      <option value="">{{ 'filter.erp' | transloco }}</option>
-      @for (erp of erps(); track erp) {
-        <option [value]="erp">{{ erp }}</option>
-      }
-    </select>
-  </div>
+  @if (tab() === 'all') {
+    <div class="filters">
+      <app-search-field [seed]="query" placeholderKey="merchants.search" (queryChange)="onQuery($event)" />
+      <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'merchants.status' | transloco">
+        <option value="">{{ 'filter.status' | transloco }}</option>
+        <option value="approved">{{ 'badge.active' | transloco }}</option>
+        <option value="pending">{{ 'badge.pending' | transloco }}</option>
+        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
+      </select>
+      <select class="filter" [value]="cityFilter()" (change)="onCity($event)" [attr.aria-label]="'merchants.city' | transloco">
+        <option value="">{{ 'filter.city' | transloco }}</option>
+        @for (city of cities(); track city) {
+          <option [value]="city">{{ city }}</option>
+        }
+      </select>
+      <select class="filter" [value]="erpFilter()" (change)="onErp($event)" [attr.aria-label]="'merchants.erp' | transloco">
+        <option value="">{{ 'filter.erp' | transloco }}</option>
+        @for (erp of erps(); track erp) {
+          <option [value]="erp">{{ erp }}</option>
+        }
+      </select>
+    </div>
+  }
 
   <div class="card table-card">
     <app-data-state
@@ -51,11 +53,18 @@
             <tr>
               <th>{{ 'merchants.businessName' | transloco }}</th>
               <th class="col-cr">{{ 'merchants.cr' | transloco }}</th>
-              <th class="col-status">{{ 'merchants.status' | transloco }}</th>
-              <th class="col-city">{{ 'merchants.city' | transloco }}</th>
-              <th class="col-erp">{{ 'merchants.erpSystem' | transloco }}</th>
-              <th class="num col-date">{{ 'merchants.onboarded' | transloco }}</th>
-              <th></th>
+              @if (tab() === 'pending') {
+                <th>{{ 'merchants.submitted' | transloco }}</th>
+                <th>{{ 'merchants.maker' | transloco }}</th>
+                <th>{{ 'merchants.status' | transloco }}</th>
+                <th class="num">{{ 'actions.column' | transloco }}</th>
+              } @else {
+                <th class="col-status">{{ 'merchants.status' | transloco }}</th>
+                <th class="col-city">{{ 'merchants.city' | transloco }}</th>
+                <th class="col-erp">{{ 'merchants.erpSystem' | transloco }}</th>
+                <th class="num col-date">{{ 'merchants.onboarded' | transloco }}</th>
+                <th class="num">{{ 'actions.column' | transloco }}</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -65,46 +74,56 @@
                   <a class="table-link" [routerLink]="['/merchants', row.id]">{{ row.legalName }}</a>
                 </td>
                 <td class="muted col-cr">{{ row.crNumber }}</td>
-                <td class="col-status">
-                  <span
-                    class="badge"
-                    [class.ok]="row.status === 'approved'"
-                    [class.warn]="row.status === 'pending'"
-                    [class.danger]="row.status === 'rejected'"
-                  >
-                    {{ badgeKey(row.status) | transloco }}
-                  </span>
-                </td>
-                <td class="muted col-city">{{ row.city }}</td>
-                <td class="muted col-erp">{{ row.erpSystem }}</td>
-                <td class="muted num col-date">
-                  {{ row.onboardedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}
-                </td>
-                <td>
-                  <app-approval-actions
-                    [show]="row.status === 'pending' && auth.canApprove('merchant')"
-                    [viewHref]="'/merchants/' + row.id"
-                    viewKey="actions.view"
-                    (approve)="decide(row.id, 'approved')"
-                    (reject)="decide(row.id, 'rejected')"
-                  />
-                </td>
+                @if (tab() === 'pending') {
+                  <td class="muted">{{ row.onboardedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                  <td class="muted">{{ row.submittedBy }}</td>
+                  <td>
+                    <span class="badge warn">{{ 'badge.pendingChecker' | transloco }}</span>
+                  </td>
+                  <td>
+                    <app-approval-actions variant="review" [viewHref]="'/merchants/' + row.id" />
+                  </td>
+                } @else {
+                  <td class="col-status">
+                    <span
+                      class="badge"
+                      [class.ok]="row.status === 'approved'"
+                      [class.warn]="row.status === 'pending'"
+                      [class.danger]="row.status === 'rejected'"
+                    >
+                      {{ badgeKey(row.status) | transloco }}
+                    </span>
+                  </td>
+                  <td class="muted col-city">{{ row.city }}</td>
+                  <td class="muted col-erp">{{ row.erpSystem }}</td>
+                  <td class="muted num col-date">
+                    {{ row.onboardedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}
+                  </td>
+                  <td>
+                    <app-approval-actions variant="manage" [viewHref]="'/merchants/' + row.id" />
+                  </td>
+                }
               </tr>
             }
           </tbody>
         </table>
       </div>
       <footer class="table-foot">
-        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
+        <p>
+          {{
+            (tab() === 'pending' ? 'list.showingPending' : 'list.showing')
+              | transloco: { shown: rows().length, total: filtered().length }
+          }}
+        </p>
         <div class="pager">
           <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-            <img src="/icons/chevron-left.svg" width="14" height="14" alt="" />
+            <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
           </button>
           @for (n of pages(); track n) {
             <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
           }
           <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-            <img src="/icons/chevron-right.svg" width="14" height="14" alt="" />
+            <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
           </button>
         </div>
       </footer>

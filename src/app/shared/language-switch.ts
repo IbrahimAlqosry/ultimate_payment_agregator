@@ -9,10 +9,12 @@ import { LocaleService } from '@core/i18n/locale.service';
     <div
       class="lang-switch"
       [class.auth]="appearance() === 'auth'"
+      [class.ar]="locale.lang() === 'ar'"
       role="group"
       dir="ltr"
       [attr.aria-label]="'common.language' | transloco"
     >
+      <span class="lang-thumb" aria-hidden="true"></span>
       <button
         type="button"
         [class.active]="locale.lang() === 'en'"

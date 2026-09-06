@@ -36,6 +36,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/UltimatePay/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

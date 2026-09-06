@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, effect, input, output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -9,7 +9,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
   imports: [FormsModule, TranslocoPipe],
   template: `
     <label class="search-box">
-      <img src="/icons/search.svg" width="14" height="14" alt="" />
+      <img src="icons/search.svg" width="14" height="14" alt="" />
       <input
         class="search"
         type="search"
@@ -23,6 +23,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 })
 export class SearchField {
   readonly placeholderKey = input.required<string>();
+  readonly seed = input('');
   readonly queryChange = output<string>();
 
   value = '';
@@ -32,6 +33,13 @@ export class SearchField {
     this.input$
       .pipe(debounceTime(250), distinctUntilChanged(), takeUntilDestroyed())
       .subscribe((query) => this.queryChange.emit(query));
+
+    effect(() => {
+      const seed = this.seed();
+      if (seed !== this.value) {
+        this.value = seed;
+      }
+    });
   }
 
   onInput(value: string): void {

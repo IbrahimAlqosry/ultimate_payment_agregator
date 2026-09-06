@@ -1,7 +1,7 @@
 <section class="page">
   <p class="crumb">{{ crumbKey() | transloco }}</p>
   <a class="back-link" [routerLink]="listPath()">
-    <img src="/icons/arrow-left.svg" width="14" height="14" alt="" />
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
     {{ backKey() | transloco }}
   </a>
   <header class="page-head">
@@ -59,10 +59,12 @@
             <dd>{{ point.institutionName }}</dd>
           </div>
         </dl>
-        <p class="warn-note">
-          <img src="/icons/shield-alert.svg" width="16" height="16" alt="" />
-          <span>{{ 'detail.pointWarning' | transloco }}</span>
-        </p>
+        @if (point.status === 'pending') {
+          <p class="warn-note">
+            <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
+            <span>{{ 'detail.pointWarning' | transloco }}</span>
+          </p>
+        }
         @if (point.status === 'pending' && auth.canApprove('point')) {
           <div class="form-actions end">
             <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">

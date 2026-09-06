@@ -24,21 +24,11 @@
             <div class="card-body">
               <div class="form-field">
                 <span class="caps">{{ 'integration.username' | transloco }}</span>
-                <div class="secret-input">
-                  <span>{{ showUser() ? creds.username : '••••••••' }}</span>
-                  <button class="show-btn" type="button" (click)="showUser.update((open) => !open)">
-                    {{ (showUser() ? 'notes.hide' : 'notes.show') | transloco }}
-                  </button>
-                </div>
+                <app-secret-field [value]="creds.username" />
               </div>
               <div class="form-field">
                 <span class="caps">{{ 'integration.password' | transloco }}</span>
-                <div class="secret-input">
-                  <span>{{ showPass() ? creds.password : '••••••••' }}</span>
-                  <button class="show-btn" type="button" (click)="showPass.update((open) => !open)">
-                    {{ (showPass() ? 'notes.hide' : 'notes.show') | transloco }}
-                  </button>
-                </div>
+                <app-secret-field [value]="creds.password" />
               </div>
               <div class="form-field">
                 <span class="caps">{{ 'integration.apiUrl' | transloco }}</span>
@@ -48,29 +38,42 @@
                 <span class="caps">{{ 'integration.apiPort' | transloco }}</span>
                 <div class="readonly-box">{{ creds.port }}</div>
               </div>
-              <button class="change-btn" type="button" (click)="requesting.set(true)">
+              <button
+                class="change-btn"
+                type="button"
+                [class.active]="requesting()"
+                [disabled]="auth.readOnly()"
+                [attr.aria-expanded]="requesting()"
+                aria-controls="request-change-card"
+                (click)="startRequest()"
+              >
                 {{ 'integration.requestChange' | transloco }}
               </button>
             </div>
           </article>
 
           @if (requesting()) {
-            <form class="form-card request-card" (submit)="onSubmit($event)" novalidate>
+            <form id="request-change-card" class="form-card request-card" (submit)="onSubmit($event)" novalidate>
               <div class="card-header">
                 <h2>{{ 'integration.requestTitle' | transloco }}</h2>
               </div>
               <div class="card-body">
                 <label class="form-field">
                   <span class="caps">{{ 'integration.reason' | transloco }}</span>
-                  <textarea [formField]="requestForm.reason" [placeholder]="'integration.reasonPh' | transloco"></textarea>
+                  <textarea
+                    #reasonField
+                    id="integration-reason"
+                    [formField]="requestForm.reason"
+                    [placeholder]="'integration.reasonPh' | transloco"
+                  ></textarea>
                   <app-field-error [state]="requestForm.reason()" />
                 </label>
                 <p class="note-box">{{ 'integration.checkerNote' | transloco }}</p>
-                <div class="form-actions">
+                <div class="form-actions request-actions">
                   <button class="cta" type="submit" [disabled]="requestForm().submitting() || auth.readOnly()">
                     {{ (requestForm().submitting() ? 'onboard.submitting' : 'integration.submitRequest') | transloco }}
                   </button>
-                  <button class="cancel-link" type="button" (click)="requesting.set(false)">
+                  <button class="cancel-link" type="button" (click)="cancelRequest()">
                     {{ 'actions.cancel' | transloco }}
                   </button>
                 </div>
@@ -90,23 +93,11 @@
             <div class="card-body">
               <div class="form-field">
                 <span class="caps">{{ 'integration.username' | transloco }}</span>
-                <div class="secret-input">
-                  <span>{{ showUser() ? creds.username : '••••••••' }}</span>
-                  <button class="show-btn" type="button" (click)="showUser.update((open) => !open)">
-                    <img src="/icons/eye.svg" width="14" height="14" alt="" />
-                    {{ (showUser() ? 'notes.hide' : 'integration.unmask') | transloco }}
-                  </button>
-                </div>
+                <app-secret-field [value]="creds.username" [eye]="true" revealKey="integration.unmask" />
               </div>
               <div class="form-field">
                 <span class="caps">{{ 'integration.password' | transloco }}</span>
-                <div class="secret-input">
-                  <span>{{ showPass() ? creds.password : '••••••••' }}</span>
-                  <button class="show-btn" type="button" (click)="showPass.update((open) => !open)">
-                    <img src="/icons/eye.svg" width="14" height="14" alt="" />
-                    {{ (showPass() ? 'notes.hide' : 'integration.unmask') | transloco }}
-                  </button>
-                </div>
+                <app-secret-field [value]="creds.password" [eye]="true" revealKey="integration.unmask" [(revealed)]="showPass" />
               </div>
               <div class="form-field">
                 <span class="caps">{{ 'integration.apiUrl' | transloco }}</span>
@@ -124,12 +115,20 @@
             <article class="form-card request-card">
               <div class="card-body">
                 <button class="outline-btn green" type="button" (click)="confirmRegen.set(true)" [disabled]="auth.readOnly()">
-                  <img src="/icons/refresh-cw.svg" width="16" height="16" alt="" />
+                  <img src="icons/refresh-cw.svg" width="16" height="16" alt="" />
                   {{ 'integration.regenerate' | transloco }}
                 </button>
                 <p class="hint">{{ 'integration.regenerateHint' | transloco }}</p>
-                <button class="outline-btn" type="button" (click)="requesting.set(true)">
-                  <img src="/icons/pencil.svg" width="16" height="16" alt="" />
+                <button
+                  class="outline-btn"
+                  type="button"
+                  [class.active]="requesting()"
+                  [disabled]="auth.readOnly()"
+                  [attr.aria-expanded]="requesting()"
+                  aria-controls="request-change-card"
+                  (click)="startRequest()"
+                >
+                  <img src="icons/pencil.svg" width="16" height="16" alt="" />
                   {{ 'integration.requestDetail' | transloco }}
                 </button>
                 <p class="hint">{{ 'integration.requestDetailHint' | transloco }}</p>
@@ -156,22 +155,27 @@
             }
 
             @if (requesting()) {
-              <form class="form-card request-card" (submit)="onSubmit($event)" novalidate>
+              <form id="request-change-card" class="form-card request-card" (submit)="onSubmit($event)" novalidate>
                 <div class="card-header">
                   <h2>{{ 'integration.requestTitle' | transloco }}</h2>
                 </div>
                 <div class="card-body">
                   <label class="form-field">
                     <span class="caps">{{ 'integration.reason' | transloco }}</span>
-                    <textarea [formField]="requestForm.reason" [placeholder]="'integration.reasonPh' | transloco"></textarea>
+                    <textarea
+                      #reasonField
+                      id="integration-reason"
+                      [formField]="requestForm.reason"
+                      [placeholder]="'integration.reasonPh' | transloco"
+                    ></textarea>
                     <app-field-error [state]="requestForm.reason()" />
                   </label>
                   <p class="note-box">{{ 'integration.checkerNote' | transloco }}</p>
-                  <div class="form-actions">
+                  <div class="form-actions request-actions">
                     <button class="cta" type="submit" [disabled]="requestForm().submitting() || auth.readOnly()">
                       {{ (requestForm().submitting() ? 'onboard.submitting' : 'integration.submitRequest') | transloco }}
                     </button>
-                    <button class="cancel-link" type="button" (click)="requesting.set(false)">
+                    <button class="cancel-link" type="button" (click)="cancelRequest()">
                       {{ 'actions.cancel' | transloco }}
                     </button>
                   </div>

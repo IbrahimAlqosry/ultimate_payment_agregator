@@ -1,7 +1,11 @@
 <section class="page">
   <p class="crumb">{{ 'detail.erpCrumb' | transloco }}</p>
+  <a class="back-link" routerLink="/erp-systems">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'actions.backToList' | transloco }}
+  </a>
   <header class="page-head">
-    <h1>{{ 'detail.erpTitle' | transloco }}</h1>
+    <h1>{{ row()?.name || ('detail.erpTitle' | transloco) }}</h1>
     @if (row(); as erp) {
       <span
         class="badge"
@@ -17,6 +21,7 @@
   <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
     @if (row(); as erp) {
       <article class="detail-card">
+        <h2 class="section-title">{{ 'detail.erpDetails' | transloco }}</h2>
         <dl class="info-grid">
           <div>
             <dt>{{ 'erp.name' | transloco }}</dt>
@@ -27,12 +32,16 @@
             <dd>{{ erp.vendor }}</dd>
           </div>
           <div>
-            <dt>{{ 'register.contactName' | transloco }}</dt>
-            <dd>{{ erp.contactName }}</dd>
+            <dt>{{ 'users.status' | transloco }}</dt>
+            <dd>{{ (erp.status === 'approved' ? 'badge.active' : 'badge.' + erp.status) | transloco }}</dd>
           </div>
           <div>
-            <dt>{{ 'register.email' | transloco }}</dt>
-            <dd>{{ erp.email }}</dd>
+            <dt>{{ 'detail.integrationType' | transloco }}</dt>
+            <dd>{{ erp.integrationType || '—' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'detail.contractNumber' | transloco }}</dt>
+            <dd>{{ erp.contractNumber || '—' }}</dd>
           </div>
           <div>
             <dt>{{ 'onboard.contractDate' | transloco }}</dt>
@@ -46,11 +55,31 @@
           </div>
           <div>
             <dt>{{ 'erp.expiry' | transloco }}</dt>
-            <dd>{{ erp.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+            <dd>
+              @if (erp.contractExpiry) {
+                {{ erp.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}
+              } @else {
+                —
+              }
+            </dd>
           </div>
           <div>
             <dt>{{ 'erp.merchants' | transloco }}</dt>
             <dd>{{ erp.connectedMerchants }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'detail.approvedBy' | transloco }}</dt>
+            <dd>{{ erp.approvedBy || erp.contactName }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'merchants.onboarded' | transloco }}</dt>
+            <dd>
+              @if (erp.onboardedAt) {
+                {{ erp.onboardedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}
+              } @else {
+                —
+              }
+            </dd>
           </div>
         </dl>
         @if (erp.status === 'pending' && auth.canApprove('erp')) {

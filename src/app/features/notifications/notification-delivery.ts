@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormField, form, required, submit } from '@angular/forms/signals';
+import { FormField, form, required, submit, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
@@ -8,10 +8,11 @@ import { NotificationWebhook, WebhookAuthType } from '@core/models';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 import { FieldError } from '@shared/field-error';
+import { SecretField } from '@shared/secret-field';
 
 @Component({
   selector: 'app-notification-delivery',
-  imports: [FormField, TranslocoPipe, DataState, FieldError],
+  imports: [FormField, TranslocoPipe, DataState, FieldError, SecretField],
   templateUrl: './notification-delivery.html',
   styleUrl: '../../shared/form-page.scss',
   styles: `
@@ -50,40 +51,6 @@ import { FieldError } from '@shared/field-error';
       color: #7e7676;
     }
 
-    .secret-input {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 44px;
-      border: 1px solid #dcd5d5;
-      border-radius: 8px;
-      padding: 0 14px;
-      background: #fff;
-    }
-
-    .secret-input input {
-      flex: 1 1 auto;
-      min-height: 0;
-      border: 0;
-      padding: 12px 0;
-      background: transparent;
-    }
-
-    .secret-input input:focus-visible {
-      outline: none;
-      box-shadow: none;
-    }
-
-    .show-btn {
-      border: 0;
-      background: transparent;
-      color: #1fa64d;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 0;
-    }
-
     .form-actions.end {
       justify-content: flex-end;
       border-top: 0;
@@ -112,7 +79,6 @@ export class NotificationDelivery implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly showSecret = signal(false);
   readonly saved = signal<NotificationWebhook | null>(null);
 
   readonly form = form(
@@ -120,14 +86,23 @@ export class NotificationDelivery implements OnInit {
       endpointUrl: '',
       port: '',
       authType: 'bearer' as WebhookAuthType,
-      username: '',
-      password: '',
       accessToken: '',
+      clientId: '',
+      clientSecret: '',
     }),
     (p) => {
       required(p.endpointUrl);
       required(p.port);
       required(p.authType);
+      validate(p.accessToken, ({ value, valueOf }) =>
+        valueOf(p.authType) === 'bearer' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.clientId, ({ value, valueOf }) =>
+        valueOf(p.authType) === 'oauth2' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.clientSecret, ({ value, valueOf }) =>
+        valueOf(p.authType) === 'oauth2' && !value().trim() ? { kind: 'required' } : undefined,
+      );
     },
   );
 
@@ -179,9 +154,9 @@ export class NotificationDelivery implements OnInit {
       endpointUrl: row.endpointUrl,
       port: row.port,
       authType: row.authType,
-      username: row.username,
-      password: row.password,
       accessToken: row.accessToken,
+      clientId: row.clientId,
+      clientSecret: row.clientSecret,
     });
   }
 
