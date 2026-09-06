@@ -2,6 +2,8 @@
 
 Angular 22 console for the **Aggregator Platform** — connecting ERP system providers and banks / licensed wallets in **Yemen**. Authenticated slices cover the **Platform Operator**, **Merchant** (Al-Amal Pharmacies), and **Financial Institution** (Tadhamon Bank) portals from the Ultimate pay Figma file.
 
+> **New here, or picking this up after a break?** Read [`docs/BUSINESS_AND_API.md`](docs/BUSINESS_AND_API.md) first — it explains the business rules behind every screen (maker-checker, Interactive vs. Integration users, Payment Points, the two confirmation methods), what's genuinely implemented vs. still a mock/gap, and the checklist + endpoint inventory for wiring up the real backend once it's handed over.
+
 The app is **standalone**, **zoneless**, **SCSS**, with **dummy JWT login**, **email OTP**, **Transloco English / Arabic**, **RTL**, **Angular signal forms** on auth screens, and HTTP interceptors.
 
 Login, OTP, forgot-password, and merchant sign-up follow the **Ultimate pay** Figma file (`ndPZQD4CLQqDbhJcd51MIW`, login node `2:9`).
