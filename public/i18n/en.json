@@ -19,14 +19,11 @@
     "invalid": "Wrong email or password.",
     "accounts": "Demo",
     "forgot": "Forgot password?",
+    "firstTime": "First time signing in?",
     "newHere": "New here?",
     "register": "Register Here",
-    "audience": "Sign in as",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "demoTitle": "Demo accounts",
-    "demoHint": "Tap a user to fill the form. The password stays hidden until you show it.",
-    "demoPassword": "Password",
     "role": {
       "operator": "Platform Operator",
       "merchant": "Merchant",
@@ -41,8 +38,8 @@
     "submit": "Verify",
     "verifying": "Verifying…",
     "resend": "Resend Code",
-    "invalid": "That code is not valid. Dummy console accepts 123456.",
-    "demoHint": "Demo code: 123456"
+    "invalid": "That code is not valid.",
+    "demoHint": "Temporary test-server OTP: 000000"
   },
   "forgot": {
     "title": "Forgot Password?",
@@ -73,6 +70,18 @@
     "title": "Password updated",
     "subtitle": "Your password has been reset. Sign in with your new credentials."
   },
+  "setPassword": {
+    "title": "Set Your Password",
+    "subtitle": "Approved accounts created by a Platform Operator use a temporary password once — set your own to finish activation.",
+    "audience": "Account type",
+    "email": "Email",
+    "temporary": "Temporary Password",
+    "newPassword": "New Password",
+    "confirm": "Confirm New Password",
+    "submit": "Set Password",
+    "submitting": "Setting password…",
+    "invalid": "That temporary password isn't valid, or was already used. Ask the Platform team to resend it."
+  },
   "locked": {
     "title": "Account Locked",
     "subtitle": "Too many incorrect attempts. Your account has been locked for 3 hours. Please try again later or contact our institutional merchant support.",
@@ -96,8 +105,9 @@
     "phonePh": "e.g. +967 777 123 456",
     "city": "City / Address",
     "cityPh": "e.g. Sana'a, Zubairi St.",
-    "erp": "ERP System",
-    "erpPh": "Select ERP",
+    "erp": "ERP System ID",
+    "erpPh": "e.g. aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "erpHint": "Ask the Platform team for your approved ERP system's ID — there is no ERP directory yet.",
     "password": "Password",
     "confirm": "Confirm Password",
     "submit": "Create Account",
@@ -154,7 +164,9 @@
     "captionOrg": "{{title}} — {{org}}",
     "logoutTitle": "Sign out",
     "logoutBody": "You can sign back in at any time.",
-    "logoutConfirm": "Sign out"
+    "logoutConfirm": "Sign out",
+    "needsFreshLogin": "Your session was restored after a reload, but making changes needs a fresh sign-in first.",
+    "signInAgain": "Sign in again"
   },
   "title": {
     "admin": "Admin",
@@ -364,21 +376,26 @@
     "banner": "Only approved ERP systems appear in merchant sign-up."
   },
   "requests": {
-    "title": "Integration User Requests",
-    "crumb": "Integration User Requests",
-    "intro": "API users requested by merchants, banks, wallets, or ERP vendors. Maker submits; Checker or Admin approves.",
+    "title": "Integration Client Rotation Requests",
+    "crumb": "Integration Client Rotation Requests",
+    "intro": "Merchant credential rotation requests. Maker submits; a different Checker or Admin approves — approving reveals the new credential pair once.",
     "search": "Search requester, organisation, or email",
-    "empty": "No integration requests match that search.",
+    "empty": "No rotation requests yet.",
     "requester": "Requester",
     "org": "Organisation",
     "kind": "Kind",
     "code": "Request ID",
+    "requestId": "Request ID",
+    "accountId": "Account ID",
     "entity": "Entity",
     "type": "Request Type",
     "pendingBadge": "{{count}} pending",
     "email": "Email",
     "submitted": "Submitted",
     "status": "Status",
+    "makerSubmit": "Submit to Checker",
+    "oneTimeTitle": "Save these now",
+    "oneTimeWarn": "This is the only time these credentials are shown. Hand them off to the requesting Merchant through your team's agreed secure process — the API will not show them again.",
     "kinds": {
       "merchant": "Merchant",
       "institution": "Financial institution",
@@ -497,7 +514,24 @@
     "requestDetailHint": "Changes to URL or Port require Platform Operator approval (maker-checker process).",
     "regenerateTitle": "Regenerate Credentials",
     "regenerateWarn": "This will invalidate your current credentials immediately. A new set will be generated after successful OTP verification.",
-    "proceedOtp": "Proceed with OTP"
+    "proceedOtp": "Proceed with OTP",
+    "clientIntro": "The machine credential your ERP/core banking system uses to call the platform's API.",
+    "createTitle": "Create Your Integration Client",
+    "createHint": "You don't have one yet. Creating it shows your Client ID and Secret once — copy them somewhere safe, they can't be retrieved again.",
+    "createAction": "Create Integration Client",
+    "oneTimeTitle": "Save these now",
+    "oneTimeWarn": "These credentials are shown only this once. Copy them somewhere safe before continuing — they cannot be retrieved again.",
+    "clientId": "Client ID",
+    "clientSecret": "Client Secret",
+    "tokenUrl": "Token URL",
+    "savedIt": "I've saved these",
+    "metadataTitle": "Integration Client",
+    "createdAt": "Created",
+    "lastRotatedAt": "Last rotated",
+    "rotationPending": "A credential rotation request is pending Platform Operator approval. The approving Checker/Admin receives the new pair directly — arrange handoff with them.",
+    "requestRotation": "Request Credential Rotation",
+    "merchantRotationHint": "Requires Platform Operator approval (maker-checker process).",
+    "otpTitle": "Verify OTP"
   },
   "profile": {
     "fiTitle": "Institution Profile",
@@ -620,7 +654,14 @@
     "allErps": "All ERP Systems",
     "allPoints": "All Payment Points",
     "showingOperators": "Showing {{shown}} of {{total}} platform operators",
-    "showingPending": "Showing {{shown}} of {{total}} pending applications"
+    "showingPending": "Showing {{shown}} of {{total}} pending applications",
+    "loadMore": "Load more",
+    "loading": "Loading…"
+  },
+  "appStatus": {
+    "awaitingMaker": "Awaiting Maker review",
+    "pendingChecker": "Awaiting approval",
+    "provisioning": "Approved — activating"
   },
   "filter": {
     "status": "Status",
@@ -652,7 +693,9 @@
     "pattern": "That value is not in the expected format.",
     "passwordStrength": "Use at least 8 characters with letters and numbers.",
     "mismatch": "Passwords must match.",
-    "phone": "Enter a phone number with at least 7 digits."
+    "phone": "Enter a phone number with at least 7 digits.",
+    "uuid": "Enter a valid ERP system ID (a UUID, e.g. aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa).",
+    "expiryAfterSigned": "Expiry date must be later than the signed date."
   },
   "role": {
     "admin": "Admin",
@@ -711,9 +754,13 @@
     "failTitle": "Couldn't do that",
     "infoTitle": "Just so you know",
     "welcome": "You're in. Let's get Yemen's rails moving.",
-    "otpSent": "A fresh 6-digit code is on its way. The demo console accepts 123456.",
+    "otpSent": "A fresh 6-digit code is on its way.",
     "registerOk": "Request received. We'll email you once a checker reviews the application.",
     "registerBad": "We couldn't save the application. Check the form and try again.",
+    "setPasswordOk": "Password set — sign in with your new password.",
+    "setPasswordBad": "Couldn't set your password. Check the temporary password and try again.",
+    "merchantSubmittedToChecker": "Submitted to a Checker for approval.",
+    "fiSubmittedToChecker": "Submitted to a Checker for approval.",
     "resetSent": "If that inbox is on file, a reset link is on its way.",
     "passwordUpdated": "Password updated. Sign in with the new one whenever you're ready.",
     "webhookUpdated": "ERP webhook endpoint is saved.",
@@ -841,6 +888,16 @@
     "tabFees": "Settlements & Fees Log",
     "tabApi": "API Integration Parameters",
     "merchantAllCrumb": "Merchant Management > All Merchants > ",
+    "originLabel": "Sign-up channel",
+    "origin": {
+      "selfService": "Public self-service",
+      "platformAssisted": "Platform Operator assisted"
+    },
+    "decidedAt": "Decided",
+    "activatedAt": "Activated",
+    "merchantAwaitingMaker": "This self-service application is awaiting Maker review before it can move to a Checker.",
+    "fiAwaitingMaker": "This application is awaiting Maker review before it can move to a Checker.",
+    "submitToChecker": "Submit to Checker",
     "fiAllCrumb": "Financial Institution Management > All FIs > ",
     "emptyPoints": "No payment points are linked to this merchant yet.",
     "emptySettlements": "No settlement records for this institution yet.",

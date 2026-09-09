@@ -24,6 +24,50 @@
   border-bottom: 1px solid #444445;
 }
 
+.sidebar-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sidebar-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.close-bars {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+.close-bars i {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-start: 0;
+  display: block;
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+.close-bars i:first-child {
+  transform: rotate(45deg);
+}
+
+.close-bars i:last-child {
+  transform: rotate(-45deg);
+}
+
 .flag-bars {
   width: 52.923px;
   height: 29.116px;
@@ -459,6 +503,49 @@ nav a:focus-visible,
   color: #1c1c1d;
 }
 
+.session-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 32px;
+  background: #fdf3e2;
+  border-block-end: 1px solid #f0d999;
+  color: #7a5a12;
+  font-size: 13px;
+}
+
+.session-banner img {
+  flex-shrink: 0;
+  filter: invert(46%) sepia(75%) saturate(1000%) hue-rotate(1deg) brightness(94%) contrast(93%);
+}
+
+.session-banner span {
+  flex: 1 1 auto;
+}
+
+.session-banner button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 6px;
+  background: #7a5a12;
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.session-banner button:hover {
+  background: #5f4610;
+}
+
+@media (max-width: 860px) {
+  .session-banner {
+    padding: 10px 16px;
+    flex-wrap: wrap;
+  }
+}
+
 .menu-btn {
   display: none;
   align-items: center;
@@ -573,7 +660,14 @@ nav a:focus-visible,
 
   .sidebar.open {
     inset-inline-start: 0;
+    /* Above .topbar's sticky z-index (40) so the drawer's own brand/logo header — and the
+       close button below — aren't visually covered by the topbar sitting at the same y=0. */
+    z-index: 50;
     box-shadow: 16px 0 40px rgba(28, 28, 29, 0.28);
+  }
+
+  .sidebar-close {
+    display: inline-flex;
   }
 
   :host-context([dir='rtl']) .sidebar.open {
@@ -586,7 +680,9 @@ nav a:focus-visible,
     inset: 0;
     border: 0;
     background: rgba(28, 25, 21, 0.45);
-    z-index: 15;
+    /* Above .topbar (40) so the whole screen dims when the drawer opens, not just the
+       content area below the topbar; still below .sidebar.open (50). */
+    z-index: 45;
   }
 
   .content {

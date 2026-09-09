@@ -3,17 +3,25 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
+import { IntegrationClientRotationRequestMetadata, RotationRequestStatus } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
-import { IntegrationRequest } from '@core/models';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
-import { SearchField } from '@shared/search-field';
+import { SecretField } from '@shared/secret-field';
 
+const PENDING_STATUSES: RotationRequestStatus[] = ['awaitingMaker', 'pendingChecker'];
+
+/**
+ * Platform queue for Merchant Integration Client rotation requests (the real backend's
+ * `/integration-client/rotation-requests`). FI self-rotates via OTP and never appears here.
+ * The API returns only opaque account/client UUIDs — no merchant name lookup is available yet.
+ */
 @Component({
   selector: 'app-integration-requests',
-  imports: [TranslocoPipe, DatePipe, FormsModule, DataState, SearchField, ApprovalActions],
+  imports: [TranslocoPipe, DatePipe, FormsModule, DataState, ApprovalActions, SecretField],
   template: `
     <section class="page">
       <header class="page-head">
@@ -25,9 +33,9 @@ import { SearchField } from '@shared/search-field';
           </div>
         </div>
       </header>
-      <div class="filters">
-        <app-search-field [seed]="query" placeholderKey="requests.search" (queryChange)="onQuery($event)" />
-      </div>
+      @if (actionError(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
       <div class="card table-card">
         <app-data-state
           [loading]="loading()"
@@ -40,50 +48,56 @@ import { SearchField } from '@shared/search-field';
             <table>
               <thead>
                 <tr>
-                  <th>{{ 'requests.code' | transloco }}</th>
-                  <th>{{ 'requests.entity' | transloco }}</th>
-                  <th>{{ 'requests.type' | transloco }}</th>
+                  <th>{{ 'requests.requestId' | transloco }}</th>
+                  <th>{{ 'requests.accountId' | transloco }}</th>
                   <th>{{ 'requests.submitted' | transloco }}</th>
                   <th>{{ 'requests.status' | transloco }}</th>
                   <th class="num">{{ 'actions.column' | transloco }}</th>
                 </tr>
               </thead>
               <tbody>
-                @for (row of rows(); track row.id) {
+                @for (row of rows(); track row.requestId) {
                   <tr>
-                    <td>
-                      <strong>{{ row.code }}</strong>
-                    </td>
-                    <td>{{ row.organization }}</td>
-                    <td>
-                      <span class="badge" [class.warn]="row.kind === 'credential'" [class.ok]="row.kind !== 'credential'">
-                        {{ ('requests.kinds.' + row.kind) | transloco }}
-                      </span>
-                    </td>
-                    <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                    <td class="muted"><span class="mono">{{ row.requestId }}</span></td>
+                    <td class="muted"><span class="mono">{{ row.accountId }}</span></td>
+                    <td class="muted">{{ row.requestedAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
                     <td>
                       <span
                         class="badge"
                         [class.ok]="row.status === 'approved'"
-                        [class.warn]="row.status === 'pending'"
+                        [class.warn]="row.status === 'awaitingMaker' || row.status === 'pendingChecker'"
                         [class.danger]="row.status === 'rejected'"
                       >
-                        {{ (row.status === 'pending' ? 'badge.pendingApproval' : 'badge.' + row.status) | transloco }}
+                        {{ (row.status === 'approved' ? 'badge.active' : 'appStatus.' + row.status) | transloco }}
                       </span>
                     </td>
                     <td>
-                      <app-approval-actions
-                        variant="decide"
-                        [show]="row.status === 'pending' && auth.canApprove('integration')"
-                        (approve)="decide(row.id, 'approved')"
-                        (reject)="askReject(row)"
-                      />
+                      @if (row.status === 'awaitingMaker') {
+                        <button class="btn-review" type="button" [disabled]="acting()" (click)="submitRow(row)">
+                          {{ 'requests.makerSubmit' | transloco }}
+                        </button>
+                      } @else {
+                        <app-approval-actions
+                          variant="decide"
+                          [show]="row.status === 'pendingChecker' && auth.canApprove('integration')"
+                          (approve)="decide(row, 'approved')"
+                          (reject)="askReject(row)"
+                        />
+                      }
                     </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
+          <footer class="table-foot">
+            <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+            @if (nextCursor()) {
+              <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+                {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+              </button>
+            }
+          </footer>
         </app-data-state>
       </div>
     </section>
@@ -93,7 +107,7 @@ import { SearchField } from '@shared/search-field';
         <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
         <article class="overlay-panel" role="dialog" aria-modal="true">
           <header class="overlay-head">
-            <h2>{{ 'actions.reject' | transloco }} — {{ row.organization }}</h2>
+            <h2>{{ 'actions.reject' | transloco }} — {{ row.requestId }}</h2>
             <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
           </header>
           <label class="form-field">
@@ -109,41 +123,98 @@ import { SearchField } from '@shared/search-field';
         </article>
       </div>
     }
+
+    @if (approvedCredentials(); as creds) {
+      <div class="overlay-modal">
+        <article class="overlay-panel" role="dialog" aria-modal="true">
+          <header class="overlay-head">
+            <h2>{{ 'requests.oneTimeTitle' | transloco }}</h2>
+          </header>
+          <p class="note-box">{{ 'requests.oneTimeWarn' | transloco }}</p>
+          <div class="form-field">
+            <span class="caps">{{ 'integration.clientId' | transloco }}</span>
+            <div class="readonly-box">{{ creds.clientId }}</div>
+          </div>
+          <div class="form-field">
+            <span class="caps">{{ 'integration.clientSecret' | transloco }}</span>
+            <app-secret-field [value]="creds.clientSecret" [eye]="true" [revealed]="true" />
+          </div>
+          <div class="overlay-actions">
+            <button class="btn btn-primary" type="button" (click)="approvedCredentials.set(null)">
+              {{ 'integration.savedIt' | transloco }}
+            </button>
+          </div>
+        </article>
+      </div>
+    }
+  `,
+  styles: `
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      /* Inline span, not the <td> itself — isolates the UUID's character order without
+         touching the cell's own text-align:start (which must stay language-aware to match
+         sibling columns in both LTR and RTL). */
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+    .readonly-box {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid #dcd5d5;
+      border-radius: 8px;
+      background: #f7f5f5;
+      font-size: 13px;
+      word-break: break-all;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+    .btn-review {
+      background: #fff;
+      color: #1c1c1d;
+      border: 1px solid #dcd5d5;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
   `,
 })
 export class IntegrationRequests {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
   readonly locale = inject(LocaleService);
+
   readonly loading = signal(true);
+  readonly loadingMore = signal(false);
   readonly error = signal(false);
-  readonly rows = signal<IntegrationRequest[]>([]);
-  readonly rejecting = signal<IntegrationRequest | null>(null);
+  readonly acting = signal(false);
+  readonly rows = signal<IntegrationClientRotationRequestMetadata[]>([]);
+  readonly nextCursor = signal<string | null>(null);
+  readonly rejecting = signal<IntegrationClientRotationRequestMetadata | null>(null);
   readonly reason = signal('');
-  query = '';
+  readonly approvedCredentials = signal<{ clientId: string; clientSecret: string } | null>(null);
+  readonly actionError = signal<string | null>(null);
 
   constructor() {
     this.load();
   }
 
   pendingCount(): number {
-    return this.rows().filter((row) => row.status === 'pending').length;
+    return this.rows().filter((row) => PENDING_STATUSES.includes(row.status)).length;
   }
 
-  onQuery(query: string): void {
-    this.query = query;
-    this.load(true);
-  }
-
-  load(silent = false): void {
-    if (!silent) {
-      this.loading.set(true);
-    }
+  load(): void {
+    this.loading.set(true);
     this.error.set(false);
-    this.api.integrationRequests(this.query).subscribe({
-      next: (rows) => {
-        this.rows.set(rows);
+    this.api.listIntegrationClientRotationRequests({ pageSize: 50 }).subscribe({
+      next: (page) => {
+        this.rows.set(page.items);
+        this.nextCursor.set(page.nextCursor);
         this.loading.set(false);
       },
       error: () => {
@@ -153,7 +224,42 @@ export class IntegrationRequests {
     });
   }
 
-  askReject(row: IntegrationRequest): void {
+  loadMore(): void {
+    const cursor = this.nextCursor();
+    if (!cursor || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.api.listIntegrationClientRotationRequests({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        this.rows.update((rows) => [...rows, ...page.items]);
+        this.nextCursor.set(page.nextCursor);
+        this.loadingMore.set(false);
+      },
+      error: () => this.loadingMore.set(false),
+    });
+  }
+
+  submitRow(row: IntegrationClientRotationRequestMetadata): void {
+    if (this.acting()) {
+      return;
+    }
+    this.acting.set(true);
+    this.actionError.set(null);
+    this.api.submitIntegrationClientRotationRequest(row.requestId).subscribe({
+      next: () => {
+        this.acting.set(false);
+        this.load();
+      },
+      error: (err) => {
+        this.acting.set(false);
+        this.actionError.set(readApiError(err).message);
+        this.load();
+      },
+    });
+  }
+
+  askReject(row: IntegrationClientRotationRequestMetadata): void {
     this.reason.set('');
     this.rejecting.set(row);
   }
@@ -168,17 +274,24 @@ export class IntegrationRequests {
     if (!row || !this.reason().trim()) {
       return;
     }
-    this.decide(row.id, 'rejected');
+    this.decide(row, 'rejected', this.reason().trim());
     this.cancelReject();
   }
 
-  decide(id: string, decision: 'approved' | 'rejected'): void {
-    this.api.decide('integration', id, decision).subscribe({
-      next: () => {
+  decide(row: IntegrationClientRotationRequestMetadata, decision: 'approved' | 'rejected', rejectionReason?: string): void {
+    this.actionError.set(null);
+    this.api.decideIntegrationClientRotationRequest(row.requestId, { decision, rejectionReason }).subscribe({
+      next: (result) => {
         this.toast.decision('integration', decision);
-        this.load(true);
+        if (decision === 'approved' && result.clientId && result.clientSecret) {
+          this.approvedCredentials.set({ clientId: result.clientId, clientSecret: result.clientSecret });
+        }
+        this.load();
       },
-      error: () => this.toast.fail('toast.saveFailed'),
+      error: (err) => {
+        this.actionError.set(readApiError(err).message);
+        this.load();
+      },
     });
   }
 }

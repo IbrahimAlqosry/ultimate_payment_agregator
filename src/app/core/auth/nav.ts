@@ -1,4 +1,5 @@
 import { Audience, AuthUser } from '@core/models';
+import { canManageOperators } from './access';
 
 export interface NavLink {
   path: string;
@@ -80,7 +81,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
     { path: '/integration-requests', label: 'nav.integrationRequests', icon: 'git-pull-request' },
   ];
 
-  if (user.role === 'admin') {
+  if (canManageOperators(user)) {
     links.push({ path: '/operators', label: 'nav.operators', icon: 'shield-user' });
   }
 

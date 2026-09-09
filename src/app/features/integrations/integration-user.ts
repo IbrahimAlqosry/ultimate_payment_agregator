@@ -1,18 +1,27 @@
-import { afterNextRender, Component, computed, ElementRef, inject, Injector, OnInit, signal, viewChild } from '@angular/core';
-import { FormField, form, required, submit } from '@angular/forms/signals';
+import { DatePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
-import { IntegrationCredentials } from '@core/models';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import { IntegrationClientCredentialOnce, IntegrationClientMetadata } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
-import { FieldError } from '@shared/field-error';
 import { SecretField } from '@shared/secret-field';
 
+type FiRotationStep = 'idle' | 'otp' | 'result';
+
+/**
+ * Integration Client — the Merchant/FI's machine credential pair (real backend). Unlike the old
+ * mock model, the real API never returns the client secret except once, at creation or FI
+ * rotation time — there is no "unmask saved password" here, and no generic "request detail
+ * change" endpoint (only credential rotation exists on the real backend).
+ */
 @Component({
   selector: 'app-integration-user',
-  imports: [FormField, TranslocoPipe, DataState, FieldError, SecretField],
+  imports: [DatePipe, FormsModule, TranslocoPipe, DataState, SecretField],
   templateUrl: './integration-user.html',
   styleUrl: '../../shared/form-page.scss',
   styles: `
@@ -37,8 +46,8 @@ import { SecretField } from '@shared/secret-field';
     }
 
     .request-card {
-      width: min(480px, 100%);
-      flex: 0 1 480px;
+      width: min(420px, 100%);
+      flex: 0 1 420px;
     }
 
     .card-header {
@@ -50,6 +59,13 @@ import { SecretField } from '@shared/secret-field';
       margin: 0;
       font-size: 16px;
       font-weight: 700;
+    }
+
+    .card-header.row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     .card-body {
@@ -78,87 +94,9 @@ import { SecretField } from '@shared/secret-field';
       border-radius: 8px;
       background: #f7f5f5;
       font-size: 13px;
-    }
-
-    .change-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      border: 1px solid #dcd5d5;
-      background: #fff;
-      color: #444445;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .change-btn:hover:not(:disabled) {
-      background: #f7f5f5;
-    }
-
-    .change-btn.active {
-      border-color: #1fa64d;
-      color: #1fa64d;
-      background: #f3faf5;
-    }
-
-    .change-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .request-actions {
-      gap: 12px;
-    }
-
-    .request-actions .cta {
-      flex: 1 1 auto;
-    }
-
-    .request-card textarea {
-      min-height: 120px;
-    }
-
-    .form-actions {
-      border-top: 0;
-      padding-top: 12px;
-    }
-
-    .cancel-link {
-      background: none;
-    }
-
-    .page-intro {
-      margin: 4px 0 0;
-      color: #7e7676;
-      font-size: 14px;
-    }
-
-    .page-head.stack {
-      align-items: flex-start;
-    }
-
-    .card-header.row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .fi-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      width: min(400px, 100%);
-      flex: 0 1 400px;
-    }
-
-    .fi-actions .request-card {
-      width: 100%;
-      flex: none;
+      direction: ltr;
+      unicode-bidi: isolate;
+      word-break: break-all;
     }
 
     .outline-btn {
@@ -182,12 +120,6 @@ import { SecretField } from '@shared/secret-field';
       color: #1fa64d;
     }
 
-    .outline-btn.active {
-      border-color: #1fa64d;
-      color: #1fa64d;
-      background: #f3faf5;
-    }
-
     .outline-btn:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -203,12 +135,36 @@ import { SecretField } from '@shared/secret-field';
       border: 1px solid #1fa64d;
     }
 
+    .otp-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .otp-row input {
+      flex: 1 1 auto;
+      height: 44px;
+      border: 1px solid #dcd5d5;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 16px;
+      letter-spacing: 0.2em;
+      text-align: center;
+    }
+
+    .form-actions {
+      border-top: 0;
+      padding-top: 12px;
+    }
+
+    .cancel-link {
+      background: none;
+    }
+
     @media (max-width: 960px) {
       .split {
         flex-direction: column;
       }
-      .request-card,
-      .fi-actions {
+      .request-card {
         width: 100%;
         flex: 1 1 auto;
       }
@@ -216,95 +172,141 @@ import { SecretField } from '@shared/secret-field';
   `,
 })
 export class IntegrationUserPage implements OnInit {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly toast = inject(ToastService);
-  private readonly injector = inject(Injector);
   readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly row = signal<IntegrationCredentials | null>(null);
-  readonly showPass = signal(false);
-  readonly requesting = signal(false);
-  readonly confirmRegen = signal(false);
-  readonly regenBusy = signal(false);
+  readonly notFound = signal(false);
+  readonly metadata = signal<IntegrationClientMetadata | null>(null);
   readonly merchant = computed(() => this.auth.user()?.audience === 'merchant');
-  private readonly reasonField = viewChild<ElementRef<HTMLTextAreaElement>>('reasonField');
 
-  readonly requestForm = form(signal({ reason: '' }), (p) => {
-    required(p.reason);
-  });
+  readonly creating = signal(false);
+  readonly created = signal<IntegrationClientCredentialOnce | null>(null);
+
+  readonly rotationStep = signal<FiRotationStep>('idle');
+  readonly otpChallengeId = signal<string | null>(null);
+  readonly otpCode = signal('');
+  readonly rotating = signal(false);
+  readonly rotationResult = signal<IntegrationClientCredentialOnce | null>(null);
+  readonly actionError = signal<string | null>(null);
+
+  readonly requestingRotation = signal(false);
+  readonly rotationRequested = signal(false);
 
   ngOnInit(): void {
     this.load();
   }
 
-  startRequest(): void {
-    if (this.auth.readOnly()) {
-      return;
-    }
-    this.confirmRegen.set(false);
-    const alreadyOpen = this.requesting();
-    this.requesting.set(true);
-    const focusReason = () => {
-      const field = this.reasonField()?.nativeElement;
-      field?.focus();
-      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
-    if (alreadyOpen) {
-      focusReason();
-      return;
-    }
-    afterNextRender(focusReason, { injector: this.injector });
-  }
-
-  cancelRequest(): void {
-    this.requestForm().reset({ reason: '' });
-    this.requesting.set(false);
-  }
-
   load(): void {
     this.loading.set(true);
     this.error.set(false);
-    this.api.credentials().subscribe({
-      next: (row) => {
-        this.row.set(row);
+    this.notFound.set(false);
+    this.api.getIntegrationClient().subscribe({
+      next: (data) => {
+        this.metadata.set(data);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.error.set(true);
+        if (err?.status === 404) {
+          this.notFound.set(true);
+        } else {
+          this.error.set(true);
+        }
       },
     });
   }
 
-  async onSubmit(event: Event): Promise<void> {
-    event.preventDefault();
-    await submit(this.requestForm, async () => {
-      try {
-        await firstValueFrom(this.api.requestCredentialChange(this.requestForm.reason().value()));
-        this.toast.ok('toast.changeRequested');
-        this.requestForm().reset({ reason: '' });
-        this.requesting.set(false);
-      } catch {
-        /* interceptor */
-      }
-      return undefined;
-    });
-  }
-
-  async regenerate(): Promise<void> {
-    this.regenBusy.set(true);
-    try {
-      const saved = await firstValueFrom(this.api.regenerateCredentials());
-      this.row.set(saved);
-      this.showPass.set(true);
-      this.confirmRegen.set(false);
-      this.toast.ok('toast.credsRegenerated');
-    } catch {
-      /* interceptor */
-    } finally {
-      this.regenBusy.set(false);
+  async create(): Promise<void> {
+    if (this.creating()) {
+      return;
     }
+    this.creating.set(true);
+    this.actionError.set(null);
+    try {
+      const result = await firstValueFrom(this.api.createIntegrationClient());
+      this.created.set(result);
+      this.notFound.set(false);
+    } catch (err) {
+      this.actionError.set(readApiError(err).message);
+    } finally {
+      this.creating.set(false);
+    }
+  }
+
+  dismissCreated(): void {
+    this.created.set(null);
+    this.load();
+  }
+
+  requestFiRotationOtp(): void {
+    this.actionError.set(null);
+    this.rotating.set(true);
+    this.api.requestIntegrationClientRotationOtp().subscribe({
+      next: (challenge) => {
+        this.otpChallengeId.set(challenge.challengeId);
+        this.rotationStep.set('otp');
+        this.rotating.set(false);
+      },
+      error: (err) => {
+        this.rotating.set(false);
+        this.actionError.set(readApiError(err).message);
+      },
+    });
+  }
+
+  confirmFiRotation(): void {
+    const challengeId = this.otpChallengeId();
+    if (!challengeId || this.rotating()) {
+      return;
+    }
+    this.rotating.set(true);
+    this.actionError.set(null);
+    this.api.rotateIntegrationClient({ otpChallengeId: challengeId, otpCode: this.otpCode() }).subscribe({
+      next: (result) => {
+        this.rotationResult.set(result as IntegrationClientCredentialOnce);
+        this.rotationStep.set('result');
+        this.rotating.set(false);
+        this.toast.ok('toast.credsRegenerated');
+      },
+      error: (err) => {
+        this.rotating.set(false);
+        this.actionError.set(readApiError(err).message);
+      },
+    });
+  }
+
+  cancelFiRotation(): void {
+    this.rotationStep.set('idle');
+    this.otpChallengeId.set(null);
+    this.otpCode.set('');
+  }
+
+  dismissFiRotationResult(): void {
+    this.rotationResult.set(null);
+    this.rotationStep.set('idle');
+    this.otpCode.set('');
+    this.load();
+  }
+
+  requestMerchantRotation(): void {
+    if (this.requestingRotation()) {
+      return;
+    }
+    this.requestingRotation.set(true);
+    this.actionError.set(null);
+    this.api.rotateIntegrationClient({}).subscribe({
+      next: () => {
+        this.requestingRotation.set(false);
+        this.rotationRequested.set(true);
+        this.toast.ok('toast.changeRequested');
+      },
+      error: (err) => {
+        this.requestingRotation.set(false);
+        this.actionError.set(readApiError(err).message);
+      },
+    });
   }
 }

@@ -8,6 +8,23 @@
   color: #7e7676;
 }
 
+.field-hint {
+  margin: 0;
+  color: #7e7676;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+  /* IDs/UUIDs must stay LTR-readable in an RTL page — otherwise the bidi algorithm can
+     reorder hyphen-separated segments unpredictably. */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;

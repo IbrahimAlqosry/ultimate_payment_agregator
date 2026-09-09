@@ -18,7 +18,7 @@
         alt=""
       />
       <div>
-        <p class="wordmark">
+        <p class="wordmark" dir="ltr">
           <strong>Ultimate</strong>
           <span>pay</span>
         </p>
@@ -26,6 +26,14 @@
           <p class="portal">{{ portalLabel | transloco }}</p>
         }
       </div>
+      <button
+        class="sidebar-close"
+        type="button"
+        (click)="close()"
+        [attr.aria-label]="'nav.close' | transloco"
+      >
+        <span class="close-bars" aria-hidden="true"><i></i><i></i></span>
+      </button>
     </div>
 
     <nav [attr.aria-label]="'nav.primary' | transloco">
@@ -147,6 +155,13 @@
         </button>
       </div>
     </header>
+    @if (auth.needsFreshLogin()) {
+      <div class="session-banner" role="alert">
+        <img src="icons/info.svg" width="16" height="16" alt="" />
+        <span>{{ 'shell.needsFreshLogin' | transloco }}</span>
+        <button type="button" (click)="auth.logout(true)">{{ 'shell.signInAgain' | transloco }}</button>
+      </div>
+    }
     <div class="content" id="main" tabindex="-1">
       <router-outlet />
     </div>

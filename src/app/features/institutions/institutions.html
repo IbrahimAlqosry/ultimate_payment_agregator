@@ -17,12 +17,19 @@
 
   @if (tab() === 'all') {
     <div class="filters">
-    <app-search-field [seed]="query" placeholderKey="institutions.search" (queryChange)="onQuery($event)" />
-    <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'institutions.status' | transloco">
-      <option value="">{{ 'filter.status' | transloco }}</option>
-      <option value="approved">{{ 'badge.active' | transloco }}</option>
-      <option value="pending">{{ 'badge.pending' | transloco }}</option>
-      <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
+      <app-search-field [seed]="query" placeholderKey="institutions.search" (queryChange)="onQuery($event)" />
+      <select
+        class="filter"
+        [value]="statusFilter()"
+        (change)="onStatus($event)"
+        [attr.aria-label]="'institutions.status' | transloco"
+      >
+        <option value="">{{ 'filter.status' | transloco }}</option>
+        <option value="awaitingMaker">{{ 'appStatus.awaitingMaker' | transloco }}</option>
+        <option value="pendingChecker">{{ 'appStatus.pendingChecker' | transloco }}</option>
+        <option value="provisioning">{{ 'appStatus.provisioning' | transloco }}</option>
+        <option value="active">{{ 'badge.active' | transloco }}</option>
+        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
       </select>
     </div>
   }
@@ -42,73 +49,50 @@
               <th>{{ 'institutions.name' | transloco }}</th>
               <th>{{ 'institutions.type' | transloco }}</th>
               <th>{{ 'institutions.license' | transloco }}</th>
-              @if (tab() === 'pending') {
-                <th>{{ 'institutions.submitted' | transloco }}</th>
-                <th>{{ 'institutions.contact' | transloco }}</th>
-                <th>{{ 'institutions.status' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              } @else {
-                <th>{{ 'institutions.contractExpiry' | transloco }}</th>
-                <th>{{ 'institutions.status' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              }
+              <th>{{ 'institutions.status' | transloco }}</th>
+              <th class="num col-date">{{ 'institutions.submitted' | transloco }}</th>
+              <th class="num">{{ 'actions.column' | transloco }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (row of rows(); track row.id) {
+            @for (row of filtered(); track row.applicationId) {
               <tr>
                 <td>
-                  <a class="table-link" [routerLink]="['/institutions', row.id]">{{ row.name }}</a>
+                  <a class="table-link" [routerLink]="['/institutions', row.applicationId]">{{ row.legalName }}</a>
                 </td>
                 <td>
-                  <span class="badge" [class.bank]="row.type === 'bank'" [class.wallet]="row.type === 'wallet'">
-                    {{ ('type.' + row.type) | transloco }}
+                  <span
+                    class="badge"
+                    [class.bank]="row.institutionType === 'bank'"
+                    [class.wallet]="row.institutionType === 'wallet'"
+                  >
+                    {{ ('type.' + row.institutionType) | transloco }}
                   </span>
                 </td>
-                <td class="muted">{{ row.cbyLicense }}</td>
-                @if (tab() === 'pending') {
-                  <td class="muted">{{ row.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td class="muted">{{ row.contactName }}</td>
-                  <td>
-                    <span class="badge warn">{{ 'badge.pendingChecker' | transloco }}</span>
-                  </td>
-                  <td>
-                    <app-approval-actions variant="review" [viewHref]="'/institutions/' + row.id" />
-                  </td>
-                } @else {
-                  <td class="muted">{{ row.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td>
-                    <span
-                      class="badge"
-                      [class.ok]="row.status === 'approved'"
-                      [class.warn]="row.status === 'pending'"
-                      [class.danger]="row.status === 'rejected'"
-                    >
-                      {{ badgeKey(row.status) | transloco }}
-                    </span>
-                  </td>
-                  <td>
-                    <app-approval-actions variant="manage" [viewHref]="'/institutions/' + row.id" />
-                  </td>
-                }
+                <td class="muted">{{ row.cbyLicenceNumber }}</td>
+                <td>
+                  <span class="badge" [class]="statusBadgeClass(row.status)">
+                    {{ (row.status === 'active' ? 'badge.active' : 'appStatus.' + row.status) | transloco }}
+                  </span>
+                </td>
+                <td class="muted num col-date">
+                  {{ row.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}
+                </td>
+                <td>
+                  <app-approval-actions variant="review" [viewHref]="'/institutions/' + row.applicationId" />
+                </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
       <footer class="table-foot">
-        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
-        <div class="pager">
-          <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-            <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
+        <p>{{ 'list.showing' | transloco: { shown: filtered().length, total: filtered().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
           </button>
-          @for (n of pages(); track n) {
-            <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
-          }
-          <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-            <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
-          </button>
-        </div>
+        }
       </footer>
     </app-data-state>
   </div>

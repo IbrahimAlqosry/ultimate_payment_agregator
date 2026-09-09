@@ -23,9 +23,12 @@
       <label class="auth-field">
         <span>{{ 'register.cr' | transloco }}</span>
         <div class="input-box">
-          <input [formField]="registerForm.crNumber" [placeholder]="'register.crPh' | transloco" />
+          <input
+            [formField]="registerForm.commercialRegistrationNumber"
+            [placeholder]="'register.crPh' | transloco"
+          />
         </div>
-        <app-field-error [state]="registerForm.crNumber()" />
+        <app-field-error [state]="registerForm.commercialRegistrationNumber()" />
       </label>
       <label class="auth-field">
         <span>{{ 'register.email' | transloco }}</span>
@@ -35,19 +38,6 @@
         <app-field-error [state]="registerForm.email()" />
       </label>
       <label class="auth-field">
-        <span>{{ 'register.industry' | transloco }}</span>
-        <div class="input-box">
-          <select [formField]="registerForm.industry">
-            <option value="">{{ 'register.industryPh' | transloco }}</option>
-            <option value="retail">{{ 'register.industries.retail' | transloco }}</option>
-            <option value="health">{{ 'register.industries.health' | transloco }}</option>
-            <option value="fuel">{{ 'register.industries.fuel' | transloco }}</option>
-            <option value="other">{{ 'register.industries.other' | transloco }}</option>
-          </select>
-        </div>
-        <app-field-error [state]="registerForm.industry()" />
-      </label>
-      <label class="auth-field">
         <span>{{ 'register.phone' | transloco }}</span>
         <div class="input-box">
           <input [formField]="registerForm.phone" [placeholder]="'register.phonePh' | transloco" />
@@ -55,24 +45,12 @@
         <app-field-error [state]="registerForm.phone()" />
       </label>
       <label class="auth-field">
-        <span>{{ 'register.city' | transloco }}</span>
-        <div class="input-box">
-          <input [formField]="registerForm.city" [placeholder]="'register.cityPh' | transloco" />
-        </div>
-        <app-field-error [state]="registerForm.city()" />
-      </label>
-      <label class="auth-field">
         <span>{{ 'register.erp' | transloco }}</span>
         <div class="input-box">
-          <select [formField]="registerForm.erpSystem">
-            <option value="">{{ 'register.erpPh' | transloco }}</option>
-            <option value="Al-Diwan ERP">Al-Diwan ERP</option>
-            <option value="Tijara Cloud">Tijara Cloud</option>
-            <option value="Mizan Suite">Mizan Suite</option>
-            <option value="Ledger Yemen">Ledger Yemen</option>
-          </select>
+          <input [formField]="registerForm.erpSystemId" [placeholder]="'register.erpPh' | transloco" />
         </div>
-        <app-field-error [state]="registerForm.erpSystem()" />
+        <p class="field-hint">{{ 'register.erpHint' | transloco }}</p>
+        <app-field-error [state]="registerForm.erpSystemId()" />
       </label>
       <label class="auth-field">
         <span>{{ 'register.password' | transloco }}</span>
@@ -103,8 +81,8 @@
         <app-field-error [state]="registerForm.confirm()" />
       </label>
     </div>
-    @if (apiError()) {
-      <p class="form-error" role="alert">{{ 'register.invalid' | transloco }}</p>
+    @if (apiError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
     }
     <div class="form-actions">
       <button class="auth-cta" type="submit" [disabled]="registerForm().submitting()">

@@ -135,7 +135,9 @@ export class Otp implements OnDestroy {
 
   private startTimer(): void {
     window.clearInterval(this.timerId);
-    this.remainingSeconds.set(OTP_SECONDS);
+    const expiresAt = this.auth.otpExpiresAt();
+    const fromExpiry = expiresAt ? Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000) : NaN;
+    this.remainingSeconds.set(fromExpiry > 0 ? fromExpiry : OTP_SECONDS);
     this.timerId = window.setInterval(() => {
       const next = this.remainingSeconds() - 1;
       if (next <= 0) {

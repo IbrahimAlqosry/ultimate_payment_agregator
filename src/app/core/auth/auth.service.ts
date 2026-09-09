@@ -1,153 +1,258 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { canApprove, canManageOperators, canMutate, isReadOnly } from '@core/auth/access';
 import { apiUrl } from '@core/http/api-url';
 import { LoadingService } from '@core/http/loading.service';
-import { ApprovalEntity, Audience, AuthUser, LoginResponse, MerchantSignup, OtpStartResponse } from '@core/models';
-import { decodeJwtPayload } from './jwt';
+import { PlatformApi } from '@core/http/platform-api';
+import { ApprovalEntity, Audience, AuthUser, MerchantSignup } from '@core/models';
+import {
+  FinancialInstitutionBootstrapRequest,
+  MerchantBootstrapRequest,
+  SelfServiceMerchantOnboardingRequest,
+} from '@core/models.platform';
 
-const TOKEN_KEY = 'aggregator.token';
-const OTP_KEY = 'aggregator.otp';
-
-interface JwtPayload {
-  sub: string;
+/**
+ * A login attempt in progress: stored only in memory (never persisted — the real backend's
+ * session cookie + CSRF token don't survive a reload either, so there is nothing to gain
+ * from persisting this, and the guide is explicit that a reload should require fresh login).
+ */
+interface PendingChallenge {
+  challengeId: string;
+  expiresAt: string;
   email: string;
-  name: string;
+  password: string;
   audience: Audience;
-  role: AuthUser['role'];
-  initials: string;
-  jobTitleKey: string;
-  orgName?: string;
-  orgId?: string;
-  iat: number;
-  exp: number;
 }
 
-interface OtpChallenge {
-  challengeId: string;
+/**
+ * Non-sensitive marker persisted across reloads (email + audience only — never the CSRF token
+ * or anything security-bearing). The real `__Host-pa-session` cookie itself already survives a
+ * reload; this marker just lets the app *ask* the backend on startup whether that cookie is
+ * still valid, instead of unconditionally treating every reload as a fresh logout.
+ */
+const SESSION_MARKER_KEY = 'aggregator.session-marker';
+
+interface SessionMarker {
   email: string;
+  audience: Audience;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly platformApi = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly loading = inject(LoadingService);
 
-  readonly token = signal<string | null>(this.readStoredToken());
-  readonly user = computed(() => this.decode(this.token()));
+  private readonly pending = signal<PendingChallenge | null>(null);
+  // csrfToken is null right after a reload-restore — the cookie session is live but the guide
+  // gives no way to recover the CSRF token itself without a fresh login (see restoreSession()).
+  private readonly session = signal<{ user: AuthUser; csrfToken: string | null } | null>(null);
+
+  readonly user = computed(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => this.user() !== null);
   readonly readOnly = computed(() => isReadOnly(this.user()));
   readonly admin = computed(() => canManageOperators(this.user()));
   readonly canMutate = computed(() => canMutate(this.user()));
+  readonly csrfToken = computed(() => this.session()?.csrfToken ?? null);
+  readonly otpExpiresAt = computed(() => this.pending()?.expiresAt ?? null);
+  /** True once a reload-restore left us with a live session but no CSRF token — mutating
+   * requests will fail until the user signs in again. Screens can use this to prompt clearly. */
+  readonly needsFreshLogin = computed(() => {
+    const s = this.session();
+    return s !== null && s.csrfToken === null;
+  });
 
   canApprove(entity: ApprovalEntity): boolean {
     return canApprove(this.user(), entity);
   }
 
   login(email: string, password: string, audience: Audience) {
-    return this.http
-      .post<OtpStartResponse>(apiUrl('/auth/login'), { email, password, audience })
-      .pipe(tap((response) => this.storeChallenge(response)));
+    return this.platformApi.login({ email, password }).pipe(
+      tap((response) => {
+        this.pending.set({ ...response, email, password, audience });
+      }),
+    );
   }
 
   verifyOtp(code: string) {
-    const challenge = this.readChallenge();
-    return this.http
-      .post<LoginResponse>(apiUrl('/auth/otp'), { challengeId: challenge?.challengeId, code })
-      .pipe(
-        tap((response) => {
-          this.clearChallenge();
-          this.setSession(response.token);
-        }),
-      );
+    const challenge = this.pending();
+    if (!challenge) {
+      throw new Error('No login in progress.');
+    }
+    return this.platformApi.verifyOtp({ challengeId: challenge.challengeId, code }).pipe(
+      tap((response) => {
+        const csrfToken = response.headers.get('X-CSRF-Token');
+        if (!csrfToken) {
+          throw new Error('The login CSRF header was unavailable.');
+        }
+        this.session.set({ user: this.composeUser(challenge), csrfToken });
+        this.pending.set(null);
+        this.persistMarker({ email: challenge.email, audience: challenge.audience });
+      }),
+      map(() => undefined),
+    );
   }
 
+  /**
+   * Runs once at app startup (see provideAppInitializer in app.config.ts), before any route
+   * guard evaluates. The `__Host-pa-session` cookie survives a reload even though our in-memory
+   * CSRF token doesn't — so if a marker was left from a previous login, ask the backend whether
+   * that cookie is still valid rather than assuming every reload means logged-out.
+   *
+   * A live session restores `user` (so guards pass and GETs work) but leaves `csrfToken` null —
+   * there is no API to recover it without a fresh login, so mutating requests still require one
+   * (see `needsFreshLogin`). This never weakens security: the server enforces the real session
+   * either way, this only affects what the client believes before it tries anything.
+   */
+  restoreSession(): Observable<void> {
+    const marker = this.readMarker();
+    if (!marker) {
+      return of(undefined);
+    }
+    return this.platformApi.getIntegrationClient().pipe(
+      map(() => true),
+      catchError((err: unknown) => of(!(err instanceof HttpErrorResponse && err.status === 401))),
+      tap((alive) => {
+        if (alive) {
+          this.session.set({ user: this.composeUser(marker), csrfToken: null });
+        } else {
+          this.clearMarker();
+        }
+      }),
+      map(() => undefined),
+    );
+  }
+
+  /** There is no dedicated resend endpoint on the real backend — restart login instead. */
   resendOtp() {
-    const challenge = this.readChallenge();
-    return this.http
-      .post<OtpStartResponse>(apiUrl('/auth/otp/resend'), { challengeId: challenge?.challengeId })
-      .pipe(tap((response) => this.storeChallenge(response)));
-  }
-
-  forgot(email: string) {
-    return this.http.post(apiUrl('/auth/forgot'), { email });
-  }
-
-  register(payload: MerchantSignup) {
-    return this.http.post(apiUrl('/auth/register'), payload);
+    const challenge = this.pending();
+    if (!challenge) {
+      throw new Error('No login in progress.');
+    }
+    return this.login(challenge.email, challenge.password, challenge.audience);
   }
 
   hasOtpChallenge(): boolean {
-    return this.readChallenge() !== null;
+    return this.pending() !== null;
   }
 
   logout(redirect = true): void {
     if (redirect) {
       this.loading.cover();
     }
-    localStorage.removeItem(TOKEN_KEY);
-    this.clearChallenge();
-    this.token.set(null);
-    if (redirect) {
-      void this.router.navigateByUrl('/login');
+    const csrfToken = this.csrfToken();
+    const finish = (): void => {
+      this.session.set(null);
+      this.pending.set(null);
+      this.clearMarker();
+      if (redirect) {
+        void this.router.navigateByUrl('/login');
+      }
+    };
+    if (csrfToken) {
+      // A 401 here can simply mean the session is already gone server-side — clear local
+      // state regardless rather than blocking logout on that.
+      this.platformApi
+        .logout()
+        .pipe(catchError(() => of(null)))
+        .subscribe(finish);
+    } else {
+      finish();
     }
   }
 
-  setSession(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
-    this.token.set(token);
+  bootstrapMerchant(body: MerchantBootstrapRequest) {
+    return this.platformApi.bootstrapMerchant(body);
   }
 
-  private storeChallenge(response: OtpStartResponse): void {
-    sessionStorage.setItem(OTP_KEY, JSON.stringify(response));
+  bootstrapFinancialInstitution(body: FinancialInstitutionBootstrapRequest) {
+    return this.platformApi.bootstrapFinancialInstitution(body);
   }
 
-  private readChallenge(): OtpChallenge | null {
-    if (typeof sessionStorage === 'undefined') {
-      return null;
-    }
+  registerMerchant(payload: SelfServiceMerchantOnboardingRequest) {
+    return this.platformApi.registerMerchantSelfService(payload);
+  }
+
+  /** Mock-only forgot-password — the real backend has no equivalent yet. */
+  forgot(email: string) {
+    return this.http.post(apiUrl('/auth/forgot'), { email });
+  }
+
+  /** Mock-only merchant sign-up — superseded by registerMerchant() for the real backend. */
+  register(payload: MerchantSignup) {
+    return this.http.post(apiUrl('/auth/register'), payload);
+  }
+
+  private composeUser({ email, audience }: SessionMarker): AuthUser {
+    const name = displayNameFromEmail(email);
+    // The real backend has no current-user endpoint, so an operator's actual Maker/Checker/
+    // Admin/Reader role is unknown client-side. Default to 'checker' — the role that grants the
+    // broadest legitimate action visibility (approve + mutate) — and gate real actions by record
+    // status (e.g. "awaitingMaker" shows the submit action) rather than by this guessed role.
+    // The server enforces the real authorization on every request regardless of this value.
+    const resolvedRole = audience === 'operator' ? 'checker' : audience;
+    return {
+      id: email,
+      email,
+      name,
+      audience,
+      role: resolvedRole,
+      avatarInitials: initialsFromName(name),
+      jobTitleKey: audience === 'operator' ? 'login.role.operator' : `role.${resolvedRole}`,
+    };
+  }
+
+  private persistMarker(marker: SessionMarker): void {
     try {
-      const raw = sessionStorage.getItem(OTP_KEY);
-      return raw ? (JSON.parse(raw) as OtpChallenge) : null;
+      sessionStorage.setItem(SESSION_MARKER_KEY, JSON.stringify(marker));
+    } catch {
+      /* sessionStorage unavailable (e.g. private mode) — reload-restore just won't work */
+    }
+  }
+
+  private readMarker(): SessionMarker | null {
+    try {
+      const raw = sessionStorage.getItem(SESSION_MARKER_KEY);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw) as Partial<SessionMarker>;
+      if (typeof parsed.email !== 'string' || typeof parsed.audience !== 'string') {
+        return null;
+      }
+      return { email: parsed.email, audience: parsed.audience };
     } catch {
       return null;
     }
   }
 
-  private clearChallenge(): void {
-    sessionStorage.removeItem(OTP_KEY);
-  }
-
-  private readStoredToken(): string | null {
-    if (typeof localStorage === 'undefined') {
-      return null;
+  private clearMarker(): void {
+    try {
+      sessionStorage.removeItem(SESSION_MARKER_KEY);
+    } catch {
+      /* nothing to clear */
     }
-    const stored = localStorage.getItem(TOKEN_KEY);
-    return this.decode(stored) ? stored : null;
-  }
-
-  private decode(token: string | null): AuthUser | null {
-    if (!token) {
-      return null;
-    }
-    const payload = decodeJwtPayload<JwtPayload>(token);
-    if (!payload || payload.exp * 1000 <= Date.now()) {
-      localStorage.removeItem(TOKEN_KEY);
-      return null;
-    }
-    return {
-      id: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      audience: payload.audience ?? 'operator',
-      role: payload.role,
-      avatarInitials: payload.initials,
-      jobTitleKey: payload.jobTitleKey ?? `role.${payload.role}`,
-      orgName: payload.orgName,
-      orgId: payload.orgId,
-    };
   }
 }
+
+function displayNameFromEmail(email: string): string {
+  const local = email.split('@')[0] ?? email;
+  const words = local
+    .split(/[.\-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+  return words.length ? words.join(' ') : email;
+}
+
+function initialsFromName(name: string): string {
+  const parts = name.split(' ').filter(Boolean);
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+  return initials || '?';
+}
+

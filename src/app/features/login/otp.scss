@@ -3,6 +3,11 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
+  /* The code is a number, read left-to-right by convention regardless of UI language (same as
+     phone numbers/PINs) — without this, RTL flips the boxes and auto-advance-on-type moves
+     focus leftward instead of the expected rightward progression. */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .otp-cell {

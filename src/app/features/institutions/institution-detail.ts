@@ -3,24 +3,13 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { forkJoin } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { Institution, IntegrationUser, Merchant, PaymentNotification, PaymentPoint } from '@core/models';
+import { FinancialInstitutionApplicationDetails } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
-
-type DetailTab = 'profile' | 'merchants' | 'integration';
-
-interface ConnectedMerchant {
-  id: string;
-  name: string;
-  crNumber: string;
-  connectedSince: string;
-  transactions: number;
-  status: Merchant['status'];
-}
 
 @Component({
   selector: 'app-institution-detail',
@@ -29,7 +18,7 @@ interface ConnectedMerchant {
   styleUrl: '../../shared/form-page.scss',
 })
 export class InstitutionDetail implements OnInit {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -38,12 +27,16 @@ export class InstitutionDetail implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly row = signal<Institution | null>(null);
-  readonly connected = signal<ConnectedMerchant[]>([]);
-  readonly integration = signal<IntegrationUser | null>(null);
-  readonly tab = signal<DetailTab>('profile');
+  readonly row = signal<FinancialInstitutionApplicationDetails | null>(null);
   readonly showReject = signal(false);
   readonly reason = signal('');
+  readonly acting = signal(false);
+  readonly actionError = signal<string | null>(null);
+
+  // The real backend has no current-user endpoint, so the operator's actual Maker/Checker role
+  // is unknown client-side. Gate by record status instead — the server enforces who may act.
+  readonly canSubmit = () => this.row()?.status === 'awaitingMaker';
+  readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('institution');
 
   ngOnInit(): void {
     this.load();
@@ -58,17 +51,10 @@ export class InstitutionDetail implements OnInit {
     }
     this.loading.set(true);
     this.error.set(false);
-    forkJoin({
-      institution: this.api.institution(id),
-      merchants: this.api.merchants(),
-      points: this.api.paymentPoints(),
-      users: this.api.integrationUsers(),
-      notes: this.api.notifications(),
-    }).subscribe({
-      next: ({ institution, merchants, points, users, notes }) => {
-        this.row.set(institution);
-        this.connected.set(this.buildConnected(institution.name, merchants, points, notes));
-        this.integration.set(users.find((item) => item.organization === institution.name) ?? null);
+    this.actionError.set(null);
+    this.api.getInstitutionApplication(id).subscribe({
+      next: (application) => {
+        this.row.set(application);
         this.loading.set(false);
       },
       error: () => {
@@ -78,43 +64,53 @@ export class InstitutionDetail implements OnInit {
     });
   }
 
-  decide(decision: 'approved' | 'rejected'): void {
+  submit(): void {
     const row = this.row();
-    if (!row) {
+    if (!row || this.acting()) {
       return;
     }
-    this.api.decide('institution', row.id, decision).subscribe({
-      next: () => {
-        this.toast.decision('institution', decision);
-        void this.router.navigateByUrl('/institutions');
+    this.acting.set(true);
+    this.actionError.set(null);
+    this.api.submitInstitutionApplication(row.applicationId).subscribe({
+      next: (updated) => {
+        this.row.set(updated);
+        this.acting.set(false);
+        this.toast.ok('toast.fiSubmittedToChecker');
+      },
+      error: (err) => {
+        this.acting.set(false);
+        this.actionError.set(readApiError(err).message);
+        this.load();
       },
     });
   }
 
-  private buildConnected(
-    institutionName: string,
-    merchants: Merchant[],
-    points: PaymentPoint[],
-    notes: PaymentNotification[],
-  ): ConnectedMerchant[] {
-    const linked = points.filter((row) => row.institutionName === institutionName);
-    const names = [...new Set(linked.map((row) => row.merchantName))];
-    return names.map((name) => {
-      const merchant = merchants.find((row) => row.legalName === name);
-      const merchantPoints = linked.filter((row) => row.merchantName === name);
-      const first = merchantPoints
-        .map((row) => row.submittedAt)
-        .sort()
-        .at(0);
-      return {
-        id: merchant?.id ?? name,
-        name,
-        crNumber: merchant?.crNumber ?? merchantPoints[0]?.merchantCr ?? '—',
-        connectedSince: first ?? merchant?.onboardedAt ?? '',
-        transactions: notes.filter((row) => row.merchantName === name && row.institutionName === institutionName)
-          .length,
-        status: merchant?.status ?? 'approved',
-      };
-    });
+  decide(decision: 'approved' | 'rejected'): void {
+    const row = this.row();
+    if (!row || this.acting() || !row.concurrencyToken) {
+      return;
+    }
+    if (decision === 'rejected' && !this.reason().trim()) {
+      return;
+    }
+    this.acting.set(true);
+    this.actionError.set(null);
+    this.api
+      .decideInstitutionApplication(row.applicationId, {
+        decision,
+        concurrencyToken: row.concurrencyToken,
+        rejectionReason: decision === 'rejected' ? this.reason().trim() : undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.toast.decision('institution', decision);
+          void this.router.navigateByUrl('/institutions');
+        },
+        error: (err) => {
+          this.acting.set(false);
+          this.actionError.set(readApiError(err).message);
+          this.load();
+        },
+      });
   }
 }

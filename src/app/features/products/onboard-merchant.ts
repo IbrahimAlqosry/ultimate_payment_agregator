@@ -1,12 +1,15 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { Component, inject, signal } from '@angular/core';
+import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPhoneRules } from '@core/forms/field-rules';
-import { AtlasApi } from '@core/http/atlas-api';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Component({
   selector: 'app-onboard-merchant',
@@ -14,52 +17,55 @@ import { FieldError } from '@shared/field-error';
   templateUrl: './onboard-merchant.html',
   styleUrl: '../../shared/form-page.scss',
 })
-export class OnboardMerchant implements OnInit {
-  private readonly api = inject(AtlasApi);
+export class OnboardMerchant {
+  private readonly api = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly apiError = signal(false);
-  readonly erps = signal<string[]>([]);
+  readonly apiError = signal<string | null>(null);
 
+  // Matches AssistedMerchantOnboardingRequest exactly — no password (the Maker never sets one)
+  // and no city/industry (the real backend doesn't carry those fields).
   readonly form = form(
     signal({
       legalName: '',
       contactName: '',
-      crNumber: '',
+      commercialRegistrationNumber: '',
       email: '',
-      industry: '',
       phone: '',
-      city: '',
-      erpSystem: '',
+      erpSystemId: '',
     }),
     (p) => {
       required(p.legalName);
       required(p.contactName);
-      required(p.crNumber);
+      required(p.commercialRegistrationNumber);
       required(p.email);
       email(p.email);
-      required(p.industry);
       applyPhoneRules(p.phone);
-      required(p.city);
-      required(p.erpSystem);
+      required(p.erpSystemId);
+      validate(p.erpSystemId, ({ value }) => (UUID_PATTERN.test(value()) ? undefined : { kind: 'uuid' }));
     },
   );
 
-  ngOnInit(): void {
-    this.api.erpOptions().subscribe({ next: (rows) => this.erps.set(rows) });
-  }
-
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
-    this.apiError.set(false);
+    this.apiError.set(null);
     await submit(this.form, async () => {
+      const { legalName, contactName, commercialRegistrationNumber, email: contactEmail, phone, erpSystemId } =
+        this.form().value();
       try {
-        await firstValueFrom(this.api.createMerchant(this.form().value()));
+        await firstValueFrom(
+          this.api.createMerchantApplication({
+            legalName,
+            commercialRegistrationNumber,
+            contact: { name: contactName, email: contactEmail, phone },
+            erpSystemId,
+          }),
+        );
         this.toast.ok('toast.merchantSubmitted');
         await this.router.navigateByUrl('/merchants');
-      } catch {
-        this.apiError.set(true);
+      } catch (err) {
+        this.apiError.set(readApiError(err).message);
       }
       return undefined;
     });

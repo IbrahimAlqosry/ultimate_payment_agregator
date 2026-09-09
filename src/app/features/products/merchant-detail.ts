@@ -1,17 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { forkJoin } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { IntegrationUser, Merchant, PaymentNotification, PaymentPoint } from '@core/models';
+import { MerchantApplicationDetails } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
-
-type DetailTab = 'profile' | 'points' | 'notifications' | 'integration';
 
 @Component({
   selector: 'app-merchant-detail',
@@ -20,7 +18,7 @@ type DetailTab = 'profile' | 'points' | 'notifications' | 'integration';
   styleUrl: '../../shared/form-page.scss',
 })
 export class MerchantDetail implements OnInit {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -29,35 +27,19 @@ export class MerchantDetail implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly row = signal<Merchant | null>(null);
-  readonly points = signal<PaymentPoint[]>([]);
-  readonly notes = signal<PaymentNotification[]>([]);
-  readonly integration = signal<IntegrationUser | null>(null);
-  readonly tab = signal<DetailTab>('profile');
+  readonly row = signal<MerchantApplicationDetails | null>(null);
   readonly showReject = signal(false);
   readonly reason = signal('');
+  readonly acting = signal(false);
+  readonly actionError = signal<string | null>(null);
 
-  readonly lastDelivery = computed(() => this.notes().find((row) => row.status === 'completed') ?? null);
-  readonly successRate = computed(() => {
-    const rows = this.notes();
-    if (!rows.length) {
-      return null;
-    }
-    const ok = rows.filter((row) => row.status === 'completed').length;
-    return Math.round((ok / rows.length) * 1000) / 10;
-  });
+  // The real backend has no current-user endpoint, so the operator's actual Maker/Checker role
+  // is unknown client-side. Gate by record status instead — the server enforces who may act.
+  readonly canSubmit = () => this.row()?.status === 'awaitingMaker';
+  readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('merchant');
 
   ngOnInit(): void {
     this.load();
-  }
-
-  industryLabel(industry: string): string {
-    const known = ['retail', 'health', 'fuel', 'other'];
-    return known.includes(industry) ? `register.industries.${industry}` : industry;
-  }
-
-  pointType(point: PaymentPoint): string {
-    return point.kind === 'wallet' ? 'kind.ecommerce' : 'kind.pos';
   }
 
   load(): void {
@@ -69,17 +51,10 @@ export class MerchantDetail implements OnInit {
     }
     this.loading.set(true);
     this.error.set(false);
-    forkJoin({
-      merchant: this.api.merchant(id),
-      points: this.api.paymentPoints(),
-      users: this.api.integrationUsers(),
-      notes: this.api.notifications(),
-    }).subscribe({
-      next: ({ merchant, points, users, notes }) => {
-        this.row.set(merchant);
-        this.points.set(points.filter((row) => row.merchantName === merchant.legalName));
-        this.integration.set(users.find((row) => row.organization === merchant.legalName) ?? null);
-        this.notes.set(notes.filter((row) => row.merchantName === merchant.legalName));
+    this.actionError.set(null);
+    this.api.getMerchantApplication(id).subscribe({
+      next: (application) => {
+        this.row.set(application);
         this.loading.set(false);
       },
       error: () => {
@@ -89,16 +64,54 @@ export class MerchantDetail implements OnInit {
     });
   }
 
-  decide(decision: 'approved' | 'rejected'): void {
+  submit(): void {
     const row = this.row();
-    if (!row) {
+    if (!row || this.acting()) {
       return;
     }
-    this.api.decide('merchant', row.id, decision).subscribe({
-      next: () => {
-        this.toast.decision('merchant', decision);
-        void this.router.navigateByUrl('/merchants');
+    this.acting.set(true);
+    this.actionError.set(null);
+    this.api.submitMerchantApplication(row.applicationId).subscribe({
+      next: (updated) => {
+        this.row.set(updated);
+        this.acting.set(false);
+        this.toast.ok('toast.merchantSubmittedToChecker');
+      },
+      error: (err) => {
+        this.acting.set(false);
+        this.actionError.set(readApiError(err).message);
+        this.load();
       },
     });
+  }
+
+  decide(decision: 'approved' | 'rejected'): void {
+    const row = this.row();
+    if (!row || this.acting() || !row.concurrencyToken) {
+      return;
+    }
+    if (decision === 'rejected' && !this.reason().trim()) {
+      return;
+    }
+    this.acting.set(true);
+    this.actionError.set(null);
+    this.api
+      .decideMerchantApplication(row.applicationId, {
+        decision,
+        concurrencyToken: row.concurrencyToken,
+        rejectionReason: decision === 'rejected' ? this.reason().trim() : undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.toast.decision('merchant', decision);
+          void this.router.navigateByUrl('/merchants');
+        },
+        error: (err) => {
+          this.acting.set(false);
+          this.actionError.set(readApiError(err).message);
+          // A 409 means the application changed since we loaded it — refresh before retrying.
+          this.load();
+        },
+      });
   }
 }

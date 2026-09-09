@@ -1,11 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPhoneRules } from '@core/forms/field-rules';
-import { AtlasApi } from '@core/http/atlas-api';
-import { InstitutionType } from '@core/models';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import { PlatformInstitutionType } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 
@@ -16,16 +17,17 @@ import { FieldError } from '@shared/field-error';
   styleUrl: '../../shared/form-page.scss',
 })
 export class OnboardInstitution {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly apiError = signal(false);
+  readonly apiError = signal<string | null>(null);
 
+  // Matches FinancialInstitutionOnboardingRequest exactly — no password (never set by the Maker).
   readonly form = form(
     signal({
       name: '',
-      type: 'bank' as InstitutionType,
+      type: 'bank' as PlatformInstitutionType,
       cbyLicense: '',
       contractRef: '',
       signedDate: '',
@@ -45,7 +47,14 @@ export class OnboardInstitution {
       required(p.contractRef);
       required(p.signedDate);
       required(p.contractExpiry);
+      validate(p.contractExpiry, ({ value, valueOf }) => {
+        const signed = valueOf(p.signedDate);
+        return signed && value() && value() <= signed ? { kind: 'expiryAfterSigned' } : undefined;
+      });
       required(p.feePerRequest);
+      validate(p.terminationNoticeDate, ({ value, valueOf }) =>
+        valueOf(p.terminationRequested) && !value() ? { kind: 'required' } : undefined,
+      );
       required(p.contactName);
       required(p.email);
       email(p.email);
@@ -55,14 +64,31 @@ export class OnboardInstitution {
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
-    this.apiError.set(false);
+    this.apiError.set(null);
     await submit(this.form, async () => {
+      const v = this.form().value();
       try {
-        await firstValueFrom(this.api.createInstitution(this.form().value()));
+        await firstValueFrom(
+          this.api.createInstitutionApplication({
+            legalName: v.name,
+            institutionType: v.type,
+            cbyLicenceNumber: v.cbyLicense,
+            contract: {
+              number: v.contractRef,
+              signedDate: v.signedDate,
+              expiryDate: v.contractExpiry,
+              agreedFeePerRequest: Number(v.feePerRequest),
+              autoRenewal: v.autoRenewal,
+              terminationRequested: v.terminationRequested,
+              terminationNoticeDate: v.terminationRequested ? v.terminationNoticeDate : null,
+            },
+            contact: { name: v.contactName, email: v.email, phone: v.phone },
+          }),
+        );
         this.toast.ok('toast.fiSubmitted');
         await this.router.navigateByUrl('/institutions');
-      } catch {
-        this.apiError.set(true);
+      } catch (err) {
+        this.apiError.set(readApiError(err).message);
       }
       return undefined;
     });

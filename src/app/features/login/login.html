@@ -1,26 +1,6 @@
 <app-auth-screen>
   <app-brand-lockup />
 
-  <div
-    class="role-switch"
-    role="tablist"
-    [attr.data-audience]="audience()"
-    [attr.aria-label]="'login.audience' | transloco"
-  >
-    <span class="role-thumb" aria-hidden="true"></span>
-    @for (option of audiences; track option.id) {
-      <button
-        type="button"
-        role="tab"
-        [class.active]="audience() === option.id"
-        [attr.aria-selected]="audience() === option.id"
-        (click)="selectAudience(option.id)"
-      >
-        {{ option.label | transloco }}
-      </button>
-    }
-  </div>
-
   <header class="auth-head">
     <h1>{{ 'login.title' | transloco }}</h1>
     <p>{{ 'login.subtitle' | transloco }}</p>
@@ -72,7 +52,12 @@
     </div>
 
     @if (apiError()) {
-      <p class="form-error" role="alert">{{ 'login.invalid' | transloco }}</p>
+      <p class="form-error" role="alert">
+        {{ 'login.invalid' | transloco }}
+        <a class="auth-link" routerLink="/set-password" [queryParams]="{ email: loginForm.email().value() }">
+          {{ 'login.firstTime' | transloco }}
+        </a>
+      </p>
     }
 
     <div class="form-actions">
@@ -85,33 +70,4 @@
       </p>
     </div>
   </form>
-
-  <section class="demo-accounts" [attr.aria-label]="'login.demoTitle' | transloco">
-    <header>
-      <h2>{{ 'login.demoTitle' | transloco }}</h2>
-      <p class="demo-secret">{{ 'login.demoHint' | transloco }}</p>
-      <p class="demo-keys">
-        <span>{{ 'login.demoPassword' | transloco }} <code>{{ demoPassword }}</code></span>
-        <span>OTP <code>123456</code></span>
-      </p>
-    </header>
-    <ul [class.out]="swapping()">
-      @for (account of visibleAccounts(); track account.user.id) {
-        <li>
-          <button
-            type="button"
-            [class.active]="loginForm.email().value() === account.email"
-            (click)="useAccount(account)"
-          >
-            <span class="demo-avatar" aria-hidden="true">{{ account.user.avatarInitials }}</span>
-            <span class="demo-copy">
-              <strong>{{ account.user.name }}</strong>
-              <span class="demo-role">{{ account.user.jobTitleKey | transloco }}</span>
-              <span class="demo-email">{{ account.email }}</span>
-            </span>
-          </button>
-        </li>
-      }
-    </ul>
-  </section>
 </app-auth-screen>

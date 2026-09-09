@@ -1,206 +1,119 @@
 <section class="page">
-  <p class="crumb">
-    @if (row(); as fi) {
-      {{ (fi.status === 'pending' ? 'detail.fiCrumb' : 'detail.fiAllCrumb') | transloco }}
-      @if (fi.status !== 'pending') {
-        {{ fi.name }}
-      }
-    } @else {
-      {{ 'detail.fiCrumb' | transloco }}
-    }
-  </p>
+  <p class="crumb">{{ 'detail.fiCrumb' | transloco }}</p>
   <a class="back-link" routerLink="/institutions">
     <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
     {{ 'actions.backToList' | transloco }}
   </a>
   <header class="page-head">
-    <h1>{{ row()?.name || ('detail.fiTitle' | transloco) }}</h1>
+    <h1>{{ row()?.legalName || ('detail.fiTitle' | transloco) }}</h1>
     @if (row(); as fi) {
-      <span class="badge info">{{ ('type.' + fi.type) | transloco }}</span>
-      <span
-        class="badge"
-        [class.ok]="fi.status === 'approved'"
-        [class.warn]="fi.status === 'pending'"
-        [class.danger]="fi.status === 'rejected'"
-      >
-        {{ (fi.status === 'approved' ? 'badge.active' : 'badge.' + fi.status) | transloco }}
+      <span class="badge info">{{ ('type.' + fi.institutionType) | transloco }}</span>
+      <span class="badge" [class.ok]="fi.status === 'active'" [class.warn]="fi.status !== 'active' && fi.status !== 'rejected'" [class.danger]="fi.status === 'rejected'">
+        {{ (fi.status === 'active' ? 'badge.active' : 'appStatus.' + fi.status) | transloco }}
       </span>
     }
   </header>
 
-  <div class="tabs" role="tablist">
-    <button type="button" class="tab" role="tab" [class.active]="tab() === 'profile'" (click)="tab.set('profile')">
-      {{ 'detail.tabFiDetails' | transloco }}
-    </button>
-    <button type="button" class="tab" role="tab" [class.active]="tab() === 'merchants'" (click)="tab.set('merchants')">
-      {{ 'detail.tabConnected' | transloco }}
-    </button>
-    <button type="button" class="tab" role="tab" [class.active]="tab() === 'integration'" (click)="tab.set('integration')">
-      {{ 'detail.tabIntegration' | transloco }}
-    </button>
-  </div>
-
   <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" emptyKey="detail.missing" (retry)="load()">
     @if (row(); as fi) {
-      @if (tab() === 'profile') {
-        <article class="detail-card">
-          <dl class="info-grid">
+      <article class="detail-card">
+        <dl class="info-grid">
+          <div>
+            <dt>{{ 'onboard.fiName' | transloco }}</dt>
+            <dd>{{ fi.legalName }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.type' | transloco }}</dt>
+            <dd>{{ ('type.' + fi.institutionType) | transloco }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.license' | transloco }}</dt>
+            <dd>{{ fi.cbyLicenceNumber }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.contract' | transloco }}</dt>
+            <dd>{{ fi.contract.number }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.signedDate' | transloco }}</dt>
+            <dd>{{ fi.contract.signedDate | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'institutions.contractExpiry' | transloco }}</dt>
+            <dd>{{ fi.contract.expiryDate | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'detail.agreedFee' | transloco }}</dt>
+            <dd>{{ fi.contract.agreedFeePerRequest }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'onboard.autoRenewal' | transloco }}</dt>
+            <dd>{{ (fi.contract.autoRenewal ? 'detail.autoRenewalYes' : 'common.no') | transloco }}</dd>
+          </div>
+          @if (fi.contract.terminationRequested) {
             <div>
-              <dt>{{ 'onboard.fiName' | transloco }}</dt>
-              <dd>{{ fi.name }}</dd>
+              <dt>{{ 'onboard.terminationNotice' | transloco }}</dt>
+              <dd>{{ fi.contract.terminationNoticeDate | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
             </div>
-            <div>
-              <dt>{{ 'institutions.type' | transloco }}</dt>
-              <dd>{{ ('type.' + fi.type) | transloco }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'institutions.license' | transloco }}</dt>
-              <dd>{{ fi.cbyLicense }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'institutions.contract' | transloco }}</dt>
-              <dd>{{ fi.contractRef }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'onboard.signedDate' | transloco }}</dt>
-              <dd>{{ (fi.signedDate || fi.contractStart) | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'institutions.contractExpiry' | transloco }}</dt>
-              <dd>{{ fi.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'detail.agreedFee' | transloco }}</dt>
-              <dd>{{ fi.agreedFee || (fi.feePerRequest != null ? fi.feePerRequest : '—') }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'onboard.autoRenewal' | transloco }}</dt>
-              <dd>
-                @if (fi.autoRenewal) {
-                  {{ 'detail.autoRenewalYes' | transloco }}
-                } @else if (fi.autoRenewal === false) {
-                  {{ 'common.no' | transloco }}
-                } @else {
-                  —
-                }
-              </dd>
-            </div>
-            <div>
-              <dt>{{ 'register.contactName' | transloco }}</dt>
-              <dd>{{ fi.contactName }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'register.email' | transloco }}</dt>
-              <dd>{{ fi.email }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'register.phone' | transloco }}</dt>
-              <dd>{{ fi.phone }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'merchants.onboarded' | transloco }}</dt>
-              <dd>{{ (fi.signedDate || fi.contractStart) | date: 'medium' : undefined : locale.dateLocale() }}</dd>
-            </div>
-          </dl>
-          @if (fi.status === 'pending' && auth.canApprove('institution')) {
-            <div class="form-actions">
-              <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
-              <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
-                {{ 'actions.rejectApplication' | transloco }}
+          }
+          <div>
+            <dt>{{ 'register.contactName' | transloco }}</dt>
+            <dd>{{ fi.contact.name }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.email' | transloco }}</dt>
+            <dd>{{ fi.contact.email }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'register.phone' | transloco }}</dt>
+            <dd>{{ fi.contact.phone }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'merchants.submitted' | transloco }}</dt>
+            <dd>{{ fi.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
+          </div>
+        </dl>
+
+        @if (actionError(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
+
+        @if (canSubmit()) {
+          <p class="warn-note">
+            <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
+            <span>{{ 'detail.fiAwaitingMaker' | transloco }}</span>
+          </p>
+          <div class="form-actions">
+            <button class="cta" type="button" [disabled]="acting()" (click)="submit()">
+              {{ (acting() ? 'onboard.submitting' : 'detail.submitToChecker') | transloco }}
+            </button>
+          </div>
+        }
+
+        @if (canDecide()) {
+          <div class="form-actions">
+            <button class="cta" type="button" [disabled]="acting()" (click)="decide('approved')">
+              {{ 'actions.approveApplication' | transloco }}
+            </button>
+            <button class="btn-reject" type="button" [disabled]="acting()" (click)="showReject.set(!showReject())">
+              {{ 'actions.rejectApplication' | transloco }}
+            </button>
+          </div>
+          @if (showReject()) {
+            <div class="reject-panel">
+              <label class="form-field">
+                <span>{{ 'detail.rejectionReason' | transloco }}</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+              </label>
+              <button class="cta cta-danger" type="button" [disabled]="!reason().trim() || acting()" (click)="decide('rejected')">
+                {{ 'actions.confirmReject' | transloco }}
               </button>
             </div>
-            @if (showReject()) {
-              <div class="reject-panel">
-                <label class="form-field">
-                  <span>{{ 'detail.rejectionReason' | transloco }}</span>
-                  <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
-                </label>
-                <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
-                  {{ 'actions.confirmReject' | transloco }}
-                </button>
-              </div>
-            }
           }
-          <a class="cancel-link" routerLink="/institutions">{{ 'actions.backToList' | transloco }}</a>
-        </article>
-      } @else if (tab() === 'merchants') {
-        <div class="card table-card">
-          @if (connected().length === 0) {
-            <p class="empty-copy">{{ 'detail.emptyConnected' | transloco }}</p>
-          } @else {
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{{ 'detail.merchantName' | transloco }}</th>
-                    <th>{{ 'merchants.cr' | transloco }}</th>
-                    <th>{{ 'detail.connectedSince' | transloco }}</th>
-                    <th>{{ 'detail.transactions' | transloco }}</th>
-                    <th>{{ 'users.status' | transloco }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of connected(); track row.id) {
-                    <tr>
-                      <td>
-                        <a class="table-link" [routerLink]="['/merchants', row.id]">{{ row.name }}</a>
-                      </td>
-                      <td class="muted">{{ row.crNumber }}</td>
-                      <td class="muted">
-                        @if (row.connectedSince) {
-                          {{ row.connectedSince | date: 'mediumDate' : undefined : locale.dateLocale() }}
-                        } @else {
-                          —
-                        }
-                      </td>
-                      <td>{{ row.transactions }}</td>
-                      <td>
-                        <span
-                          class="badge"
-                          [class.ok]="row.status === 'approved'"
-                          [class.warn]="row.status === 'pending'"
-                          [class.danger]="row.status === 'rejected'"
-                        >
-                          {{ (row.status === 'approved' ? 'badge.active' : 'badge.' + row.status) | transloco }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
-      } @else {
-        <article class="detail-card">
-          @if (integration(); as user) {
-            <dl class="info-grid">
-              <div>
-                <dt>{{ 'integration.username' | transloco }}</dt>
-                <dd>{{ user.username }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'users.status' | transloco }}</dt>
-                <dd>
-                  <span class="badge" [class.ok]="user.status === 'active'" [class.warn]="user.status === 'pending'">
-                    {{ ('badge.' + user.status) | transloco }}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt>{{ 'integration.scopes' | transloco }}</dt>
-                <dd>{{ user.scopes }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'integration.lastUsed' | transloco }}</dt>
-                <dd>{{ user.lastUsed | date: 'medium' : undefined : locale.dateLocale() }}</dd>
-              </div>
-            </dl>
-          } @else {
-            <p class="empty-copy">{{ 'integration.empty' | transloco }}</p>
-          }
-        </article>
-      }
+        }
+
+        <a class="cancel-link" routerLink="/institutions">{{ 'actions.backToList' | transloco }}</a>
+      </article>
     }
   </app-data-state>
 </section>

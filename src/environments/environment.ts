@@ -7,4 +7,10 @@ export const environment = {
    * Set to false (and point `apiUrl` at a real host) to use a live backend.
    */
   useMockApi: true,
+  /**
+   * Base URL for the real Payment Aggregator backend (auth, onboarding, Integration Client).
+   * A relative path proxied by `proxy.conf.json` (see `npm start`) to avoid the backend's
+   * missing CORS configuration — never point this at a raw cross-origin URL.
+   */
+  platformApiUrl: '/pa-api',
 };

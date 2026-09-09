@@ -5,6 +5,7 @@ import {
   ENVIRONMENT_INITIALIZER,
   inject,
   isDevMode,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -16,6 +17,8 @@ import {
 } from '@angular/router';
 import { provideTransloco } from '@jsverse/transloco';
 import { provideSignalFormsConfig } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from '@core/auth/auth.service';
 import { authInterceptor } from '@core/auth/auth.interceptor';
 import { errorInterceptor } from '@core/http/error.interceptor';
 import { loadingInterceptor } from '@core/http/loading.interceptor';
@@ -75,5 +78,8 @@ export const appConfig: ApplicationConfig = {
         inject(LocaleService);
       },
     },
+    // Runs before the initial route's guards evaluate — restores the session from a live
+    // __Host-pa-session cookie after a reload, instead of every reload forcing a fresh login.
+    provideAppInitializer(() => firstValueFrom(inject(AuthService).restoreSession())),
   ],
 };

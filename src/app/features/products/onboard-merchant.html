@@ -18,8 +18,8 @@
       </label>
       <label class="form-field">
         <span>{{ 'register.cr' | transloco }}</span>
-        <input [formField]="form.crNumber" [placeholder]="'register.crPh' | transloco" />
-        <app-field-error [state]="form.crNumber()" />
+        <input [formField]="form.commercialRegistrationNumber" [placeholder]="'register.crPh' | transloco" />
+        <app-field-error [state]="form.commercialRegistrationNumber()" />
       </label>
       <label class="form-field">
         <span>{{ 'register.email' | transloco }}</span>
@@ -27,39 +27,19 @@
         <app-field-error [state]="form.email()" />
       </label>
       <label class="form-field">
-        <span>{{ 'register.industry' | transloco }}</span>
-        <select [formField]="form.industry">
-          <option value="">{{ 'register.industryPh' | transloco }}</option>
-          <option value="retail">{{ 'register.industries.retail' | transloco }}</option>
-          <option value="health">{{ 'register.industries.health' | transloco }}</option>
-          <option value="fuel">{{ 'register.industries.fuel' | transloco }}</option>
-          <option value="other">{{ 'register.industries.other' | transloco }}</option>
-        </select>
-        <app-field-error [state]="form.industry()" />
-      </label>
-      <label class="form-field">
         <span>{{ 'register.phone' | transloco }}</span>
         <input [formField]="form.phone" [placeholder]="'register.phonePh' | transloco" />
         <app-field-error [state]="form.phone()" />
       </label>
       <label class="form-field">
-        <span>{{ 'register.city' | transloco }}</span>
-        <input [formField]="form.city" [placeholder]="'register.cityPh' | transloco" />
-        <app-field-error [state]="form.city()" />
-      </label>
-      <label class="form-field">
         <span>{{ 'register.erp' | transloco }}</span>
-        <select [formField]="form.erpSystem">
-          <option value="">{{ 'register.erpPh' | transloco }}</option>
-          @for (erp of erps(); track erp) {
-            <option [value]="erp">{{ erp }}</option>
-          }
-        </select>
-        <app-field-error [state]="form.erpSystem()" />
+        <input [formField]="form.erpSystemId" [placeholder]="'register.erpPh' | transloco" />
+        <p class="field-hint">{{ 'register.erpHint' | transloco }}</p>
+        <app-field-error [state]="form.erpSystemId()" />
       </label>
     </div>
-    @if (apiError()) {
-      <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+    @if (apiError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
     }
     <div class="form-actions">
       <button class="cta" type="submit" [disabled]="form().submitting()">

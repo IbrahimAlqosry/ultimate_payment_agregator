@@ -60,6 +60,11 @@
   border-radius: 10px;
 }
 
+/* No sliding thumb — used for the set-password Merchant/FI picker (2 options). */
+.role-switch-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .role-thumb {
   position: absolute;
   top: 3px;
@@ -215,6 +220,8 @@
 .forgot-row {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   width: 100%;
 }
 

@@ -4,8 +4,8 @@
   "description": "Aggregator Platform console — Yemen ERP and bank/wallet hub with JWT dummy auth, EN/AR, and RTL.",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0 --port 43123",
-    "start:open": "ng serve --host 0.0.0.0 --port 43123 --open",
+    "start": "ng serve --host 0.0.0.0 --port 43123 --proxy-config proxy.conf.json",
+    "start:open": "ng serve --host 0.0.0.0 --port 43123 --proxy-config proxy.conf.json --open",
     "build": "ng build",
     "lint": "ng lint",
     "format": "prettier --write .",

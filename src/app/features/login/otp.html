@@ -12,7 +12,7 @@
   </header>
 
   <form class="auth-form" (submit)="onVerify($event)" novalidate>
-    <div class="otp-row" role="group" [attr.aria-label]="'otp.title' | transloco">
+    <div class="otp-row" dir="ltr" role="group" [attr.aria-label]="'otp.title' | transloco">
       @for (digit of digits(); track $index; let i = $index) {
         <input
           class="otp-cell"

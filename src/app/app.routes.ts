@@ -66,6 +66,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/pending').then((m) => m.Pending),
   },
   {
+    path: 'set-password',
+    title: 'setPassword.title',
+    ...guestAuth,
+    loadComponent: () => import('./features/login/set-password').then((m) => m.SetPassword),
+  },
+  {
     path: '401',
     loadComponent: () => import('./features/status/status').then((m) => m.Status),
     data: { code: 401 },

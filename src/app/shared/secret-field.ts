@@ -56,6 +56,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      /* The revealed value is a technical string (username/password/secret) — must stay
+         LTR-ordered even in an RTL page, or the bidi algorithm can scramble it. Scoped to just
+         the value text, not :host, so the show/hide button still flips side with language
+         like any other UI control. */
+      direction: ltr;
+      unicode-bidi: isolate;
+      text-align: start;
     }
 
     .show-btn {

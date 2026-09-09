@@ -3,14 +3,16 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
+import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { ApprovalStatus, Merchant } from '@core/models';
+import { ApplicationStatus, MerchantApplicationDetails } from '@core/models.platform';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
 import { SearchField } from '@shared/search-field';
 
 type ListTab = 'all' | 'pending';
+
+const PENDING_STATUSES: ApplicationStatus[] = ['awaitingMaker', 'pendingChecker', 'provisioning'];
 
 @Component({
   selector: 'app-products',
@@ -18,50 +20,41 @@ type ListTab = 'all' | 'pending';
   templateUrl: './products.html',
 })
 export class Products {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly locale = inject(LocaleService);
 
   readonly loading = signal(true);
+  readonly loadingMore = signal(false);
   readonly error = signal(false);
-  readonly all = signal<Merchant[]>([]);
+  readonly all = signal<MerchantApplicationDetails[]>([]);
+  readonly nextCursor = signal<string | null>(null);
   readonly tab = signal<ListTab>('all');
   readonly statusFilter = signal('');
-  readonly cityFilter = signal('');
-  readonly erpFilter = signal('');
-  readonly page = signal(1);
-  readonly pageSize = 6;
   query = '';
 
-  readonly pendingCount = computed(() => this.all().filter((row) => row.status === 'pending').length);
-  readonly cities = computed(() => [...new Set(this.all().map((row) => row.city))].sort());
-  readonly erps = computed(() => [...new Set(this.all().map((row) => row.erpSystem))].sort());
+  readonly pendingCount = computed(() => this.all().filter((row) => PENDING_STATUSES.includes(row.status)).length);
   readonly filtered = computed(() => {
     let rows = this.all();
     if (this.tab() === 'pending') {
-      rows = rows.filter((row) => row.status === 'pending');
+      rows = rows.filter((row) => PENDING_STATUSES.includes(row.status));
     }
     const status = this.statusFilter();
     if (status) {
       rows = rows.filter((row) => row.status === status);
     }
-    const city = this.cityFilter();
-    if (city) {
-      rows = rows.filter((row) => row.city === city);
-    }
-    const erp = this.erpFilter();
-    if (erp) {
-      rows = rows.filter((row) => row.erpSystem === erp);
+    const q = this.query.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(
+        (row) =>
+          row.legalName.toLowerCase().includes(q) ||
+          row.commercialRegistrationNumber.toLowerCase().includes(q) ||
+          row.contact.email.toLowerCase().includes(q),
+      );
     }
     return rows;
-  });
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
-  readonly pages = computed(() => Array.from({ length: this.pageCount() }, (_, index) => index + 1));
-  readonly rows = computed(() => {
-    const start = (this.page() - 1) * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
   });
 
   constructor() {
@@ -70,21 +63,16 @@ export class Products {
       if (tab === 'pending' || tab === 'all') {
         this.tab.set(tab);
       }
-      this.query = params.get('q') ?? '';
-      this.page.set(1);
-      this.load();
     });
+    this.load();
   }
 
   onQuery(query: string): void {
     this.query = query;
-    this.page.set(1);
-    this.load(true);
   }
 
   setTab(tab: ListTab): void {
     this.tab.set(tab);
-    this.page.set(1);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { tab },
@@ -94,44 +82,41 @@ export class Products {
 
   onStatus(event: Event): void {
     this.statusFilter.set((event.target as HTMLSelectElement).value);
-    this.page.set(1);
   }
 
-  onCity(event: Event): void {
-    this.cityFilter.set((event.target as HTMLSelectElement).value);
-    this.page.set(1);
+  statusBadgeClass(status: ApplicationStatus): { ok: boolean; warn: boolean; danger: boolean } {
+    return { ok: status === 'active', warn: PENDING_STATUSES.includes(status), danger: status === 'rejected' };
   }
 
-  onErp(event: Event): void {
-    this.erpFilter.set((event.target as HTMLSelectElement).value);
-    this.page.set(1);
-  }
-
-  goTo(page: number): void {
-    this.page.set(Math.min(this.pageCount(), Math.max(1, page)));
-  }
-
-  badgeKey(status: ApprovalStatus): string {
-    return status === 'approved' ? 'badge.active' : `badge.${status}`;
-  }
-
-  load(silent = false): void {
-    if (!silent) {
-      this.loading.set(true);
-    }
+  load(): void {
+    this.loading.set(true);
     this.error.set(false);
-    this.api.merchants(this.query).subscribe({
-      next: (rows) => {
-        this.all.set(rows);
+    this.api.listMerchantApplications({ pageSize: 50 }).subscribe({
+      next: (page) => {
+        this.all.set(page.items);
+        this.nextCursor.set(page.nextCursor);
         this.loading.set(false);
-        if (this.page() > this.pageCount()) {
-          this.page.set(this.pageCount());
-        }
       },
       error: () => {
         this.loading.set(false);
         this.error.set(true);
       },
+    });
+  }
+
+  loadMore(): void {
+    const cursor = this.nextCursor();
+    if (!cursor || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.api.listMerchantApplications({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        this.all.update((rows) => [...rows, ...page.items]);
+        this.nextCursor.set(page.nextCursor);
+        this.loadingMore.set(false);
+      },
+      error: () => this.loadingMore.set(false),
     });
   }
 }

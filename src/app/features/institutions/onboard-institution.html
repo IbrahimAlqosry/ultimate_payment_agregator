@@ -97,8 +97,8 @@
         <app-field-error [state]="form.phone()" />
       </label>
     </div>
-    @if (apiError()) {
-      <p class="form-error" role="alert">{{ 'onboard.submitError' | transloco }}</p>
+    @if (apiError(); as message) {
+      <p class="form-error" role="alert">{{ message }}</p>
     }
     <div class="form-actions">
       <button class="cta" type="submit" [disabled]="form().submitting()">
