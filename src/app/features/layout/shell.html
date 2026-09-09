@@ -89,7 +89,7 @@
 
       <div class="topbar-actions">
         <app-language-switch appearance="auth" />
-        <div class="inbox-wrap" (click)="$event.stopPropagation()">
+        <div class="inbox-wrap" [class.inbox-open]="inboxOpen()">
           <button
             class="icon-btn"
             type="button"
@@ -102,30 +102,36 @@
               <span class="inbox-dot" aria-hidden="true"></span>
             }
           </button>
-          @if (inboxOpen()) {
-            <div class="inbox-panel" role="dialog" [attr.aria-label]="'inbox.title' | transloco">
-              <header class="inbox-head">
-                <h2>{{ 'inbox.title' | transloco }}</h2>
-              </header>
-              @if (inboxItems().length === 0) {
-                <p class="inbox-empty">{{ 'inbox.empty' | transloco }}</p>
-              } @else {
-                <ul class="inbox-list">
-                  @for (item of inboxItems(); track item.id) {
-                    <li>
-                      <button class="inbox-item" type="button" [class.unread]="item.unread" (click)="openItem(item)">
-                        <strong>{{ item.titleKey | transloco: item.params }}</strong>
-                        <span>{{ item.bodyKey | transloco: item.params }}</span>
-                        <em>{{ relativeKey(item.at) | transloco: { n: relativeCount(item.at) } }}</em>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              }
-              <button class="inbox-all" type="button" (click)="viewAll()">{{ 'inbox.viewAll' | transloco }}</button>
-            </div>
-          }
         </div>
+        @if (inboxOpen()) {
+          <div
+            class="inbox-panel"
+            role="dialog"
+            [attr.aria-label]="'inbox.title' | transloco"
+            (click)="$event.stopPropagation()"
+            (keydown)="$event.stopPropagation()"
+          >
+            <header class="inbox-head">
+              <h2>{{ 'inbox.title' | transloco }}</h2>
+            </header>
+            @if (inboxItems().length === 0) {
+              <p class="inbox-empty">{{ 'inbox.empty' | transloco }}</p>
+            } @else {
+              <ul class="inbox-list">
+                @for (item of inboxItems(); track item.id) {
+                  <li>
+                    <button class="inbox-item" type="button" [class.unread]="item.unread" (click)="openItem(item)">
+                      <strong>{{ item.titleKey | transloco: item.params }}</strong>
+                      <span>{{ item.bodyKey | transloco: item.params }}</span>
+                      <em>{{ relativeKey(item.at) | transloco: { n: relativeCount(item.at) } }}</em>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            <button class="inbox-all" type="button" (click)="viewAll()">{{ 'inbox.viewAll' | transloco }}</button>
+          </div>
+        }
         <span class="vline" aria-hidden="true"></span>
         @if (auth.user(); as user) {
           <a class="who" routerLink="/account-settings" (click)="close()">

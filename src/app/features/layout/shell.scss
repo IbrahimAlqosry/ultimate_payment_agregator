@@ -222,6 +222,11 @@ nav a:focus-visible,
   align-items: center;
   gap: 24px;
   margin-inline-start: auto;
+  /* Anchors .inbox-panel below (a positioning root, not just a container) — the panel needs to
+     hang off the whole action row's true end edge, not the bell button's, since the avatar and
+     logout button sit after it and push the button well short of that edge on narrow screens
+     (see .inbox-panel comment). */
+  position: relative;
 }
 
 .vline {
@@ -315,6 +320,26 @@ nav a:focus-visible,
   border: 2px solid #fff;
 }
 
+/* Points up at the bell regardless of where .inbox-panel itself ends up anchored (see
+   .topbar-actions/.inbox-panel comments) — tied to .inbox-wrap, which sits exactly where the
+   button is, not to the panel's own box. */
+.inbox-wrap.inbox-open::after {
+  content: '';
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-block-start: 1px solid #dcd5d5;
+  border-inline-start: 1px solid #dcd5d5;
+  z-index: 31;
+}
+
+/* Positioned against .topbar-actions (see above), not .inbox-wrap — the bell button sits mid-row
+   (avatar + logout follow it), so anchoring to the button itself pushed the panel's far edge off
+   the viewport on narrow screens instead of sitting flush with the row everyone else aligns to. */
 .inbox-panel {
   position: absolute;
   top: calc(100% + 8px);
