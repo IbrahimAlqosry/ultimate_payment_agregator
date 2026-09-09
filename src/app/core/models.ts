@@ -21,7 +21,7 @@ export type ScreenModule =
   | 'operators'
   | 'reports'
   | 'settings';
-export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration';
+export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration' | 'operator';
 export type PointScope = 'all' | 'mine' | 'institution' | 'pending';
 
 export interface AuthUser {
@@ -34,6 +34,9 @@ export interface AuthUser {
   jobTitleKey: string;
   orgName?: string;
   orgId?: string;
+  /** Real grant strings from GET /auth/me (e.g. "platform.merchant-onboarding.decide").
+   * Always [] for Merchant/FI accounts, which have no Platform permissions. */
+  permissions: string[];
 }
 
 export interface Operator {

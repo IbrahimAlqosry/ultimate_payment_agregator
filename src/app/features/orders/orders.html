@@ -9,7 +9,13 @@
     @if (layout() === 'merchant' && auth.canMutate()) {
       <a class="btn btn-primary" routerLink="/my-payment-points/new">{{ 'cta.addPoint' | transloco }}</a>
     }
+    @if (layout() === 'fi-pending') {
+      <a class="btn btn-primary" routerLink="/pp-approvals/decide">{{ 'points.decideById' | transloco }}</a>
+    }
   </header>
+  @if (layout() === 'fi-pending') {
+    <p class="info-banner">{{ 'points.decideByIdHint' | transloco }}</p>
+  }
 
   @if (layout() === 'operator' || layout() === 'fi-all') {
     <div class="tabs" role="tablist">

@@ -42,6 +42,7 @@ export const DEMO_ACCOUNTS: {
       role: 'admin',
       avatarInitials: 'AH',
       jobTitleKey: 'title.admin',
+      permissions: [],
     },
   },
   {
@@ -58,6 +59,7 @@ export const DEMO_ACCOUNTS: {
       role: 'maker',
       avatarInitials: 'LQ',
       jobTitleKey: 'title.maker',
+      permissions: [],
     },
   },
   {
@@ -74,6 +76,7 @@ export const DEMO_ACCOUNTS: {
       role: 'checker',
       avatarInitials: 'KH',
       jobTitleKey: 'title.checker',
+      permissions: [],
     },
   },
   {
@@ -90,6 +93,7 @@ export const DEMO_ACCOUNTS: {
       role: 'reader',
       avatarInitials: 'NM',
       jobTitleKey: 'title.reader',
+      permissions: [],
     },
   },
   {
@@ -108,6 +112,7 @@ export const DEMO_ACCOUNTS: {
       jobTitleKey: 'title.financeLead',
       orgName: 'Al-Amal Pharmacies',
       orgId: 'm-1',
+      permissions: [],
     },
   },
   {
@@ -126,6 +131,7 @@ export const DEMO_ACCOUNTS: {
       jobTitleKey: 'title.opsOfficer',
       orgName: 'Tadhamon Bank',
       orgId: 'fi-1',
+      permissions: [],
     },
   },
 ];

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormField, email, form, maxLength, required, submit, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -6,12 +6,12 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules, applyPhoneRules } from '@core/forms/field-rules';
 import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import { ErpChoice } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
 import { BrandLockup } from './brand-lockup';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Component({
   selector: 'app-register',
@@ -19,14 +19,18 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
   templateUrl: './register.html',
   styleUrls: ['./auth-forms.scss', './register.scss'],
 })
-export class Register {
+export class Register implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly platformApi = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   readonly apiError = signal<string | null>(null);
   readonly show = signal(false);
   readonly showConfirm = signal(false);
+  readonly erps = signal<ErpChoice[]>([]);
+  readonly erpsLoading = signal(true);
+  readonly erpsFailed = signal(false);
 
   // Fields match the real backend's SelfServiceMerchantOnboardingRequest exactly — it rejects
   // unknown fields, so there is no city/industry here (the mock's fields, dropped for this flow).
@@ -52,7 +56,6 @@ export class Register {
       email(p.email);
       applyPhoneRules(p.phone);
       required(p.erpSystemId);
-      validate(p.erpSystemId, ({ value }) => (UUID_PATTERN.test(value()) ? undefined : { kind: 'uuid' }));
       applyPasswordRules(p.password);
       applyPasswordRules(p.confirm);
       validate(p.confirm, ({ value, valueOf }) =>
@@ -60,6 +63,30 @@ export class Register {
       );
     },
   );
+
+  ngOnInit(): void {
+    this.loadErps();
+  }
+
+  /** Fetches every page of choices (usually few) so the selector isn't silently missing options
+   * past the first page — the guide is explicit this endpoint has no server-side search. */
+  private loadErps(cursor?: string, acc: ErpChoice[] = []): void {
+    this.platformApi.getErpChoices({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        const items = [...acc, ...page.items];
+        if (page.nextCursor) {
+          this.loadErps(page.nextCursor, items);
+          return;
+        }
+        this.erps.set(items);
+        this.erpsLoading.set(false);
+      },
+      error: () => {
+        this.erpsLoading.set(false);
+        this.erpsFailed.set(true);
+      },
+    });
+  }
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();

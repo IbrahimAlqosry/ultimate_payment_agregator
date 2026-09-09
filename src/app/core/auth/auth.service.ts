@@ -1,15 +1,17 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, map, Observable, of, tap } from 'rxjs';
-import { canApprove, canManageOperators, canMutate, isReadOnly } from '@core/auth/access';
+import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
+import { canApprove, canManageOperators, canMutate, hasPermission, isReadOnly } from '@core/auth/access';
 import { apiUrl } from '@core/http/api-url';
 import { LoadingService } from '@core/http/loading.service';
 import { PlatformApi } from '@core/http/platform-api';
-import { ApprovalEntity, Audience, AuthUser, MerchantSignup } from '@core/models';
+import { ApprovalEntity, Audience, AuthUser, MerchantSignup, UserRole } from '@core/models';
 import {
+  AuthMeResponse,
   FinancialInstitutionBootstrapRequest,
   MerchantBootstrapRequest,
+  PlatformAccountType,
   SelfServiceMerchantOnboardingRequest,
 } from '@core/models.platform';
 
@@ -23,20 +25,29 @@ interface PendingChallenge {
   expiresAt: string;
   email: string;
   password: string;
-  audience: Audience;
 }
 
 /**
- * Non-sensitive marker persisted across reloads (email + audience only — never the CSRF token
- * or anything security-bearing). The real `__Host-pa-session` cookie itself already survives a
- * reload; this marker just lets the app *ask* the backend on startup whether that cookie is
- * still valid, instead of unconditionally treating every reload as a fresh logout.
+ * Non-sensitive marker persisted across reloads (email only — never the CSRF token or anything
+ * security-bearing). The real `__Host-pa-session` cookie itself already survives a reload; this
+ * marker just supplies a display email for `restoreSession()`, since GET /auth/me returns no
+ * email/name at all — the actual audience/role/permissions always come fresh from that call,
+ * never from this marker.
  */
 const SESSION_MARKER_KEY = 'aggregator.session-marker';
 
 interface SessionMarker {
   email: string;
-  audience: Audience;
+}
+
+function audienceFromAccountType(accountType: PlatformAccountType): Audience {
+  if (accountType === 'merchant') {
+    return 'merchant';
+  }
+  if (accountType === 'financialInstitution') {
+    return 'institution';
+  }
+  return 'operator';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -69,10 +80,15 @@ export class AuthService {
     return canApprove(this.user(), entity);
   }
 
-  login(email: string, password: string, audience: Audience) {
+  /** Real grant check against GET /auth/me's permissions (e.g. 'platform.erp-systems.submit'). */
+  hasPermission(permission: string): boolean {
+    return hasPermission(this.user(), permission);
+  }
+
+  login(email: string, password: string) {
     return this.platformApi.login({ email, password }).pipe(
       tap((response) => {
-        this.pending.set({ ...response, email, password, audience });
+        this.pending.set({ ...response, email, password });
       }),
     );
   }
@@ -83,14 +99,20 @@ export class AuthService {
       throw new Error('No login in progress.');
     }
     return this.platformApi.verifyOtp({ challengeId: challenge.challengeId, code }).pipe(
-      tap((response) => {
+      switchMap((response) => {
         const csrfToken = response.headers.get('X-CSRF-Token');
         if (!csrfToken) {
           throw new Error('The login CSRF header was unavailable.');
         }
-        this.session.set({ user: this.composeUser(challenge), csrfToken });
+        // GET /auth/me is the only source of real accountType/role/permissions — nothing in the
+        // login/OTP responses carries them. Wait for it before setting `session` at all, so a
+        // guard or component reading `user()` mid-flight never sees a half-composed identity.
+        return this.platformApi.getMe().pipe(map((me) => ({ csrfToken, me })));
+      }),
+      tap(({ csrfToken, me }) => {
+        this.session.set({ user: this.composeUser(challenge.email, me), csrfToken });
         this.pending.set(null);
-        this.persistMarker({ email: challenge.email, audience: challenge.audience });
+        this.persistMarker({ email: challenge.email });
       }),
       map(() => undefined),
     );
@@ -99,8 +121,8 @@ export class AuthService {
   /**
    * Runs once at app startup (see provideAppInitializer in app.config.ts), before any route
    * guard evaluates. The `__Host-pa-session` cookie survives a reload even though our in-memory
-   * CSRF token doesn't — so if a marker was left from a previous login, ask the backend whether
-   * that cookie is still valid rather than assuming every reload means logged-out.
+   * CSRF token doesn't — so GET /auth/me (the real source of identity, not a guess) tells us
+   * whether that cookie is still valid rather than assuming every reload means logged-out.
    *
    * A live session restores `user` (so guards pass and GETs work) but leaves `csrfToken` null —
    * there is no API to recover it without a fresh login, so mutating requests still require one
@@ -109,18 +131,15 @@ export class AuthService {
    */
   restoreSession(): Observable<void> {
     const marker = this.readMarker();
-    if (!marker) {
-      return of(undefined);
-    }
-    return this.platformApi.getIntegrationClient().pipe(
-      map(() => true),
-      catchError((err: unknown) => of(!(err instanceof HttpErrorResponse && err.status === 401))),
-      tap((alive) => {
-        if (alive) {
-          this.session.set({ user: this.composeUser(marker), csrfToken: null });
-        } else {
+    return this.platformApi.getMe().pipe(
+      tap((me) => {
+        this.session.set({ user: this.composeUser(marker?.email ?? '', me), csrfToken: null });
+      }),
+      catchError((err: unknown) => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
           this.clearMarker();
         }
+        return of(null);
       }),
       map(() => undefined),
     );
@@ -132,7 +151,7 @@ export class AuthService {
     if (!challenge) {
       throw new Error('No login in progress.');
     }
-    return this.login(challenge.email, challenge.password, challenge.audience);
+    return this.login(challenge.email, challenge.password);
   }
 
   hasOtpChallenge(): boolean {
@@ -186,22 +205,23 @@ export class AuthService {
     return this.http.post(apiUrl('/auth/register'), payload);
   }
 
-  private composeUser({ email, audience }: SessionMarker): AuthUser {
-    const name = displayNameFromEmail(email);
-    // The real backend has no current-user endpoint, so an operator's actual Maker/Checker/
-    // Admin/Reader role is unknown client-side. Default to 'checker' — the role that grants the
-    // broadest legitimate action visibility (approve + mutate) — and gate real actions by record
-    // status (e.g. "awaitingMaker" shows the submit action) rather than by this guessed role.
-    // The server enforces the real authorization on every request regardless of this value.
-    const resolvedRole = audience === 'operator' ? 'checker' : audience;
+  /** email may be '' when restoring without a marker (see restoreSession) — accountType, role,
+   * and permissions always come from the real `me` response, never guessed. */
+  private composeUser(email: string, me: AuthMeResponse): AuthUser {
+    const audience = audienceFromAccountType(me.accountType);
+    // Marker missing is a rare edge case (e.g. sessionStorage cleared but the cookie survived) —
+    // /auth/me itself never returns an email, so there is nothing better to show here.
+    const name = email ? displayNameFromEmail(email) : 'Account';
+    const role: UserRole = audience === 'operator' ? (me.role ?? 'reader') : audience;
     return {
-      id: email,
+      id: email || audience,
       email,
       name,
       audience,
-      role: resolvedRole,
+      role,
       avatarInitials: initialsFromName(name),
-      jobTitleKey: audience === 'operator' ? 'login.role.operator' : `role.${resolvedRole}`,
+      jobTitleKey: `role.${role}`,
+      permissions: me.permissions,
     };
   }
 
@@ -220,10 +240,10 @@ export class AuthService {
         return null;
       }
       const parsed = JSON.parse(raw) as Partial<SessionMarker>;
-      if (typeof parsed.email !== 'string' || typeof parsed.audience !== 'string') {
+      if (typeof parsed.email !== 'string') {
         return null;
       }
-      return { email: parsed.email, audience: parsed.audience };
+      return { email: parsed.email };
     } catch {
       return null;
     }

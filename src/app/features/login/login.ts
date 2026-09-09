@@ -36,11 +36,9 @@ export class Login {
     await submit(this.loginForm, async () => {
       const { email, password } = this.loginForm().value();
       try {
-        // The real backend's login response carries no role/audience/account-type field, so
-        // every login is treated as a Platform Operator until the backend exposes a way to
-        // tell accounts apart (a current-user endpoint, or a field on this response). Merchant
-        // and Financial Institution accounts will not route correctly through this form today.
-        await firstValueFrom(this.auth.login(email, password, 'operator'));
+        // The real backend now exposes GET /auth/me, called right after OTP verification — the
+        // app discovers the account's real type/role there instead of needing to guess it here.
+        await firstValueFrom(this.auth.login(email, password));
         this.toast.ok('toast.otpSent');
         await this.router.navigateByUrl('/otp');
       } catch (err: unknown) {

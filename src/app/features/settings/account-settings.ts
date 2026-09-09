@@ -1,11 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, form, required, submit, validate } from '@angular/forms/signals';
+import { email, FormField, form, required, submit, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
 import { AtlasApi } from '@core/http/atlas-api';
+import { readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
 import { AccountProfile } from '@core/models';
+import { MerchantProfileResponse } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 import { FieldError } from '@shared/field-error';
@@ -18,6 +21,7 @@ import { FieldError } from '@shared/field-error';
 })
 export class AccountSettings {
   private readonly api = inject(AtlasApi);
+  private readonly platformApi = inject(PlatformApi);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
   readonly loading = signal(true);
@@ -26,22 +30,27 @@ export class AccountSettings {
   readonly emailOn = signal(true);
   readonly smsOn = signal(false);
 
+  /** Real GET /profiles/merchant — the mock `AccountProfile.merchant`'s richer shape
+   * (address/officePhone/businessEmail/contactRole) has no equivalent on the real backend, so
+   * the merchant section is sourced from here instead, not from `apply()`. */
+  readonly merchantApiError = signal<string | null>(null);
+  private merchantConcurrencyToken: string | null = null;
+  private merchantErpSystemId = '';
+
   readonly merchantForm = form(
     signal({
-      businessName: '',
-      crNumber: '',
-      erpSystem: '',
-      address: '',
-      officePhone: '',
-      businessEmail: '',
+      legalName: '',
+      commercialRegistrationNumber: '',
+      erpSystemName: '',
       contactName: '',
-      contactRole: '',
       contactPhone: '',
       contactEmail: '',
     }),
     (p) => {
-      required(p.businessName);
+      required(p.legalName);
       required(p.contactName);
+      required(p.contactEmail);
+      email(p.contactEmail);
     },
   );
 
@@ -90,13 +99,27 @@ export class AccountSettings {
 
   async onMerchant(event: Event): Promise<void> {
     event.preventDefault();
+    this.merchantApiError.set(null);
     await submit(this.merchantForm, async () => {
+      if (!this.merchantConcurrencyToken) {
+        this.merchantApiError.set('Missing concurrency token — reload and try again.');
+        return undefined;
+      }
+      const value = this.merchantForm().value();
       try {
-        const saved = await firstValueFrom(this.api.updateMerchantProfile(this.merchantForm().value()));
-        this.profile.set(saved);
+        const saved = await firstValueFrom(
+          this.platformApi.updateOwnMerchantProfile({
+            legalName: value.legalName,
+            commercialRegistrationNumber: value.commercialRegistrationNumber,
+            contact: { name: value.contactName, email: value.contactEmail, phone: value.contactPhone },
+            erpSystemId: this.merchantErpSystemId,
+            concurrencyToken: this.merchantConcurrencyToken,
+          }),
+        );
+        this.applyMerchantProfile(saved);
         this.toast.ok('toast.profileUpdated');
-      } catch {
-        /* interceptor */
+      } catch (err) {
+        this.merchantApiError.set(readApiError(err).message);
       }
       return undefined;
     });
@@ -160,8 +183,28 @@ export class AccountSettings {
     this.operatorForm().reset({ name: profile.name, phone: profile.phone });
     this.emailOn.set(profile.operator?.emailNotifications ?? true);
     this.smsOn.set(profile.operator?.smsNotifications ?? false);
-    if (profile.merchant) {
-      this.merchantForm().reset(profile.merchant);
+    if (profile.audience === 'merchant') {
+      this.loadMerchantProfile();
     }
+  }
+
+  private loadMerchantProfile(): void {
+    this.platformApi.getOwnMerchantProfile().subscribe({
+      next: (saved) => this.applyMerchantProfile(saved),
+      error: (err: unknown) => this.merchantApiError.set(readApiError(err).message),
+    });
+  }
+
+  private applyMerchantProfile(saved: MerchantProfileResponse): void {
+    this.merchantConcurrencyToken = saved.concurrencyToken;
+    this.merchantErpSystemId = saved.erpSystem.erpSystemId;
+    this.merchantForm().reset({
+      legalName: saved.legalName,
+      commercialRegistrationNumber: saved.commercialRegistrationNumber,
+      erpSystemName: saved.erpSystem.systemName,
+      contactName: saved.contact.name,
+      contactPhone: saved.contact.phone,
+      contactEmail: saved.contact.email,
+    });
   }
 }

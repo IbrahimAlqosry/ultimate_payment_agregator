@@ -47,9 +47,18 @@
       <label class="auth-field">
         <span>{{ 'register.erp' | transloco }}</span>
         <div class="input-box">
-          <input [formField]="registerForm.erpSystemId" [placeholder]="'register.erpPh' | transloco" />
+          <select [formField]="registerForm.erpSystemId">
+            <option value="">{{ (erpsLoading() ? 'register.erpLoading' : 'register.erpPh') | transloco }}</option>
+            @for (erp of erps(); track erp.erpSystemId) {
+              <option [value]="erp.erpSystemId">{{ erp.systemName }}</option>
+            }
+          </select>
         </div>
-        <p class="field-hint">{{ 'register.erpHint' | transloco }}</p>
+        @if (erpsFailed()) {
+          <p class="field-hint error">{{ 'register.erpLoadFailed' | transloco }}</p>
+        } @else if (!erpsLoading() && erps().length === 0) {
+          <p class="field-hint error">{{ 'register.erpEmpty' | transloco }}</p>
+        }
         <app-field-error [state]="registerForm.erpSystemId()" />
       </label>
       <label class="auth-field">

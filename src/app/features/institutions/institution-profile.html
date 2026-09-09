@@ -17,42 +17,42 @@
             <div class="form-field">
               <span class="caps">{{ 'profile.licenseNumber' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ fi.cbyLicense }}</span>
+                <span>{{ fi.cbyLicenceNumber }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.contractStart' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ (fi.contractStart || fi.contractExpiry) | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
+                <span>{{ fi.contract.signedDate | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.contractExpiry' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ fi.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
+                <span>{{ fi.contract.expiryDate | date: 'mediumDate' : undefined : locale.dateLocale() }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
               <span class="caps">{{ 'profile.institutionType' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ (fi.type === 'bank' ? 'profile.commercialBank' : 'type.wallet') | transloco }}</span>
+                <span>{{ (fi.institutionType === 'bank' ? 'profile.commercialBank' : 'type.wallet') | transloco }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
-              <span class="caps">{{ 'profile.regulatory' | transloco }}</span>
+              <span class="caps">{{ 'profile.contractNumber' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ fi.regulatoryAuthority || ('profile.cby' | transloco) }}</span>
+                <span>{{ fi.contract.number }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
             <div class="form-field">
-              <span class="caps">{{ 'profile.swift' | transloco }}</span>
+              <span class="caps">{{ 'profile.agreedFee' | transloco }}</span>
               <div class="locked-input">
-                <span>{{ fi.swiftCode || '—' }}</span>
+                <span>{{ fi.contract.agreedFeePerRequest }}</span>
                 <img src="icons/lock.svg" width="14" height="14" alt="" />
               </div>
             </div>
@@ -70,21 +70,17 @@
               <app-field-error [state]="contactForm.contactName()" />
             </label>
             <label class="form-field">
-              <span class="caps">{{ 'profile.roleTitle' | transloco }}</span>
-              <input [formField]="contactForm.jobTitle" />
-            </label>
-            <label class="form-field">
-              <span class="caps">{{ 'profile.department' | transloco }}</span>
-              <input [formField]="contactForm.department" />
-            </label>
-            <label class="form-field">
               <span class="caps">{{ 'profile.phone' | transloco }}</span>
               <input [formField]="contactForm.phone" />
             </label>
             <label class="form-field">
               <span class="caps">{{ 'profile.email' | transloco }}</span>
               <input [formField]="contactForm.email" />
+              <app-field-error [state]="contactForm.email()" />
             </label>
+            @if (apiError(); as message) {
+              <p class="form-error" role="alert">{{ message }}</p>
+            }
             <div class="form-actions stretch">
               <button class="cta full" type="submit" [disabled]="contactForm().submitting() || auth.readOnly()">
                 {{ 'profile.saveContact' | transloco }}

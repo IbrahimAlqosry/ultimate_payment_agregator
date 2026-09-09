@@ -21,35 +21,26 @@
               <div class="card-body">
                 <label class="form-field">
                   <span class="caps">{{ 'settings.businessName' | transloco }}</span>
-                  <input [formField]="merchantForm.businessName" />
-                  <app-field-error [state]="merchantForm.businessName()" />
+                  <input [formField]="merchantForm.legalName" />
+                  <app-field-error [state]="merchantForm.legalName()" />
                 </label>
                 <label class="form-field">
                   <span class="caps">{{ 'settings.crNumber' | transloco }}</span>
                   <div class="locked-input">
                     <img src="icons/lock.svg" width="14" height="14" alt="" />
-                    <span>{{ merchantForm.crNumber().value() }}</span>
+                    <span>{{ merchantForm.commercialRegistrationNumber().value() }}</span>
                   </div>
                 </label>
                 <label class="form-field">
                   <span class="caps">{{ 'settings.erpSystem' | transloco }}</span>
                   <div class="locked-input">
                     <img src="icons/lock.svg" width="14" height="14" alt="" />
-                    <span>{{ merchantForm.erpSystem().value() }}</span>
+                    <span>{{ merchantForm.erpSystemName().value() }}</span>
                   </div>
                 </label>
-                <label class="form-field">
-                  <span class="caps">{{ 'settings.address' | transloco }}</span>
-                  <input [formField]="merchantForm.address" />
-                </label>
-                <label class="form-field">
-                  <span class="caps">{{ 'settings.officePhone' | transloco }}</span>
-                  <input [formField]="merchantForm.officePhone" />
-                </label>
-                <label class="form-field">
-                  <span class="caps">{{ 'settings.businessEmail' | transloco }}</span>
-                  <input [formField]="merchantForm.businessEmail" />
-                </label>
+                @if (merchantApiError(); as message) {
+                  <p class="form-error" role="alert">{{ message }}</p>
+                }
                 <button class="cta full" type="submit" [disabled]="merchantForm().submitting() || auth.readOnly()">
                   {{ 'settings.updateProfile' | transloco }}
                 </button>
@@ -64,10 +55,7 @@
                 <label class="form-field">
                   <span class="caps">{{ 'settings.fullName' | transloco }}</span>
                   <input [formField]="merchantForm.contactName" />
-                </label>
-                <label class="form-field">
-                  <span class="caps">{{ 'settings.rolePosition' | transloco }}</span>
-                  <input [formField]="merchantForm.contactRole" />
+                  <app-field-error [state]="merchantForm.contactName()" />
                 </label>
                 <label class="form-field">
                   <span class="caps">{{ 'settings.personalPhone' | transloco }}</span>
@@ -76,6 +64,7 @@
                 <label class="form-field">
                   <span class="caps">{{ 'settings.personalEmail' | transloco }}</span>
                   <input [formField]="merchantForm.contactEmail" />
+                  <app-field-error [state]="merchantForm.contactEmail()" />
                 </label>
               </div>
             </div>

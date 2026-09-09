@@ -146,6 +146,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/erp/add-erp').then((m) => m.AddErp),
       },
       {
+        path: 'erp-systems/:id/edit',
+        title: 'erp.editTitle',
+        ...operatorOnly,
+        loadComponent: () => import('./features/erp/add-erp').then((m) => m.AddErp),
+      },
+      {
         path: 'erp-systems/:id',
         title: 'detail.erpTitle',
         ...operatorOnly,
@@ -212,6 +218,12 @@ export const routes: Routes = [
         ...merchantOnly,
         data: { scope: 'mine', titleKey: 'points.mineTitle', introKey: 'points.mineIntro' },
         loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
+      },
+      {
+        path: 'pp-approvals/decide',
+        title: 'points.decideById',
+        ...institutionOnly,
+        loadComponent: () => import('./features/orders/decide-payment-point').then((m) => m.DecidePaymentPoint),
       },
       {
         path: 'pp-approvals/:id',

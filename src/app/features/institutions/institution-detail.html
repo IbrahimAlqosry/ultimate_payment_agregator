@@ -114,6 +114,160 @@
 
         <a class="cancel-link" routerLink="/institutions">{{ 'actions.backToList' | transloco }}</a>
       </article>
+
+      @if (fi.status === 'active') {
+        <article class="detail-card">
+          <div class="page-head">
+            <h2>{{ 'detail.fiChangesTitle' | transloco }}</h2>
+            @if (canProposeChange() && !proposing()) {
+              <button class="cta" type="button" (click)="openPropose()">{{ 'detail.proposeFiChange' | transloco }}</button>
+            }
+          </div>
+
+          @if (changeApiError(); as message) {
+            <p class="form-error" role="alert">{{ message }}</p>
+          }
+
+          @if (proposing()) {
+            <form class="form-card" (submit)="submitChange($event)" novalidate>
+              <div class="form-grid">
+                <label class="form-field">
+                  <span class="caps">{{ 'onboard.fiName' | transloco }}</span>
+                  <input [formField]="changeForm.legalName" />
+                  <app-field-error [state]="changeForm.legalName()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'institutions.license' | transloco }}</span>
+                  <input [formField]="changeForm.cbyLicenceNumber" />
+                  <app-field-error [state]="changeForm.cbyLicenceNumber()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'institutions.contract' | transloco }}</span>
+                  <input [formField]="changeForm.contractNumber" />
+                  <app-field-error [state]="changeForm.contractNumber()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'onboard.signedDate' | transloco }}</span>
+                  <input type="date" [formField]="changeForm.signedDate" />
+                  <app-field-error [state]="changeForm.signedDate()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'institutions.contractExpiry' | transloco }}</span>
+                  <input type="date" [formField]="changeForm.expiryDate" />
+                  <app-field-error [state]="changeForm.expiryDate()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'detail.agreedFee' | transloco }}</span>
+                  <input type="number" step="0.01" [formField]="changeForm.feePerRequest" />
+                  <app-field-error [state]="changeForm.feePerRequest()" />
+                </label>
+              </div>
+              <div class="form-field">
+                <span>{{ 'onboard.contractFlags' | transloco }}</span>
+                <div class="check-row">
+                  <label class="check-opt">
+                    <input type="checkbox" [formField]="changeForm.autoRenewal" />
+                    <span class="check-box" aria-hidden="true"></span>
+                    {{ 'onboard.autoRenewal' | transloco }}
+                  </label>
+                  <label class="check-opt">
+                    <input type="checkbox" [formField]="changeForm.terminationRequested" />
+                    <span class="check-box" aria-hidden="true"></span>
+                    {{ 'onboard.terminationRequested' | transloco }}
+                  </label>
+                </div>
+              </div>
+              @if (changeForm.terminationRequested().value()) {
+                <label class="form-field">
+                  <span class="caps">{{ 'onboard.terminationNotice' | transloco }}</span>
+                  <input type="date" [formField]="changeForm.terminationNoticeDate" />
+                  <app-field-error [state]="changeForm.terminationNoticeDate()" />
+                </label>
+              }
+              <div class="form-actions">
+                <button class="cta" type="submit" [disabled]="changeForm().submitting()">
+                  {{ (changeForm().submitting() ? 'onboard.submitting' : 'detail.submitFiChange') | transloco }}
+                </button>
+                <button class="btn-text" type="button" (click)="cancelPropose()">{{ 'actions.cancel' | transloco }}</button>
+              </div>
+            </form>
+          }
+
+          <app-data-state
+            [loading]="changesLoading()"
+            [error]="false"
+            [empty]="!changesLoading() && changes().length === 0"
+            emptyKey="detail.fiChangesEmpty"
+          >
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{{ 'onboard.fiName' | transloco }}</th>
+                    <th>{{ 'merchants.submitted' | transloco }}</th>
+                    <th>{{ 'erp.status' | transloco }}</th>
+                    <th class="num">{{ 'actions.column' | transloco }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (change of changes(); track change.requestId) {
+                    <tr>
+                      <td>{{ change.legalName }}</td>
+                      <td class="muted">{{ change.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                      <td>
+                        <span class="badge" [class.ok]="change.status === 'approved'" [class.danger]="change.status === 'rejected'" [class.warn]="change.status === 'pendingChecker'">
+                          {{
+                            (change.status === 'approved'
+                              ? 'badge.active'
+                              : change.status === 'rejected'
+                                ? 'badge.rejected'
+                                : 'appStatus.pendingChecker'
+                            ) | transloco
+                          }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (change.status === 'pendingChecker' && canDecideChange()) {
+                          <div class="form-actions">
+                            <button class="btn-text" type="button" [disabled]="changeActing()" (click)="decideChange(change, 'approved')">
+                              {{ 'actions.approve' | transloco }}
+                            </button>
+                            <button class="btn-text" type="button" [disabled]="changeActing()" (click)="askRejectChange(change)">
+                              {{ 'actions.reject' | transloco }}
+                            </button>
+                          </div>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </app-data-state>
+        </article>
+      }
     }
   </app-data-state>
 </section>
+
+@if (rejectingChange(); as change) {
+  <div class="overlay-modal">
+    <button class="overlay-backdrop" type="button" (click)="cancelRejectChange()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
+      <header class="overlay-head">
+        <h2>{{ 'actions.reject' | transloco }} — {{ change.legalName }}</h2>
+        <button type="button" class="overlay-close" (click)="cancelRejectChange()">✕</button>
+      </header>
+      <label class="form-field">
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="changeReason()" (ngModelChange)="changeReason.set($event)" rows="3"></textarea>
+      </label>
+      <div class="overlay-actions">
+        <button class="btn-text" type="button" (click)="cancelRejectChange()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!changeReason().trim()" (click)="decideChange(change, 'rejected')">
+          {{ 'actions.confirmReject' | transloco }}
+        </button>
+      </div>
+    </article>
+  </div>
+}

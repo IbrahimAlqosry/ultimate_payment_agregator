@@ -1,0 +1,73 @@
+<section class="page">
+  <p class="crumb">{{ 'points.decideByIdCrumb' | transloco }}</p>
+  <a class="back-link" routerLink="/pp-approvals">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'actions.backToList' | transloco }}
+  </a>
+
+  <div class="form-card narrow headed">
+    <div class="card-header">
+      <h1>{{ 'points.decideById' | transloco }}</h1>
+    </div>
+    <div class="card-body">
+      <p class="note-box">{{ 'points.decideByIdHint' | transloco }}</p>
+
+      <label class="form-field">
+        <span class="caps">{{ 'detail.pointId' | transloco }}</span>
+        <input [ngModel]="pointId()" (ngModelChange)="pointId.set($event)" [disabled]="acting()" />
+      </label>
+
+      @if (apiError(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      @if (decided(); as point) {
+        <div class="card outlined">
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'detail.pointId' | transloco }}</dt>
+              <dd class="value-mono">{{ point.id }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'points.status' | transloco }}</dt>
+              <dd>
+                <span class="badge" [class.ok]="point.status === 'approved'" [class.danger]="point.status === 'rejected'">
+                  {{ ('badge.' + (point.status === 'approved' ? 'active' : point.status)) | transloco }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>{{ 'points.code' | transloco }}</dt>
+              <dd>{{ point.pointNumber }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'points.submitted' | transloco }}</dt>
+              <dd>{{ point.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="form-actions end bare">
+          <button class="cta" type="button" (click)="reset()">{{ 'points.decideAnother' | transloco }}</button>
+        </div>
+      } @else {
+        <label class="form-field">
+          <span class="caps">{{ 'detail.rejectionReason' | transloco }}</span>
+          <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" [disabled]="acting()" rows="3"></textarea>
+        </label>
+        <div class="form-actions end bare">
+          <button class="cta" type="button" [disabled]="acting() || !pointId().trim()" (click)="decide('approved')">
+            {{ (acting() ? 'onboard.submitting' : 'actions.approveApplication') | transloco }}
+          </button>
+          <button
+            class="btn-reject"
+            type="button"
+            [disabled]="acting() || !pointId().trim() || !reason().trim()"
+            (click)="decide('rejected')"
+          >
+            {{ 'actions.rejectApplication' | transloco }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</section>

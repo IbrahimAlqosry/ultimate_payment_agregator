@@ -5,16 +5,15 @@
     {{ 'actions.backToList' | transloco }}
   </a>
   <header class="page-head">
-    <h1>{{ row()?.name || ('detail.erpTitle' | transloco) }}</h1>
+    <h1>{{ row()?.systemName || ('detail.erpTitle' | transloco) }}</h1>
     @if (row(); as erp) {
-      <span
-        class="badge"
-        [class.ok]="erp.status === 'approved'"
-        [class.warn]="erp.status === 'pending'"
-        [class.danger]="erp.status === 'rejected'"
-      >
-        {{ (erp.status === 'approved' ? 'badge.active' : 'badge.' + erp.status) | transloco }}
-      </span>
+      @if (erp.isLegacyIncomplete) {
+        <span class="badge warn">{{ 'erp.incomplete' | transloco }}</span>
+      } @else {
+        <span class="badge" [class.ok]="erp.isApproved" [class.warn]="!erp.isApproved">
+          {{ (erp.isApproved ? 'badge.active' : 'erp.notApproved') | transloco }}
+        </span>
+      }
     }
   </header>
 
@@ -25,23 +24,19 @@
         <dl class="info-grid">
           <div>
             <dt>{{ 'erp.name' | transloco }}</dt>
-            <dd>{{ erp.name }}</dd>
+            <dd>{{ erp.systemName }}</dd>
           </div>
           <div>
             <dt>{{ 'erp.company' | transloco }}</dt>
-            <dd>{{ erp.vendor }}</dd>
+            <dd>{{ erp.providerCompanyName }}</dd>
           </div>
           <div>
-            <dt>{{ 'users.status' | transloco }}</dt>
-            <dd>{{ (erp.status === 'approved' ? 'badge.active' : 'badge.' + erp.status) | transloco }}</dd>
+            <dt>{{ 'register.contactName' | transloco }}</dt>
+            <dd>{{ erp.contact.name }}</dd>
           </div>
           <div>
-            <dt>{{ 'detail.integrationType' | transloco }}</dt>
-            <dd>{{ erp.integrationType || '—' }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'detail.contractNumber' | transloco }}</dt>
-            <dd>{{ erp.contractNumber || '—' }}</dd>
+            <dt>{{ 'register.email' | transloco }}</dt>
+            <dd>{{ erp.contact.email }}</dd>
           </div>
           <div>
             <dt>{{ 'onboard.contractDate' | transloco }}</dt>
@@ -56,51 +51,32 @@
           <div>
             <dt>{{ 'erp.expiry' | transloco }}</dt>
             <dd>
-              @if (erp.contractExpiry) {
-                {{ erp.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}
+              @if (erp.expiryDate) {
+                {{ erp.expiryDate | date: 'mediumDate' : undefined : locale.dateLocale() }}
               } @else {
                 —
               }
             </dd>
           </div>
           <div>
-            <dt>{{ 'erp.merchants' | transloco }}</dt>
-            <dd>{{ erp.connectedMerchants }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'detail.approvedBy' | transloco }}</dt>
-            <dd>{{ erp.approvedBy || erp.contactName }}</dd>
-          </div>
-          <div>
-            <dt>{{ 'merchants.onboarded' | transloco }}</dt>
-            <dd>
-              @if (erp.onboardedAt) {
-                {{ erp.onboardedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}
-              } @else {
-                —
-              }
-            </dd>
+            <dt>{{ 'merchants.submitted' | transloco }}</dt>
+            <dd>{{ erp.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
           </div>
         </dl>
-        @if (erp.status === 'pending' && auth.canApprove('erp')) {
-          <div class="form-actions">
-            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveApplication' | transloco }}</button>
-            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
-              {{ 'actions.rejectApplication' | transloco }}
-            </button>
-          </div>
-          @if (showReject()) {
-            <div class="reject-panel">
-              <label class="form-field">
-                <span>{{ 'detail.rejectionReason' | transloco }}</span>
-                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
-              </label>
-              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
-                {{ 'actions.confirmReject' | transloco }}
-              </button>
-            </div>
-          }
+
+        @if (erp.isLegacyIncomplete) {
+          <p class="warn-note">
+            <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
+            <span>{{ 'erp.incompleteWarning' | transloco }}</span>
+          </p>
         }
+
+        @if (auth.hasPermission('platform.erp-systems.submit')) {
+          <div class="form-actions">
+            <a class="cta" [routerLink]="['/erp-systems', erp.erpSystemId, 'edit']">{{ 'erp.proposeUpdate' | transloco }}</a>
+          </div>
+        }
+
         <a class="cancel-link" routerLink="/erp-systems">{{ 'actions.backToList' | transloco }}</a>
       </article>
     }

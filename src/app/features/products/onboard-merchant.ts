@@ -1,15 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { FormField, email, form, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPhoneRules } from '@core/forms/field-rules';
 import { readApiError } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
+import { ErpChoice } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Component({
   selector: 'app-onboard-merchant',
@@ -17,12 +16,15 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
   templateUrl: './onboard-merchant.html',
   styleUrl: '../../shared/form-page.scss',
 })
-export class OnboardMerchant {
+export class OnboardMerchant implements OnInit {
   private readonly api = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   readonly apiError = signal<string | null>(null);
+  readonly erps = signal<ErpChoice[]>([]);
+  readonly erpsLoading = signal(true);
+  readonly erpsFailed = signal(false);
 
   // Matches AssistedMerchantOnboardingRequest exactly — no password (the Maker never sets one)
   // and no city/industry (the real backend doesn't carry those fields).
@@ -43,9 +45,30 @@ export class OnboardMerchant {
       email(p.email);
       applyPhoneRules(p.phone);
       required(p.erpSystemId);
-      validate(p.erpSystemId, ({ value }) => (UUID_PATTERN.test(value()) ? undefined : { kind: 'uuid' }));
     },
   );
+
+  ngOnInit(): void {
+    this.loadErps();
+  }
+
+  private loadErps(cursor?: string, acc: ErpChoice[] = []): void {
+    this.api.getErpChoices({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        const items = [...acc, ...page.items];
+        if (page.nextCursor) {
+          this.loadErps(page.nextCursor, items);
+          return;
+        }
+        this.erps.set(items);
+        this.erpsLoading.set(false);
+      },
+      error: () => {
+        this.erpsLoading.set(false);
+        this.erpsFailed.set(true);
+      },
+    });
+  }
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();

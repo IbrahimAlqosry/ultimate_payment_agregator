@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'erp.title' | transloco }}</h1>
-    @if (tab() === 'all' && auth.canMutate()) {
+    @if (tab() === 'all' && auth.hasPermission('platform.erp-systems.submit')) {
       <a class="btn btn-primary" routerLink="/erp-systems/new">{{ 'cta.addErp' | transloco }}</a>
     }
   </header>
@@ -17,80 +17,157 @@
     </button>
   </div>
 
+  @if (actionError(); as message) {
+    <p class="form-error" role="alert">{{ message }}</p>
+  }
+
   @if (tab() === 'all') {
     <div class="filters">
       <app-search-field [seed]="query" placeholderKey="erp.search" (queryChange)="onQuery($event)" />
-      <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'erp.status' | transloco">
-        <option value="">{{ 'filter.status' | transloco }}</option>
-        <option value="approved">{{ 'badge.active' | transloco }}</option>
-        <option value="pending">{{ 'badge.pending' | transloco }}</option>
-        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
-      </select>
+    </div>
+
+    <div class="card table-card">
+      <app-data-state
+        [loading]="recordsLoading()"
+        [error]="recordsError()"
+        [empty]="filteredRecords().length === 0"
+        emptyKey="erp.empty"
+        (retry)="loadRecords()"
+      >
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'erp.name' | transloco }}</th>
+                <th>{{ 'erp.company' | transloco }}</th>
+                <th>{{ 'erp.status' | transloco }}</th>
+                <th>{{ 'erp.expiry' | transloco }}</th>
+                <th class="num">{{ 'actions.column' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of filteredRecords(); track row.erpSystemId) {
+                <tr>
+                  <td>
+                    <a class="table-link" [routerLink]="['/erp-systems', row.erpSystemId]">{{ row.systemName }}</a>
+                  </td>
+                  <td class="muted">{{ row.providerCompanyName }}</td>
+                  <td>
+                    @if (row.isLegacyIncomplete) {
+                      <span class="badge warn">{{ 'erp.incomplete' | transloco }}</span>
+                    } @else {
+                      <span class="badge" [class.ok]="row.isApproved" [class.warn]="!row.isApproved">
+                        {{ (row.isApproved ? 'badge.active' : 'erp.notApproved') | transloco }}
+                      </span>
+                    }
+                  </td>
+                  <td class="muted">
+                    @if (row.expiryDate) {
+                      {{ row.expiryDate | date: 'mediumDate' : undefined : locale.dateLocale() }}
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td>
+                    <app-approval-actions variant="manage" [viewHref]="'/erp-systems/' + row.erpSystemId" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="table-foot">
+          <p>{{ 'list.showing' | transloco: { shown: filteredRecords().length, total: filteredRecords().length } }}</p>
+          @if (recordsNextCursor()) {
+            <button class="page-btn" type="button" [disabled]="recordsLoadingMore()" (click)="loadMoreRecords()">
+              {{ (recordsLoadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+            </button>
+          }
+        </footer>
+      </app-data-state>
+    </div>
+  } @else {
+    <div class="card table-card">
+      <app-data-state
+        [loading]="requestsLoading()"
+        [error]="requestsError()"
+        [empty]="requests().length === 0"
+        emptyKey="erp.emptyPending"
+        (retry)="loadRequests()"
+      >
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'erp.name' | transloco }}</th>
+                <th>{{ 'erp.changeKind' | transloco }}</th>
+                <th>{{ 'merchants.submitted' | transloco }}</th>
+                <th>{{ 'erp.status' | transloco }}</th>
+                <th class="num">{{ 'actions.column' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of requests(); track row.requestId) {
+                <tr>
+                  <td>{{ row.requested.systemName }}</td>
+                  <td class="muted">{{ changeKindLabel(row.changeKind) | transloco }}</td>
+                  <td class="muted">{{ row.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                  <td>
+                    <span class="badge" [class]="statusBadgeClass(row.status)">
+                      {{
+                        (row.status === 'approved'
+                          ? 'badge.active'
+                          : row.status === 'rejected'
+                            ? 'badge.rejected'
+                            : 'appStatus.pendingChecker'
+                        ) | transloco
+                      }}
+                    </span>
+                  </td>
+                  <td>
+                    <app-approval-actions
+                      variant="decide"
+                      [show]="row.status === 'pendingChecker' && auth.canApprove('erp')"
+                      (approve)="decide(row, 'approved')"
+                      (reject)="askReject(row)"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="table-foot">
+          <p>{{ 'list.showing' | transloco: { shown: requests().length, total: requests().length } }}</p>
+          @if (requestsNextCursor()) {
+            <button class="page-btn" type="button" [disabled]="requestsLoadingMore()" (click)="loadMoreRequests()">
+              {{ (requestsLoadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+            </button>
+          }
+        </footer>
+      </app-data-state>
     </div>
   }
-
-  <div class="card table-card">
-    <app-data-state
-      [loading]="loading()"
-      [error]="error()"
-      [empty]="filtered().length === 0"
-      emptyKey="erp.empty"
-      (retry)="load()"
-    >
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>{{ 'erp.name' | transloco }}</th>
-              <th>{{ 'erp.company' | transloco }}</th>
-              <th>{{ 'erp.status' | transloco }}</th>
-              <th>{{ 'erp.expiry' | transloco }}</th>
-              <th>{{ 'actions.column' | transloco }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.id) {
-              <tr>
-                <td>
-                  <a class="table-link" [routerLink]="['/erp-systems', row.id]">{{ row.name }}</a>
-                </td>
-                <td class="muted">{{ row.vendor }}</td>
-                <td>
-                  <span
-                    class="badge"
-                    [class.ok]="row.status === 'approved'"
-                    [class.warn]="row.status === 'pending'"
-                    [class.danger]="row.status === 'rejected'"
-                  >
-                    {{ badgeKey(row.status) | transloco }}
-                  </span>
-                </td>
-                <td class="muted">{{ row.contractExpiry | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                <td>
-                  <app-approval-actions
-                    [variant]="row.status === 'pending' ? 'review' : 'manage'"
-                    [viewHref]="'/erp-systems/' + row.id"
-                  />
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <footer class="table-foot">
-        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
-        <div class="pager">
-          <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-            <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
-          </button>
-          @for (n of pages(); track n) {
-            <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
-          }
-          <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-            <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
-          </button>
-        </div>
-      </footer>
-    </app-data-state>
-  </div>
 </section>
+
+@if (rejecting(); as row) {
+  <div class="overlay-modal">
+    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
+      <header class="overlay-head">
+        <h2>{{ 'actions.reject' | transloco }} — {{ row.requested.systemName }}</h2>
+        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
+      </header>
+      <label class="form-field">
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+      </label>
+      <div class="overlay-actions">
+        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+          {{ 'actions.confirmReject' | transloco }}
+        </button>
+      </div>
+    </article>
+  </div>
+}

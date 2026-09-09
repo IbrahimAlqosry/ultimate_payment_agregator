@@ -33,8 +33,17 @@
       </label>
       <label class="form-field">
         <span>{{ 'register.erp' | transloco }}</span>
-        <input [formField]="form.erpSystemId" [placeholder]="'register.erpPh' | transloco" />
-        <p class="field-hint">{{ 'register.erpHint' | transloco }}</p>
+        <select [formField]="form.erpSystemId">
+          <option value="">{{ (erpsLoading() ? 'register.erpLoading' : 'register.erpPh') | transloco }}</option>
+          @for (erp of erps(); track erp.erpSystemId) {
+            <option [value]="erp.erpSystemId">{{ erp.systemName }}</option>
+          }
+        </select>
+        @if (erpsFailed()) {
+          <p class="field-hint error">{{ 'register.erpLoadFailed' | transloco }}</p>
+        } @else if (!erpsLoading() && erps().length === 0) {
+          <p class="field-hint error">{{ 'register.erpEmpty' | transloco }}</p>
+        }
         <app-field-error [state]="form.erpSystemId()" />
       </label>
     </div>

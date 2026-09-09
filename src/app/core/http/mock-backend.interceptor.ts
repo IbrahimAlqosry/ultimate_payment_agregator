@@ -117,6 +117,7 @@ function session(req: HttpRequest<unknown>): AuthUser | null {
     jobTitleKey: payload.jobTitleKey,
     orgName: payload.orgName,
     orgId: payload.orgId,
+    permissions: [],
   };
 }
 
