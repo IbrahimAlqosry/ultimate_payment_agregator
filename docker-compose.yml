@@ -1,0 +1,27 @@
+# Standalone bring-up:
+#   docker compose up -d --build
+#   -> http://localhost:8080, proxying /pa-api to API_BACKEND below.
+#
+# To join the backend's own compose network instead (recommended once you know its
+# service/network names — ask the backend developer):
+#   1. remove the `environment: API_BACKEND` line's IP and use the backend's service name
+#      instead, e.g. API_BACKEND=http://backend:9519
+#   2. uncomment `networks:` below (both the service block and the top-level declaration)
+#      and set `name:` to their compose project's network — find it with:
+#        docker network ls
+#      (usually `<backend-project-folder-name>_default` unless they named one explicitly)
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      API_BACKEND: http://88.80.145.121:9519
+    restart: unless-stopped
+    # networks:
+    #   - backend-net
+
+# networks:
+#   backend-net:
+#     external: true
+#     name: <the-backend-compose-network-name>
