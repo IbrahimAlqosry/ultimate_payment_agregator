@@ -35,7 +35,7 @@ export class MerchantDetail implements OnInit {
 
   // The real backend has no current-user endpoint, so the operator's actual Maker/Checker role
   // is unknown client-side. Gate by record status instead — the server enforces who may act.
-  readonly canSubmit = () => this.row()?.status === 'awaitingMaker';
+  readonly canSubmit = () => this.row()?.status === 'awaitingMaker' && this.auth.canSubmit('merchant');
   readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('merchant');
 
   ngOnInit(): void {

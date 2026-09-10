@@ -35,7 +35,7 @@ export class ErpSystems {
   readonly locale = inject(LocaleService);
 
   readonly tab = signal<ListTab>('all');
-  query = '';
+  readonly query = signal('');
 
   // --- All records ---
   readonly recordsLoading = signal(true);
@@ -44,7 +44,7 @@ export class ErpSystems {
   readonly records = signal<ErpSystemDetails[]>([]);
   readonly recordsNextCursor = signal<string | null>(null);
   readonly filteredRecords = computed(() => {
-    const q = this.query.trim().toLowerCase();
+    const q = this.query().trim().toLowerCase();
     if (!q) {
       return this.records();
     }
@@ -77,7 +77,7 @@ export class ErpSystems {
   }
 
   onQuery(query: string): void {
-    this.query = query;
+    this.query.set(query);
   }
 
   setTab(tab: ListTab, updateUrl = true): void {

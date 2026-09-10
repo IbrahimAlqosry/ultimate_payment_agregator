@@ -466,14 +466,19 @@ export function resolvePointScope(user: AuthUser, requested = 'all'): string {
 
 export function scopedPoints(user: AuthUser, scope: string, q = ''): PaymentPoint[] {
   const resolved = resolvePointScope(user, scope);
-  let rows = PAYMENT_POINTS;
-  if (resolved === 'mine' && user.orgName) {
-    rows = rows.filter((row) => row.merchantName === user.orgName);
-  } else if ((resolved === 'institution' || resolved === 'pending') && user.orgName) {
-    rows = rows.filter((row) => row.institutionName === user.orgName);
+  // Fail closed, not open: an org-scoped view with no orgName to scope by (e.g. a real-backend
+  // login, which never carries one — see AuthService.composeUser) must return nothing, never
+  // silently fall through to every merchant's/institution's rows.
+  let rows: PaymentPoint[];
+  if (resolved === 'mine') {
+    rows = user.orgName ? PAYMENT_POINTS.filter((row) => row.merchantName === user.orgName) : [];
+  } else if (resolved === 'institution' || resolved === 'pending') {
+    rows = user.orgName ? PAYMENT_POINTS.filter((row) => row.institutionName === user.orgName) : [];
     if (resolved === 'pending') {
       rows = rows.filter((row) => row.status === 'pending');
     }
+  } else {
+    rows = PAYMENT_POINTS;
   }
   const needle = q.trim().toLowerCase();
   if (!needle) {
@@ -488,11 +493,14 @@ export function scopedPoints(user: AuthUser, scope: string, q = ''): PaymentPoin
 }
 
 export function scopedNotifications(user: AuthUser, q = ''): PaymentNotification[] {
-  let rows = NOTIFICATIONS;
-  if (user.audience === 'merchant' && user.orgName) {
-    rows = rows.filter((row) => row.merchantName === user.orgName);
-  } else if (user.audience === 'institution' && user.orgName) {
-    rows = rows.filter((row) => row.institutionName === user.orgName);
+  // Fail closed — see the matching comment in scopedPoints().
+  let rows: PaymentNotification[];
+  if (user.audience === 'merchant') {
+    rows = user.orgName ? NOTIFICATIONS.filter((row) => row.merchantName === user.orgName) : [];
+  } else if (user.audience === 'institution') {
+    rows = user.orgName ? NOTIFICATIONS.filter((row) => row.institutionName === user.orgName) : [];
+  } else {
+    rows = NOTIFICATIONS;
   }
   const needle = q.trim().toLowerCase();
   if (!needle) {
@@ -515,8 +523,9 @@ export function buildDashboard(user: AuthUser): DashboardPayload {
       )
     : [];
   const orgNotes = scopedNotifications(user);
-  const integration =
-    INTEGRATION_USERS.find((row) => row.organization === user.orgName) ?? INTEGRATION_USERS[0];
+  // No fallback to INTEGRATION_USERS[0] — that would show a different org's integration status
+  // when orgName is missing (see scopedPoints()'s fail-closed comment).
+  const integration = user.orgName ? INTEGRATION_USERS.find((row) => row.organization === user.orgName) : undefined;
 
   return {
     audience: user.audience,

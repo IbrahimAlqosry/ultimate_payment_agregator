@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'erp.title' | transloco }}</h1>
-    @if (tab() === 'all' && auth.hasPermission('platform.erp-systems.submit')) {
+    @if (tab() === 'all' && auth.canSubmit('erp')) {
       <a class="btn btn-primary" routerLink="/erp-systems/new">{{ 'cta.addErp' | transloco }}</a>
     }
   </header>
@@ -23,7 +23,7 @@
 
   @if (tab() === 'all') {
     <div class="filters">
-      <app-search-field [seed]="query" placeholderKey="erp.search" (queryChange)="onQuery($event)" />
+      <app-search-field [seed]="query()" placeholderKey="erp.search" (queryChange)="onQuery($event)" />
     </div>
 
     <div class="card table-card">

@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
 import { AtlasApi } from '@core/http/atlas-api';
-import { readApiError } from '@core/http/http-error';
+import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { AccountProfile } from '@core/models';
 import { MerchantProfileResponse } from '@core/models.platform';
@@ -102,7 +102,7 @@ export class AccountSettings {
     this.merchantApiError.set(null);
     await submit(this.merchantForm, async () => {
       if (!this.merchantConcurrencyToken) {
-        this.merchantApiError.set('Missing concurrency token — reload and try again.');
+        this.merchantApiError.set(MISSING_CONCURRENCY_TOKEN_MESSAGE);
         return undefined;
       }
       const value = this.merchantForm().value();

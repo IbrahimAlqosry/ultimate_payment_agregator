@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
-import { canManageOperators } from './access';
+import { canAdministerOperators } from './access';
 import { AuthService } from './auth.service';
 import { allowedAudiencesForPath } from './nav';
 import { Audience } from '@core/models';
@@ -17,7 +17,7 @@ export const adminGuard: CanActivateFn = () => {
   if (!auth.isAuthenticated()) {
     return router.createUrlTree(['/login']);
   }
-  return canManageOperators(auth.user()) ? true : router.createUrlTree(['/dashboard']);
+  return canAdministerOperators(auth.user()) ? true : router.createUrlTree(['/dashboard']);
 };
 
 export const audienceGuard =

@@ -1,6 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ProblemDetails } from '@core/models.platform';
 
+/** Shared guard message for "we don't have the record's concurrencyToken yet, so submitting
+ * would just fail server-side" — shown before ever making the request, so it's not a ProblemDetails
+ * response and doesn't go through readApiError(). Kept as one plain string, matching how every
+ * server-derived error in this app already displays (readApiError().message is never translated
+ * either), rather than three near-identical copies drifting across call sites. */
+export const MISSING_CONCURRENCY_TOKEN_MESSAGE = 'Missing concurrency token — reload and try again.';
+
 export interface ApiError {
   status: number;
   message: string;

@@ -4,7 +4,7 @@ import { email, FormField, form, required, submit } from '@angular/forms/signals
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { readApiError } from '@core/http/http-error';
+import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { FinancialInstitutionSelfProfileResponse } from '@core/models.platform';
@@ -66,7 +66,7 @@ export class InstitutionProfile {
     this.apiError.set(null);
     await submit(this.contactForm, async () => {
       if (!this.concurrencyToken) {
-        this.apiError.set('Missing concurrency token — reload and try again.');
+        this.apiError.set(MISSING_CONCURRENCY_TOKEN_MESSAGE);
         return undefined;
       }
       const value = this.contactForm().value();

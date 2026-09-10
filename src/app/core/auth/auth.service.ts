@@ -2,16 +2,17 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
-import { canApprove, canManageOperators, canMutate, hasPermission, isReadOnly } from '@core/auth/access';
+import { canAdministerOperators, canApprove, canMutate, canSubmit, hasPermission, isReadOnly } from '@core/auth/access';
 import { apiUrl } from '@core/http/api-url';
 import { LoadingService } from '@core/http/loading.service';
 import { PlatformApi } from '@core/http/platform-api';
-import { ApprovalEntity, Audience, AuthUser, MerchantSignup, UserRole } from '@core/models';
+import { ApprovalEntity, Audience, AuthUser, UserRole } from '@core/models';
 import {
   AuthMeResponse,
   FinancialInstitutionBootstrapRequest,
   MerchantBootstrapRequest,
   PlatformAccountType,
+  PlatformPermission,
   SelfServiceMerchantOnboardingRequest,
 } from '@core/models.platform';
 
@@ -65,7 +66,7 @@ export class AuthService {
   readonly user = computed(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => this.user() !== null);
   readonly readOnly = computed(() => isReadOnly(this.user()));
-  readonly admin = computed(() => canManageOperators(this.user()));
+  readonly admin = computed(() => canAdministerOperators(this.user()));
   readonly canMutate = computed(() => canMutate(this.user()));
   readonly csrfToken = computed(() => this.session()?.csrfToken ?? null);
   readonly otpExpiresAt = computed(() => this.pending()?.expiresAt ?? null);
@@ -80,8 +81,13 @@ export class AuthService {
     return canApprove(this.user(), entity);
   }
 
-  /** Real grant check against GET /auth/me's permissions (e.g. 'platform.erp-systems.submit'). */
-  hasPermission(permission: string): boolean {
+  /** Mirrors canApprove() for the Maker-side submit action on the same entity. */
+  canSubmit(entity: ApprovalEntity): boolean {
+    return canSubmit(this.user(), entity);
+  }
+
+  /** Real grant check against GET /auth/me's permissions. */
+  hasPermission(permission: PlatformPermission): boolean {
     return hasPermission(this.user(), permission);
   }
 
@@ -109,8 +115,9 @@ export class AuthService {
         // guard or component reading `user()` mid-flight never sees a half-composed identity.
         return this.platformApi.getMe().pipe(map((me) => ({ csrfToken, me })));
       }),
-      tap(({ csrfToken, me }) => {
-        this.session.set({ user: this.composeUser(challenge.email, me), csrfToken });
+      switchMap(({ csrfToken, me }) => this.buildUser(challenge.email, me).pipe(map((user) => ({ csrfToken, user })))),
+      tap(({ csrfToken, user }) => {
+        this.session.set({ user, csrfToken });
         this.pending.set(null);
         this.persistMarker({ email: challenge.email });
       }),
@@ -132,8 +139,9 @@ export class AuthService {
   restoreSession(): Observable<void> {
     const marker = this.readMarker();
     return this.platformApi.getMe().pipe(
-      tap((me) => {
-        this.session.set({ user: this.composeUser(marker?.email ?? '', me), csrfToken: null });
+      switchMap((me) => this.buildUser(marker?.email ?? '', me)),
+      tap((user) => {
+        this.session.set({ user, csrfToken: null });
       }),
       catchError((err: unknown) => {
         if (err instanceof HttpErrorResponse && err.status === 401) {
@@ -200,20 +208,22 @@ export class AuthService {
     return this.http.post(apiUrl('/auth/forgot'), { email });
   }
 
-  /** Mock-only merchant sign-up — superseded by registerMerchant() for the real backend. */
-  register(payload: MerchantSignup) {
-    return this.http.post(apiUrl('/auth/register'), payload);
-  }
-
   /** email may be '' when restoring without a marker (see restoreSession) — accountType, role,
-   * and permissions always come from the real `me` response, never guessed. */
-  private composeUser(email: string, me: AuthMeResponse): AuthUser {
+   * and permissions always come from the real `me` response, never guessed.
+   *
+   * For Merchant/FI audiences, also fetches the account's own profile to fill in `orgName`/
+   * `orgId` — `GET /auth/me` itself carries neither. Those two fields gate real scoping/display
+   * logic in several still-mock-backed screens (e.g. "My Payment Points"), which fail closed
+   * (show nothing) rather than leak other orgs' data when they're missing — but leaving them
+   * genuinely unset there is a real usability bug, not just a display nicety, so this is not
+   * optional. A profile-fetch failure degrades to no org name/id rather than failing the login. */
+  private buildUser(email: string, me: AuthMeResponse): Observable<AuthUser> {
     const audience = audienceFromAccountType(me.accountType);
     // Marker missing is a rare edge case (e.g. sessionStorage cleared but the cookie survived) —
     // /auth/me itself never returns an email, so there is nothing better to show here.
     const name = email ? displayNameFromEmail(email) : 'Account';
     const role: UserRole = audience === 'operator' ? (me.role ?? 'reader') : audience;
-    return {
+    const base: AuthUser = {
       id: email || audience,
       email,
       name,
@@ -223,6 +233,19 @@ export class AuthService {
       jobTitleKey: `role.${role}`,
       permissions: me.permissions,
     };
+    if (audience === 'merchant') {
+      return this.platformApi.getOwnMerchantProfile().pipe(
+        map((profile) => ({ ...base, orgName: profile.legalName, orgId: profile.merchantId })),
+        catchError(() => of(base)),
+      );
+    }
+    if (audience === 'institution') {
+      return this.platformApi.getOwnFinancialInstitutionProfile().pipe(
+        map((profile) => ({ ...base, orgName: profile.legalName, orgId: profile.financialInstitutionId })),
+        catchError(() => of(base)),
+      );
+    }
+    return of(base);
   }
 
   private persistMarker(marker: SessionMarker): void {

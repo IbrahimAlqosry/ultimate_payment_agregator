@@ -3,7 +3,7 @@ import { FormField, email, form, required, submit, validate } from '@angular/for
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import { readApiError } from '@core/http/http-error';
+import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -93,7 +93,7 @@ export class AddErp implements OnInit {
       try {
         if (id) {
           if (!this.concurrencyToken) {
-            throw new Error('Missing concurrency token — reload and try again.');
+            throw new Error(MISSING_CONCURRENCY_TOKEN_MESSAGE);
           }
           await firstValueFrom(this.api.submitErpUpdate(id, { ...body, concurrencyToken: this.concurrencyToken }));
         } else {

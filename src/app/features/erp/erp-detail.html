@@ -71,7 +71,7 @@
           </p>
         }
 
-        @if (auth.hasPermission('platform.erp-systems.submit')) {
+        @if (auth.canSubmit('erp')) {
           <div class="form-actions">
             <a class="cta" [routerLink]="['/erp-systems', erp.erpSystemId, 'edit']">{{ 'erp.proposeUpdate' | transloco }}</a>
           </div>

@@ -7,6 +7,39 @@
 export type PlatformAudience = 'operator' | 'merchant' | 'institution';
 export type PlatformOperatorRole = 'admin' | 'maker' | 'checker' | 'reader';
 
+/** Every real `platform.*` grant string GET /auth/me can return, named — nothing in `core/auth`
+ * or components should spell one out as a raw string literal (see `access.ts`'s `hasPermission`,
+ * `DECIDE_PERMISSION`, `SUBMIT_PERMISSION`). Catalog verified live via
+ * GET /platform-operator-administration/permissions.
+ *
+ * A `const` object + derived union, not a TS `enum` — matches this file's own convention for
+ * every other fixed backend string set (`ApplicationStatus`, `PlatformOperatorRole`, etc.), and
+ * the values stay plain strings, so no cast is needed anywhere a raw `string` from the backend
+ * (e.g. `AuthMeResponse.permissions`) needs comparing against one. */
+export const PlatformPermission = {
+  MerchantOnboardingSubmit: 'platform.merchant-onboarding.submit',
+  MerchantOnboardingDecide: 'platform.merchant-onboarding.decide',
+  MerchantOnboardingRead: 'platform.merchant-onboarding.read',
+  FinancialInstitutionOnboardingSubmit: 'platform.financial-institution-onboarding.submit',
+  FinancialInstitutionOnboardingDecide: 'platform.financial-institution-onboarding.decide',
+  FinancialInstitutionOnboardingRead: 'platform.financial-institution-onboarding.read',
+  IntegrationClientApprovalsSubmit: 'platform.integration-client-approvals.submit',
+  IntegrationClientApprovalsDecide: 'platform.integration-client-approvals.decide',
+  IntegrationClientApprovalsRead: 'platform.integration-client-approvals.read',
+  ErpSystemsSubmit: 'platform.erp-systems.submit',
+  ErpSystemsDecide: 'platform.erp-systems.decide',
+  ErpSystemsRead: 'platform.erp-systems.read',
+  OperatorsInvite: 'platform.operators.invite',
+  OperatorsChange: 'platform.operators.change',
+  OperatorsDecide: 'platform.operators.decide',
+  OperatorsRead: 'platform.operators.read',
+  ProfilesSubmit: 'platform.profiles.submit',
+  ProfilesDecide: 'platform.profiles.decide',
+  ProfilesRead: 'platform.profiles.read',
+} as const;
+
+export type PlatformPermission = (typeof PlatformPermission)[keyof typeof PlatformPermission];
+
 export type ApplicationStatus = 'awaitingMaker' | 'pendingChecker' | 'provisioning' | 'active' | 'rejected';
 export type ApplicationOrigin = 'selfService' | 'platformAssisted';
 export type OnboardingDecision = 'approved' | 'rejected';

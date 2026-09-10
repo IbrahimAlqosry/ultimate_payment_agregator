@@ -6,7 +6,7 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import { environment } from '@env/environment';
-import { canApprove, canManageOperators, canMutate } from '@core/auth/access';
+import { canAdministerOperators, canApprove, canMutate } from '@core/auth/access';
 import { decodeJwtPayload } from '@core/auth/jwt';
 import {
   ApprovalRequest,
@@ -372,7 +372,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (req.method === 'GET' && (path === apiUrl('/operators') || path === apiUrl('/users'))) {
-    if (!canManageOperators(user)) {
+    if (!canAdministerOperators(user)) {
       return fail(403, 'FORBIDDEN');
     }
     if (query(req, 'fail') === '1') {
@@ -384,7 +384,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (req.method === 'POST' && path === apiUrl('/operators')) {
-    if (!canManageOperators(user)) {
+    if (!canAdministerOperators(user)) {
       return fail(403, 'FORBIDDEN');
     }
     const body = req.body as OperatorDraft;
@@ -412,7 +412,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   const operatorId = resourceId(path, 'operators');
   if (req.method === 'PUT' && operatorId) {
-    if (!canManageOperators(user)) {
+    if (!canAdministerOperators(user)) {
       return fail(403, 'FORBIDDEN');
     }
     const row = OPERATORS.find((item) => item.id === operatorId);

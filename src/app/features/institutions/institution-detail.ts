@@ -13,6 +13,7 @@ import {
   FinancialInstitutionProfileResponse,
   GovernedProfileChangeResponse,
   PlatformInstitutionType,
+  PlatformPermission,
 } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
@@ -40,9 +41,9 @@ export class InstitutionDetail implements OnInit {
   readonly acting = signal(false);
   readonly actionError = signal<string | null>(null);
 
-  // Gated by real GET /auth/me permissions (see core/auth/access.ts's canApprove) — the record
-  // status still narrows which of those permitted actions makes sense at this point in the flow.
-  readonly canSubmit = () => this.row()?.status === 'awaitingMaker';
+  // Gated by real GET /auth/me permissions (see core/auth/access.ts's canApprove/canSubmit) — the
+  // record status narrows which of those permitted actions makes sense at this point in the flow.
+  readonly canSubmit = () => this.row()?.status === 'awaitingMaker' && this.auth.canSubmit('institution');
   readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('institution');
 
   // --- Platform-governed profile changes (only meaningful once the FI is active) --------------
@@ -54,8 +55,8 @@ export class InstitutionDetail implements OnInit {
   readonly changeActing = signal(false);
   readonly rejectingChange = signal<GovernedProfileChangeResponse | null>(null);
   readonly changeReason = signal('');
-  readonly canProposeChange = () => this.auth.hasPermission('platform.profiles.submit');
-  readonly canDecideChange = () => this.auth.hasPermission('platform.profiles.decide');
+  readonly canProposeChange = () => this.auth.hasPermission(PlatformPermission.ProfilesSubmit);
+  readonly canDecideChange = () => this.auth.hasPermission(PlatformPermission.ProfilesDecide);
 
   readonly changeForm = form(
     signal({

@@ -33,7 +33,7 @@ export class Institutions {
   readonly nextCursor = signal<string | null>(null);
   readonly tab = signal<ListTab>('all');
   readonly statusFilter = signal('');
-  query = '';
+  readonly query = signal('');
 
   readonly pendingCount = computed(() => this.all().filter((row) => PENDING_STATUSES.includes(row.status)).length);
   readonly filtered = computed(() => {
@@ -45,7 +45,7 @@ export class Institutions {
     if (status) {
       rows = rows.filter((row) => row.status === status);
     }
-    const q = this.query.trim().toLowerCase();
+    const q = this.query().trim().toLowerCase();
     if (q) {
       rows = rows.filter(
         (row) =>
@@ -68,7 +68,7 @@ export class Institutions {
   }
 
   onQuery(query: string): void {
-    this.query = query;
+    this.query.set(query);
   }
 
   setTab(tab: ListTab): void {
