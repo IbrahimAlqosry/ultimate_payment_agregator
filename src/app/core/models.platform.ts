@@ -36,6 +36,18 @@ export const PlatformPermission = {
   ProfilesSubmit: 'platform.profiles.submit',
   ProfilesDecide: 'platform.profiles.decide',
   ProfilesRead: 'platform.profiles.read',
+  /** Live-verified via `/auth/me` against the real backend (guide v4.0 §15): Maker carries
+   * `.submit`, Admin carries `.decide`, both carry `.read` — same maker-checker shape as every
+   * other entity here, despite the API path itself being `notification-endpoint-configurations`. */
+  NotificationEndpointsSubmit: 'platform.notification-endpoints.submit',
+  NotificationEndpointsDecide: 'platform.notification-endpoints.decide',
+  NotificationEndpointsRead: 'platform.notification-endpoints.read',
+  /** Guide v5.0 §16 — direct Checker/Admin actions, not a maker-submit/decide pair. */
+  NotificationDeliveriesRead: 'platform.notification-deliveries.read',
+  NotificationDeliveriesRemediate: 'platform.notification-deliveries.remediate',
+  NotificationDeliveriesReplay: 'platform.notification-deliveries.replay',
+  /** Guide v5.0 §17 — read-only. */
+  AuditRead: 'platform.audit.read',
 } as const;
 
 export type PlatformPermission = (typeof PlatformPermission)[keyof typeof PlatformPermission];
@@ -511,4 +523,396 @@ export interface PaymentPoint {
 export interface PaymentPointDecisionRequest {
   decision: OnboardingDecision;
   rejectionReason?: string | null;
+}
+
+// --- Merchant payment inquiry (guide v4.0 §13) --------------------------------
+
+export interface PaymentInquiryRequest {
+  financialInstitutionId: string;
+  transactionId: string;
+}
+
+export type TransactionStatus = '00002' | '00007';
+export type PaymentMatchStatus =
+  | 'unmatched'
+  | 'matchedByTransactionId'
+  | 'matchedByNotificationTap'
+  | 'conflict';
+export type PaymentCurrency = 'USD' | 'SAR' | 'YER';
+
+export interface PaymentInquiryResponse {
+  financialInstitutionId: string;
+  transactionId: string;
+  /** '00002' = Paid, '00007' = Refunded — kept as a string, not parsed into a boolean/enum, per
+   * the guide: treat unrecognized codes defensively rather than assuming only these two exist. */
+  transactionStatus: TransactionStatus;
+  transactionDate: string;
+  amount: number;
+  currency: PaymentCurrency;
+  pointNumber: string;
+  matchStatus: PaymentMatchStatus;
+}
+
+// --- Merchant payment matching (guide v4.0 §14) -------------------------------
+// Two actions (by-transaction-id, by-notification-tap) share the same request/response shape and
+// validation. Every attempt needs one Idempotency-Key header — a real, load-bearing retry key,
+// not decoration — see PlatformApi.matchByTransactionId/matchByNotificationTap.
+
+export interface PaymentMatchRequest {
+  financialInstitutionId: string;
+  transactionId: string;
+  invoiceReference: string;
+  expectedAmount: number;
+  currency: PaymentCurrency;
+}
+
+export type PaymentMatchMethod = 'transactionId' | 'notificationTap';
+export type PaymentMatchOutcome = 'matched' | 'conflict';
+/** A conflict is a normal, expected HTTP 200 business outcome, not an error — see
+ * PaymentMatchResponse's own doc comment. */
+export type PaymentMatchConflictKind = 'amount' | 'reference' | 'duplicate' | 'noNotification' | null;
+
+/** HTTP 200 does not mean "matched" — always check `outcome` first. A `conflict` outcome is a
+ * normal business result the UI must render as a conflict, not a thrown error (guide §14.3). */
+export interface PaymentMatchResponse {
+  method: PaymentMatchMethod;
+  outcome: PaymentMatchOutcome;
+  conflictKind: PaymentMatchConflictKind;
+  recordedAt: string;
+  matchedAt: string | null;
+}
+
+// --- Merchant notification settings + Platform review (guide v4.0 §15) -------
+
+export type CallbackAuthenticationMode = 'basic' | 'oauth2ClientCredentials' | 'customHeader' | 'staticBearerJwt';
+
+export interface BasicCallbackAuthentication {
+  mode: 'basic';
+  username: string;
+  password: string;
+}
+
+export interface OAuth2CallbackAuthentication {
+  mode: 'oauth2ClientCredentials';
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  scope?: string;
+}
+
+export interface CustomHeaderCallbackAuthentication {
+  mode: 'customHeader';
+  headerName: string;
+  headerValue: string;
+}
+
+export interface StaticBearerJwtCallbackAuthentication {
+  mode: 'staticBearerJwt';
+  token: string;
+}
+
+/** A discriminated union on `mode` — send exactly the fields for the selected mode, nothing
+ * else. There is no "none" mode. */
+export type CallbackAuthenticationRequest =
+  | BasicCallbackAuthentication
+  | OAuth2CallbackAuthentication
+  | CustomHeaderCallbackAuthentication
+  | StaticBearerJwtCallbackAuthentication;
+
+export type NotificationConfigurationStatus = 'awaitingMaker' | 'pendingChecker' | 'approved' | 'rejected';
+
+export interface NotificationEndpointConfigurationInput {
+  callbackUrl: string;
+  authentication: CallbackAuthenticationRequest;
+}
+
+/** GET /notification-endpoint-configurations (Merchant) — the latest *submitted* version, which
+ * may not be the active one. Never carries any authentication secret back — GET cannot recover
+ * what was entered, by design (guide §15.1). */
+export interface NotificationEndpointConfigurationMetadata {
+  configurationId: string;
+  version: number;
+  callbackUrl: string;
+  authenticationMode: CallbackAuthenticationMode;
+  status: NotificationConfigurationStatus;
+  isActive: boolean;
+  isVerified: boolean;
+  approvalRequired: boolean;
+  createdAt: string;
+  staticJwtExpiresAt: string | null;
+}
+
+/** The Platform review shape — same 10 Merchant-visible fields plus 7 approval fields. Still no
+ * Merchant identity and no authentication values (guide §15.5). */
+export interface NotificationEndpointConfigurationReview extends NotificationEndpointConfigurationMetadata {
+  approvalRequestId: string | null;
+  makerSubmittedAt: string | null;
+  makerVerifiedAt: string | null;
+  activationVerifiedAt: string | null;
+  decidedAt: string | null;
+  rejectionReason: string | null;
+  concurrencyToken: string | null;
+}
+
+export interface NotificationEndpointConfigurationReviewPage {
+  items: NotificationEndpointConfigurationReview[];
+  /** Opaque 27-character string, NOT a UUID like every other cursor in this API — omit on the
+   * first page rather than sending an empty string (guide §15.5). */
+  nextCursor: string | null;
+}
+
+export interface NotificationEndpointConfigurationDecisionRequest {
+  decision: OnboardingDecision;
+  concurrencyToken: string;
+  rejectionReason?: string;
+}
+
+// --- Platform delivery recovery and replay (guide v5.0 §16) ------------------
+// Reads need `.read`; remediation/replay are direct Checker/Admin actions gated by their own
+// permission — there is no separate maker-submit step here, unlike every other entity in this file.
+
+export type NotificationDeliveryState =
+  | 'authenticationPaused'
+  | 'deadLettered'
+  | 'replayPending'
+  | 'processing'
+  | 'retryPublishing'
+  | 'retryScheduled'
+  | 'deadLetterPublishing'
+  | 'succeeded'
+  | 'permanentlyFailed';
+
+/** The attention list (§16.1) only ever returns `authenticationPaused`/`deadLettered` rows; the
+ * other states can appear when reading a specific delivery (e.g. a replay) by ID. */
+export type DeliveryAttentionState = 'authenticationPaused' | 'deadLettered';
+
+export type DeliveryFailureClass =
+  | 'none'
+  | 'callbackAuthentication'
+  | 'oauthAuthentication'
+  | 'endpointPaused'
+  | 'configurationUnavailable'
+  | 'destinationPolicy'
+  | 'dnsFailure'
+  | 'connectFailure'
+  | 'tlsFailure'
+  | 'networkFailure'
+  | 'timeout'
+  | 'http408'
+  | 'http429'
+  | 'http5xx'
+  | 'redirectDenied'
+  | 'http4xx'
+  | 'protocolFailure'
+  | 'dependencyUnavailable'
+  | 'retryExhausted';
+
+export type DeliveryAttemptOutcome =
+  | 'interruptedUnknown'
+  | 'succeeded'
+  | 'authenticationFailed'
+  | 'transientFailed'
+  | 'permanentlyFailed';
+
+export interface DeliveryAttempt {
+  attemptId: string;
+  attemptNumber: number;
+  retryTier: number;
+  endpointConfigurationVersion: number;
+  outcome: DeliveryAttemptOutcome;
+  httpStatus: number | null;
+  /** 0 = no HTTP status recorded; 1-5 = the corresponding HTTP response class. */
+  statusClass: number;
+  failureClass: DeliveryFailureClass;
+  latencyMilliseconds: number | null;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export type DeliveryRemediationReason = 'configurationUpdated' | 'endpointRecovered' | 'operatorVerified';
+
+export interface DeliveryRemediation {
+  remediationId: string;
+  action: 'resume';
+  reason: DeliveryRemediationReason;
+  endpointConfigurationVersion: number;
+  recordedAt: string;
+}
+
+/** Shared shape for both the attention-list rows and single-delivery detail — list rows always
+ * carry `attempts: []` (not proof of no attempts; use `attemptCount` and open detail for history). */
+export interface NotificationDelivery {
+  deliveryId: string;
+  eventId: string;
+  state: NotificationDeliveryState;
+  failureClass: DeliveryFailureClass;
+  retryTier: number;
+  attemptCount: number;
+  publishedEndpointConfigurationVersion: number;
+  activeEndpointConfigurationVersion: number | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  originalDeliveryId: string | null;
+  replayDeliveryId: string | null;
+  remediation: DeliveryRemediation | null;
+  attempts: DeliveryAttempt[];
+}
+
+export interface NotificationDeliveryPage {
+  items: NotificationDelivery[];
+  /** Opaque 32-character string, NOT a UUID. */
+  nextCursor: string | null;
+}
+
+export interface DeliveryRemediationRequest {
+  reason: DeliveryRemediationReason;
+}
+
+export interface DeliveryReplayAcceptance {
+  commandId: string;
+  originalDeliveryId: string;
+  deliveryId: string;
+  eventId: string;
+  status: 'accepted' | 'published';
+  acceptedAt: string;
+}
+
+// --- Platform audit search (guide v5.0 §17) -----------------------------------
+
+export type AuditActorKind = 'anonymous' | 'system' | 'interactiveUser' | 'integrationClient';
+
+export type AuditAction =
+  | 'passwordAuthentication'
+  | 'otpAuthentication'
+  | 'sessionRevocation'
+  | 'approvalSubmitted'
+  | 'approvalDecided'
+  | 'integrationClientCreated'
+  | 'integrationClientCredentialsRotated'
+  | 'notificationEndpointVersionSubmitted'
+  | 'notificationEndpointActivated'
+  | 'paymentPointDecided'
+  | 'paymentNotificationConflict'
+  | 'paymentMatchingConflict'
+  | 'deliveryAuthenticationPaused'
+  | 'deliveryDeadLettered'
+  | 'deliveryRemediated'
+  | 'deliveryReplayAccepted'
+  | 'deliveryReplayPublished'
+  | 'deliveryReplayTerminal'
+  | 'platformOperatorInvitationSubmitted'
+  | 'platformOperatorChangeSubmitted'
+  | 'platformOperatorChangeApplied';
+
+export type AuditOutcome =
+  | 'succeeded'
+  | 'invalid'
+  | 'expiredOrReplayed'
+  | 'locked'
+  | 'revoked'
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'conflict'
+  | 'paused'
+  | 'deadLettered'
+  | 'accepted'
+  | 'published'
+  | 'permanentlyFailed';
+
+export type AuditEntityType =
+  | 'account'
+  | 'interactiveUser'
+  | 'otpChallenge'
+  | 'portalSession'
+  | 'approvalRequest'
+  | 'integrationClient'
+  | 'notificationEndpointConfiguration'
+  | 'paymentPoint'
+  | 'paymentNotification'
+  | 'paymentMatchCommand'
+  | 'notificationDelivery'
+  | 'platformOperatorInvitation'
+  | 'platformOperatorChange';
+
+export type AuditMetadataStatus = 'pending' | 'active' | 'suspended' | 'reactivated' | 'processing' | 'succeeded' | 'failed';
+
+export type AuditReasonClass =
+  | 'credentials'
+  | 'otpInvalid'
+  | 'otpExpiredOrReplayed'
+  | 'attemptLimit'
+  | 'logout'
+  | 'passwordReset'
+  | 'accountSuspended'
+  | 'userSuspended'
+  | 'roleChanged'
+  | 'permissionsChanged'
+  | 'securityStampRotated'
+  | 'duplicatePayload'
+  | 'amountConflict'
+  | 'referenceConflict'
+  | 'duplicateMatch'
+  | 'missingNotification'
+  | 'endpointAuthentication'
+  | 'retryExhausted'
+  | 'configurationUpdated'
+  | 'endpointRecovered'
+  | 'operatorVerified';
+
+export type AuditHttpStatusClass = '1xx' | '2xx' | '3xx' | '4xx' | '5xx';
+
+export type AuditWorkflow =
+  | 'merchantOnboarding'
+  | 'financialInstitutionOnboarding'
+  | 'platformOperator'
+  | 'erpSystem'
+  | 'governedProfile'
+  | 'integrationClient'
+  | 'notificationEndpointConfiguration';
+
+/** When present, all six keys are present and each value can independently be null. */
+export interface AuditEventMetadata {
+  status: AuditMetadataStatus | null;
+  reasonClass: AuditReasonClass | null;
+  version: number | null;
+  retryTier: number | null;
+  httpStatusClass: AuditHttpStatusClass | null;
+  workflow: AuditWorkflow | null;
+}
+
+export interface AuditEvent {
+  auditEventId: string;
+  actorKind: AuditActorKind;
+  actorSubjectId: string | null;
+  affectedAccountId: string | null;
+  action: AuditAction;
+  entityType: AuditEntityType | null;
+  entityReference: string | null;
+  occurredAt: string;
+  outcome: AuditOutcome;
+  /** Safe support reference, 1-64 chars; not necessarily a distributed trace ID. */
+  correlationId: string | null;
+  metadata: AuditEventMetadata | null;
+}
+
+export interface AuditEventPage {
+  items: AuditEvent[];
+  /** Opaque 32-character string, NOT a UUID. */
+  nextCursor: string | null;
+}
+
+export interface AuditSearchQuery {
+  accountId?: string;
+  action?: AuditAction;
+  outcome?: AuditOutcome;
+  entityType?: AuditEntityType;
+  entityReference?: string;
+  correlationId?: string;
+  /** UTC timestamps with explicit zero offset; `from` inclusive, `to` exclusive, `from` < `to`. */
+  from?: string;
+  to?: string;
+  pageSize?: number;
+  cursor?: string;
 }

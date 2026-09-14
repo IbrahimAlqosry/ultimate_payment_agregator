@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { IntegrationClientRotationRequestMetadata, RotationRequestStatus } from '@core/models.platform';
@@ -34,7 +34,7 @@ const PENDING_STATUSES: RotationRequestStatus[] = ['awaitingMaker', 'pendingChec
         </div>
       </header>
       @if (actionError(); as message) {
-        <p class="form-error" role="alert">{{ message }}</p>
+        <p class="form-error" role="alert">{{ message | transloco }}</p>
       }
       <div class="card table-card">
         <app-data-state
@@ -253,7 +253,7 @@ export class IntegrationRequests {
       },
       error: (err) => {
         this.acting.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
         this.load();
       },
     });
@@ -289,7 +289,7 @@ export class IntegrationRequests {
         this.load();
       },
       error: (err) => {
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
         this.load();
       },
     });

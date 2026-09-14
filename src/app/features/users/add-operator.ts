@@ -1,46 +1,45 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { email, FormField, form, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import { SCREEN_MODULES, defaultScreens } from '@core/auth/screens';
-import { AtlasApi } from '@core/http/atlas-api';
-import { Operator, OperatorRole, ScreenModule } from '@core/models';
+import { apiErrorMessageKey } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import { PlatformOperatorRole } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 
+/** Guide v5.0 §8.2 — confirmed live-fixed 2026-09-13 (see docs/BACKEND_ISSUES.md): the invite
+ * email must belong to the test server's configured corporate domain, confirmed with the test
+ * team beforehand; permissions are picked from the real 26-value catalog, not a screens list. */
 @Component({
   selector: 'app-add-operator',
   imports: [FormField, RouterLink, TranslocoPipe, FieldError],
   templateUrl: './add-operator.html',
-  styleUrl: '../../shared/form-page.scss',
+  styleUrls: ['../../shared/form-page.scss', './operator-detail.scss'],
 })
 export class AddOperator {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
-  readonly apiError = signal(false);
-  readonly step = signal<1 | 2>(1);
-  readonly operators = signal<Operator[]>([]);
-  readonly copyFrom = signal('');
-  readonly screens = signal<ScreenModule[]>(defaultScreens('admin'));
-  readonly modules = SCREEN_MODULES;
 
-  readonly roles = [
-    { id: 'maker' as const, titleKey: 'role.maker', hintKey: 'onboard.roleMaker' },
-    { id: 'checker' as const, titleKey: 'role.checker', hintKey: 'onboard.roleChecker' },
-    { id: 'reader' as const, titleKey: 'role.reader', hintKey: 'onboard.roleReader' },
-    { id: 'admin' as const, titleKey: 'role.admin', hintKey: 'onboard.roleAdmin' },
+  readonly apiError = signal<string | null>(null);
+  readonly catalog = signal<string[]>([]);
+  readonly selectedPermissions = signal<string[]>([]);
+
+  readonly roles: { id: PlatformOperatorRole; titleKey: string; hintKey: string }[] = [
+    { id: 'maker', titleKey: 'role.maker', hintKey: 'onboard.roleMaker' },
+    { id: 'checker', titleKey: 'role.checker', hintKey: 'onboard.roleChecker' },
+    { id: 'reader', titleKey: 'role.reader', hintKey: 'onboard.roleReader' },
+    { id: 'admin', titleKey: 'role.admin', hintKey: 'onboard.roleAdmin' },
   ];
 
   readonly form = form(
     signal({
-      name: '',
       email: '',
-      role: 'admin' as OperatorRole,
+      role: 'reader' as PlatformOperatorRole,
     }),
     (p) => {
-      required(p.name);
       required(p.email);
       email(p.email);
       required(p.role);
@@ -48,60 +47,37 @@ export class AddOperator {
   );
 
   constructor() {
-    this.api.operators().subscribe({
-      next: (rows) => this.operators.set(rows),
+    this.api.getOperatorPermissionCatalog().subscribe({
+      next: (page) => this.catalog.set(page.permissions),
     });
   }
 
-  selectRole(role: OperatorRole): void {
+  selectRole(role: PlatformOperatorRole): void {
     this.form.role().value.set(role);
   }
 
-  toggleScreen(id: ScreenModule): void {
-    this.screens.update((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+  togglePermission(permission: string): void {
+    this.selectedPermissions.update((current) =>
+      current.includes(permission) ? current.filter((item) => item !== permission) : [...current, permission],
     );
-  }
-
-  onCopy(event: Event): void {
-    const id = (event.target as HTMLSelectElement).value;
-    this.copyFrom.set(id);
-    const source = this.operators().find((row) => row.id === id);
-    if (source) {
-      this.screens.set(source.screens?.length ? [...source.screens] : defaultScreens(source.role));
-    }
-  }
-
-  back(): void {
-    this.step.set(1);
-  }
-
-  async goNext(event: Event): Promise<void> {
-    event.preventDefault();
-    this.apiError.set(false);
-    await submit(this.form, async () => {
-      this.screens.set(defaultScreens(this.form.role().value()));
-      this.copyFrom.set('');
-      this.step.set(2);
-      return undefined;
-    });
   }
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
-    this.apiError.set(false);
+    this.apiError.set(null);
     await submit(this.form, async () => {
       try {
         await firstValueFrom(
-          this.api.createOperator({
-            ...this.form().value(),
-            screens: this.screens(),
+          this.api.inviteOperator({
+            email: this.form().value().email,
+            role: this.form().value().role,
+            permissions: this.selectedPermissions(),
           }),
         );
         this.toast.ok('toast.operatorInvited');
-        await this.router.navigateByUrl('/operators');
-      } catch {
-        this.apiError.set(true);
+        await this.router.navigateByUrl('/operators?tab=requests');
+      } catch (err) {
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });

@@ -48,7 +48,7 @@
       </label>
     </div>
     @if (apiError(); as message) {
-      <p class="form-error" role="alert">{{ message }}</p>
+      <p class="form-error" role="alert">{{ message | transloco }}</p>
     }
     <div class="form-actions">
       <button class="cta" type="submit" [disabled]="form().submitting()">

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { IntegrationClientCredentialOnce, IntegrationClientMetadata } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
@@ -230,7 +230,7 @@ export class IntegrationUserPage implements OnInit {
       this.created.set(result);
       this.notFound.set(false);
     } catch (err) {
-      this.actionError.set(readApiError(err).message);
+      this.actionError.set(apiErrorMessageKey(err));
     } finally {
       this.creating.set(false);
     }
@@ -252,7 +252,7 @@ export class IntegrationUserPage implements OnInit {
       },
       error: (err) => {
         this.rotating.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
       },
     });
   }
@@ -273,7 +273,7 @@ export class IntegrationUserPage implements OnInit {
       },
       error: (err) => {
         this.rotating.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
       },
     });
   }
@@ -305,7 +305,7 @@ export class IntegrationUserPage implements OnInit {
       },
       error: (err) => {
         this.requestingRotation.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
       },
     });
   }

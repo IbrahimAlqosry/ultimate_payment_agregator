@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { PaymentPoint } from '@core/models.platform';
@@ -54,7 +54,7 @@ export class DecidePaymentPoint {
         },
         error: (err) => {
           this.acting.set(false);
-          this.apiError.set(readApiError(err).message);
+          this.apiError.set(apiErrorMessageKey(err));
         },
       });
   }

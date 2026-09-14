@@ -5,6 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
@@ -48,7 +49,10 @@ export class Login {
           return undefined;
         }
         this.apiError.set(true);
-        this.toast.fail('toast.loginBad');
+        // 401 really is "wrong email/password" — everything else (500, 503, network) gets its
+        // actual status-based message instead of the misleading "bad credentials" copy, so a
+        // server/deployment problem doesn't masquerade as a typo.
+        this.toast.fail(status === 401 ? 'toast.loginBad' : apiErrorMessageKey(err));
       }
       return undefined;
     });

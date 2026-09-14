@@ -56,6 +56,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
     return [
       { path: '/dashboard', label: 'nav.dashboard', icon: 'layout-dashboard' },
       { path: '/my-payment-points', label: 'nav.myPoints', icon: 'credit-card' },
+      { path: '/payment-inquiry', label: 'nav.paymentInquiry', icon: 'search' },
       { path: '/my-integration-user', label: 'nav.myIntegration', icon: 'user-key' },
       { path: '/notification-delivery', label: 'nav.notificationDelivery', icon: 'circle-x' },
     ];
@@ -78,6 +79,8 @@ export function navLinks(user: AuthUser | null): NavLink[] {
     { path: '/payment-points', label: 'nav.points', icon: 'credit-card' },
     { path: '/institutions', label: 'nav.fiMgmt', icon: 'building' },
     { path: '/erp-systems', label: 'nav.erpList', icon: 'cpu' },
+    { path: '/notification-reviews', label: 'nav.notificationReviews', icon: 'bell' },
+    { path: '/delivery-recovery', label: 'nav.deliveryRecovery', icon: 'refresh-cw' },
     { path: '/integration-requests', label: 'nav.integrationRequests', icon: 'git-pull-request' },
   ];
 
@@ -101,12 +104,14 @@ export function allowedAudiencesForPath(path: string): Audience[] | null {
     '/merchants',
     '/institutions',
     '/erp-systems',
+    '/notification-reviews',
+    '/delivery-recovery',
     '/integration-requests',
     '/operators',
     '/reports',
     '/payment-points',
   ];
-  const merchantOnly = ['/my-payment-points', '/my-integration-user', '/notification-delivery'];
+  const merchantOnly = ['/my-payment-points', '/payment-inquiry', '/my-integration-user', '/notification-delivery'];
   const institutionOnly = [
     '/pp-approvals',
     '/all-payment-points',

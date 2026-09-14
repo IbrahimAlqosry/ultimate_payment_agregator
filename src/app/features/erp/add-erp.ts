@@ -3,7 +3,7 @@ import { FormField, email, form, required, submit, validate } from '@angular/for
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -93,7 +93,8 @@ export class AddErp implements OnInit {
       try {
         if (id) {
           if (!this.concurrencyToken) {
-            throw new Error(MISSING_CONCURRENCY_TOKEN_MESSAGE);
+            this.apiError.set(MISSING_CONCURRENCY_TOKEN_KEY);
+            return undefined;
           }
           await firstValueFrom(this.api.submitErpUpdate(id, { ...body, concurrencyToken: this.concurrencyToken }));
         } else {
@@ -102,7 +103,7 @@ export class AddErp implements OnInit {
         this.toast.ok('toast.erpSubmitted');
         await this.router.navigateByUrl(id ? `/erp-systems/${id}` : '/erp-systems');
       } catch (err) {
-        this.apiError.set(readApiError(err).message);
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });

@@ -13,7 +13,7 @@
 
   <app-data-state [loading]="loading()" [error]="error()" [empty]="false" (retry)="load()">
     @if (actionError(); as message) {
-      <p class="form-error" role="alert">{{ message }}</p>
+      <p class="form-error" role="alert">{{ message | transloco }}</p>
     }
 
     @if (notFound() && !created()) {

@@ -5,7 +5,7 @@ import { FormField, form, required, submit, validate } from '@angular/forms/sign
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import {
@@ -121,7 +121,7 @@ export class InstitutionDetail implements OnInit {
   private loadGovernedProfile(applicationId: string): void {
     this.api.getGovernedFiProfile(applicationId).subscribe({
       next: (profile) => this.governedProfile.set(profile),
-      error: (err) => this.changeApiError.set(readApiError(err).message),
+      error: (err) => this.changeApiError.set(apiErrorMessageKey(err)),
     });
   }
 
@@ -134,7 +134,7 @@ export class InstitutionDetail implements OnInit {
       },
       error: (err) => {
         this.changesLoading.set(false);
-        this.changeApiError.set(readApiError(err).message);
+        this.changeApiError.set(apiErrorMessageKey(err));
       },
     });
   }
@@ -200,7 +200,7 @@ export class InstitutionDetail implements OnInit {
         this.loadGovernedProfile(applicationId);
         this.loadChanges(applicationId);
       } catch (err) {
-        this.changeApiError.set(readApiError(err).message);
+        this.changeApiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });
@@ -241,7 +241,7 @@ export class InstitutionDetail implements OnInit {
         },
         error: (err) => {
           this.changeActing.set(false);
-          this.changeApiError.set(readApiError(err).message);
+          this.changeApiError.set(apiErrorMessageKey(err));
         },
       });
   }
@@ -261,7 +261,7 @@ export class InstitutionDetail implements OnInit {
       },
       error: (err) => {
         this.acting.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
         this.load();
       },
     });
@@ -290,7 +290,7 @@ export class InstitutionDetail implements OnInit {
         },
         error: (err) => {
           this.acting.set(false);
-          this.actionError.set(readApiError(err).message);
+          this.actionError.set(apiErrorMessageKey(err));
           this.load();
         },
       });

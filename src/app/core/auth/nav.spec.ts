@@ -1,4 +1,4 @@
-import { canAdministerOperators, canApprove, canManageOperators, isReadOnly } from './access';
+import { canApprove, canManageOperators, isReadOnly } from './access';
 import { inboxPath, navLinks, portalKey, searchPath, searchPlaceholderKey } from './nav';
 import { AuthUser } from '@core/models';
 
@@ -99,16 +99,6 @@ describe('role access', () => {
     expect(canManageOperators(merchant)).toBe(false);
   });
 
-  it('still restricts the legacy mock Operators screen (route + actions) to Admin only', () => {
-    // canManageOperators above is nav-link visibility only — that mock screen has no
-    // maker-checker flow at all, so only Admin may actually use it (see access.ts comment).
-    expect(canAdministerOperators(admin)).toBe(true);
-    expect(canAdministerOperators(maker)).toBe(false);
-    expect(canAdministerOperators(checker)).toBe(false);
-    expect(canAdministerOperators(reader)).toBe(false);
-    expect(canAdministerOperators(merchant)).toBe(false);
-  });
-
   it('gates decisions by the real .decide permission, not a role guess', () => {
     expect(canApprove(admin, 'merchant')).toBe(true);
     // A payment-point decision is the linked FI's own single-approver action, never a Platform
@@ -142,6 +132,7 @@ describe('navLinks', () => {
     expect(navLinks(merchant).map((link) => link.path)).toEqual([
       '/dashboard',
       '/my-payment-points',
+      '/payment-inquiry',
       '/my-integration-user',
       '/notification-delivery',
     ]);

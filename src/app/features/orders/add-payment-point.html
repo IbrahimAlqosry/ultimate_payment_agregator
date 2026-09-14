@@ -23,7 +23,7 @@
       </label>
       <p class="note-box">{{ 'onboard.pointNote' | transloco }}</p>
       @if (apiError(); as message) {
-        <p class="form-error" role="alert">{{ message }}</p>
+        <p class="form-error" role="alert">{{ message | transloco }}</p>
       }
       <div class="form-actions end bare">
         <a class="btn-cancel" routerLink="/my-payment-points">{{ 'actions.cancel' | transloco }}</a>

@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
@@ -105,7 +106,10 @@ export class Otp implements OnDestroy {
           return undefined;
         }
         this.apiError.set(true);
-        this.toast.fail('toast.otpBad');
+        // 401 really is "wrong code" — everything else (500, 503, network) gets its actual
+        // status-based message instead, so a server/deployment problem doesn't masquerade as a
+        // typo'd OTP.
+        this.toast.fail(status === 401 ? 'toast.otpBad' : apiErrorMessageKey(err));
       }
       return undefined;
     });

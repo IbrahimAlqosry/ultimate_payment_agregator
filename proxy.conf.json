@@ -2,7 +2,10 @@
   "/pa-api/**": {
     "target": "http://88.80.145.121:9519",
     "secure": false,
-    "changeOrigin": true,
+    "changeOrigin": false,
+    "headers": {
+      "Host": "localhost:8080"
+    },
     "pathRewrite": {
       "^/pa-api": ""
     }

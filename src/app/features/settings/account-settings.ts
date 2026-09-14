@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
 import { AtlasApi } from '@core/http/atlas-api';
-import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { AccountProfile } from '@core/models';
 import { MerchantProfileResponse } from '@core/models.platform';
@@ -102,7 +102,7 @@ export class AccountSettings {
     this.merchantApiError.set(null);
     await submit(this.merchantForm, async () => {
       if (!this.merchantConcurrencyToken) {
-        this.merchantApiError.set(MISSING_CONCURRENCY_TOKEN_MESSAGE);
+        this.merchantApiError.set(MISSING_CONCURRENCY_TOKEN_KEY);
         return undefined;
       }
       const value = this.merchantForm().value();
@@ -119,7 +119,7 @@ export class AccountSettings {
         this.applyMerchantProfile(saved);
         this.toast.ok('toast.profileUpdated');
       } catch (err) {
-        this.merchantApiError.set(readApiError(err).message);
+        this.merchantApiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });
@@ -175,7 +175,10 @@ export class AccountSettings {
       })
       .subscribe({
         next: (saved) => this.profile.set(saved),
-        error: () => undefined,
+        error: () => {
+          this.emailOn.set(this.profile()?.operator?.emailNotifications ?? true);
+          this.smsOn.set(this.profile()?.operator?.smsNotifications ?? false);
+        },
       });
   }
 
@@ -191,7 +194,7 @@ export class AccountSettings {
   private loadMerchantProfile(): void {
     this.platformApi.getOwnMerchantProfile().subscribe({
       next: (saved) => this.applyMerchantProfile(saved),
-      error: (err: unknown) => this.merchantApiError.set(readApiError(err).message),
+      error: (err: unknown) => this.merchantApiError.set(apiErrorMessageKey(err)),
     });
   }
 

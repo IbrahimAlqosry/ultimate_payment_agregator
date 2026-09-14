@@ -1,0 +1,185 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'reports.title' | transloco }}</h1>
+    <button class="btn btn-export" type="button" (click)="exportCsv()" [disabled]="rows().length === 0">
+      <img src="icons/file-text.svg" width="14" height="14" alt="" />
+      {{ 'reports.export' | transloco }}
+    </button>
+  </header>
+
+  <div class="card filter-card">
+    <div class="filters">
+      <input
+        class="filter"
+        type="date"
+        [attr.aria-label]="'filter.fromDate' | transloco"
+        [value]="from()"
+        (change)="from.set($any($event.target).value)"
+      />
+      <input
+        class="filter"
+        type="date"
+        [attr.aria-label]="'filter.toDate' | transloco"
+        [value]="to()"
+        (change)="to.set($any($event.target).value)"
+      />
+      <select class="filter" [value]="action()" (change)="action.set($any($event.target).value)">
+        <option value="">{{ 'reports.allActions' | transloco }}</option>
+        <optgroup [label]="'reports.actionGroup.session' | transloco">
+          <option value="passwordAuthentication">{{ 'reports.action.passwordAuthentication' | transloco }}</option>
+          <option value="otpAuthentication">{{ 'reports.action.otpAuthentication' | transloco }}</option>
+          <option value="sessionRevocation">{{ 'reports.action.sessionRevocation' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.approvals' | transloco">
+          <option value="approvalSubmitted">{{ 'reports.action.approvalSubmitted' | transloco }}</option>
+          <option value="approvalDecided">{{ 'reports.action.approvalDecided' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.integrationClient' | transloco">
+          <option value="integrationClientCreated">{{ 'reports.action.integrationClientCreated' | transloco }}</option>
+          <option value="integrationClientCredentialsRotated">{{ 'reports.action.integrationClientCredentialsRotated' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.notification' | transloco">
+          <option value="notificationEndpointVersionSubmitted">{{ 'reports.action.notificationEndpointVersionSubmitted' | transloco }}</option>
+          <option value="notificationEndpointActivated">{{ 'reports.action.notificationEndpointActivated' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.payments' | transloco">
+          <option value="paymentPointDecided">{{ 'reports.action.paymentPointDecided' | transloco }}</option>
+          <option value="paymentNotificationConflict">{{ 'reports.action.paymentNotificationConflict' | transloco }}</option>
+          <option value="paymentMatchingConflict">{{ 'reports.action.paymentMatchingConflict' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.delivery' | transloco">
+          <option value="deliveryAuthenticationPaused">{{ 'reports.action.deliveryAuthenticationPaused' | transloco }}</option>
+          <option value="deliveryDeadLettered">{{ 'reports.action.deliveryDeadLettered' | transloco }}</option>
+          <option value="deliveryRemediated">{{ 'reports.action.deliveryRemediated' | transloco }}</option>
+          <option value="deliveryReplayAccepted">{{ 'reports.action.deliveryReplayAccepted' | transloco }}</option>
+          <option value="deliveryReplayPublished">{{ 'reports.action.deliveryReplayPublished' | transloco }}</option>
+          <option value="deliveryReplayTerminal">{{ 'reports.action.deliveryReplayTerminal' | transloco }}</option>
+        </optgroup>
+        <optgroup [label]="'reports.actionGroup.operators' | transloco">
+          <option value="platformOperatorInvitationSubmitted">{{ 'reports.action.platformOperatorInvitationSubmitted' | transloco }}</option>
+          <option value="platformOperatorChangeSubmitted">{{ 'reports.action.platformOperatorChangeSubmitted' | transloco }}</option>
+          <option value="platformOperatorChangeApplied">{{ 'reports.action.platformOperatorChangeApplied' | transloco }}</option>
+        </optgroup>
+      </select>
+      <select class="filter" [value]="outcome()" (change)="outcome.set($any($event.target).value)">
+        <option value="">{{ 'reports.allOutcomes' | transloco }}</option>
+        @for (o of ['succeeded','invalid','expiredOrReplayed','locked','revoked','submitted','approved','rejected','conflict','paused','deadLettered','accepted','published','permanentlyFailed']; track o) {
+          <option [value]="o">{{ ('reports.outcome.' + o) | transloco }}</option>
+        }
+      </select>
+      <select class="filter" [value]="entityType()" (change)="entityType.set($any($event.target).value)">
+        <option value="">{{ 'reports.allEntityTypes' | transloco }}</option>
+        @for (t of ['account','interactiveUser','otpChallenge','portalSession','approvalRequest','integrationClient','notificationEndpointConfiguration','paymentPoint','paymentNotification','paymentMatchCommand','notificationDelivery','platformOperatorInvitation','platformOperatorChange']; track t) {
+          <option [value]="t">{{ ('reports.entityType.' + t) | transloco }}</option>
+        }
+      </select>
+      <input class="filter" type="text" [placeholder]="'reports.correlationId' | transloco" [value]="correlationId()" (change)="correlationId.set($any($event.target).value)" />
+      <input class="filter" type="text" [placeholder]="'reports.accountId' | transloco" [value]="accountId()" (change)="accountId.set($any($event.target).value)" />
+      <input class="filter" type="text" [placeholder]="'reports.entityReference' | transloco" [value]="entityReference()" (change)="entityReference.set($any($event.target).value)" />
+      <div class="filter-actions">
+        <button class="btn-text" type="button" (click)="clearFilters()">{{ 'filter.clear' | transloco }}</button>
+        <button class="btn btn-primary" type="button" (click)="apply()">{{ 'filter.apply' | transloco }}</button>
+      </div>
+    </div>
+    <p class="field-hint">{{ 'reports.dateRangeHint' | transloco }}</p>
+  </div>
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="reports.empty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'reports.at' | transloco }}</th>
+              <th>{{ 'reports.actionCol' | transloco }}</th>
+              <th>{{ 'reports.outcomeCol' | transloco }}</th>
+              <th>{{ 'reports.entity' | transloco }}</th>
+              <th>{{ 'reports.actor' | transloco }}</th>
+              <th>{{ 'reports.correlationId' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.auditEventId) {
+              <tr class="row-clickable" (click)="toggleExpand(row.auditEventId)">
+                <td class="muted">{{ row.occurredAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                <td>{{ ('reports.action.' + row.action) | transloco }}</td>
+                <td>
+                  <span class="badge" [class.ok]="row.outcome === 'succeeded' || row.outcome === 'approved' || row.outcome === 'accepted' || row.outcome === 'published'" [class.danger]="row.outcome === 'rejected' || row.outcome === 'invalid' || row.outcome === 'locked' || row.outcome === 'revoked' || row.outcome === 'deadLettered' || row.outcome === 'permanentlyFailed'" [class.warn]="row.outcome === 'conflict' || row.outcome === 'paused' || row.outcome === 'submitted' || row.outcome === 'expiredOrReplayed'">
+                    {{ ('reports.outcome.' + row.outcome) | transloco }}
+                  </span>
+                </td>
+                <td class="muted">
+                  @if (row.entityType) {
+                    {{ ('reports.entityType.' + row.entityType) | transloco }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="muted">{{ ('reports.actorKind.' + row.actorKind) | transloco }}</td>
+                <td class="muted"><span class="mono">{{ row.correlationId || '—' }}</span></td>
+              </tr>
+              @if (expandedId() === row.auditEventId) {
+                <tr class="row-detail">
+                  <td colspan="6">
+                    <dl class="info-grid">
+                      <div>
+                        <dt>{{ 'reports.auditEventId' | transloco }}</dt>
+                        <dd><span class="mono">{{ row.auditEventId }}</span></dd>
+                      </div>
+                      <div>
+                        <dt>{{ 'reports.actorSubjectId' | transloco }}</dt>
+                        <dd><span class="mono">{{ row.actorSubjectId || '—' }}</span></dd>
+                      </div>
+                      <div>
+                        <dt>{{ 'reports.affectedAccountId' | transloco }}</dt>
+                        <dd><span class="mono">{{ row.affectedAccountId || '—' }}</span></dd>
+                      </div>
+                      <div>
+                        <dt>{{ 'reports.entityReference' | transloco }}</dt>
+                        <dd><span class="mono">{{ row.entityReference || '—' }}</span></dd>
+                      </div>
+                      @if (row.metadata; as m) {
+                        <div>
+                          <dt>{{ 'reports.metadataStatus' | transloco }}</dt>
+                          <dd>{{ m.status ? ('reports.metadataStatusValue.' + m.status | transloco) : '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'reports.reasonClass' | transloco }}</dt>
+                          <dd>{{ m.reasonClass ? ('reports.reasonClassValue.' + m.reasonClass | transloco) : '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'reports.version' | transloco }}</dt>
+                          <dd>{{ m.version ?? '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'reports.retryTier' | transloco }}</dt>
+                          <dd>{{ m.retryTier ?? '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'reports.httpStatusClass' | transloco }}</dt>
+                          <dd>{{ m.httpStatusClass || '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'reports.workflow' | transloco }}</dt>
+                          <dd>{{ m.workflow ? ('reports.workflowValue.' + m.workflow | transloco) : '—' }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>

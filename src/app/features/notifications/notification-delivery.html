@@ -1,66 +1,141 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'notes.settingsTitle' | transloco }}</h1>
-    @if (saved(); as webhook) {
-      <span class="badge" [class.ok]="webhook.status === 'approved'" [class.warn]="webhook.status === 'pending'">
-        {{ ('badge.' + webhook.status) | transloco }}
+    @if (current(); as row) {
+      <span
+        class="badge"
+        [class.ok]="row.status === 'approved' && row.isActive"
+        [class.warn]="row.status === 'awaitingMaker' || row.status === 'pendingChecker'"
+        [class.danger]="row.status === 'rejected'"
+      >
+        {{ (row.status === 'approved' ? (row.isActive ? 'badge.active' : 'notes.approvedInactive') : 'appStatus.' + row.status) | transloco }}
       </span>
     }
   </header>
 
   <app-data-state [loading]="loading()" [error]="error()" [empty]="false" (retry)="load()">
-    <form class="form-card webhook-card" (submit)="onSubmit($event)" novalidate>
-      <div class="card-header">
-        <h2>{{ 'notes.webhookTitle' | transloco }}</h2>
-      </div>
-      <div class="card-body">
-        <label class="form-field">
-          <span class="caps">{{ 'notes.endpoint' | transloco }}</span>
-          <input [formField]="form.endpointUrl" autocomplete="off" />
-          <app-field-error [state]="form.endpointUrl()" />
-        </label>
-        <label class="form-field">
-          <span class="caps">{{ 'notes.port' | transloco }}</span>
-          <input [formField]="form.port" inputmode="numeric" />
-          <app-field-error [state]="form.port()" />
-        </label>
-        <label class="form-field">
-          <span class="caps">{{ 'notes.authType' | transloco }}</span>
-          <select [formField]="form.authType">
-            <option value="bearer">{{ 'notes.bearer' | transloco }}</option>
-            <option value="oauth2">{{ 'notes.oauth2' | transloco }}</option>
-          </select>
-        </label>
-        @if (oauth()) {
-          <label class="form-field">
-            <span class="caps">{{ 'notes.clientId' | transloco }}</span>
-            <input [formField]="form.clientId" autocomplete="off" />
-            <app-field-error [state]="form.clientId()" />
-          </label>
-          <label class="form-field">
-            <span class="caps">{{ 'notes.clientSecret' | transloco }}</span>
-            <app-secret-field>
-              <input [formField]="form.clientSecret" type="text" autocomplete="off" spellcheck="false" />
-            </app-secret-field>
-            <app-field-error [state]="form.clientSecret()" />
-          </label>
-        } @else {
-          <label class="form-field">
-            <span class="caps">{{ 'notes.accessToken' | transloco }}</span>
-            <app-secret-field>
-              <input [formField]="form.accessToken" type="text" autocomplete="off" spellcheck="false" />
-            </app-secret-field>
-            <app-field-error [state]="form.accessToken()" />
-          </label>
-        }
-        <p class="note-box">{{ 'notes.webhookNote' | transloco }}</p>
-        <div class="form-actions end">
-          <button class="btn-reset" type="button" (click)="reset()">{{ 'notes.resetSaved' | transloco }}</button>
-          <button class="cta" type="submit" [disabled]="form().submitting() || auth.readOnly()">
-            {{ (form().submitting() ? 'notes.updating' : 'notes.updateEndpoint') | transloco }}
-          </button>
+    <div class="settings-stack">
+      @if (current(); as row) {
+        <article class="settings-card outlined full">
+          <h2>{{ 'notes.currentVersionTitle' | transloco }}</h2>
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'notes.endpoint' | transloco }}</dt>
+              <dd><span class="mono">{{ row.callbackUrl }}</span></dd>
+            </div>
+            <div>
+              <dt>{{ 'notes.authType' | transloco }}</dt>
+              <dd>{{ ('notes.mode.' + row.authenticationMode) | transloco }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'notes.version' | transloco }}</dt>
+              <dd>{{ row.version }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'notes.submittedAt' | transloco }}</dt>
+              <dd>{{ row.createdAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+          @if (row.status === 'approved' && !row.isActive) {
+            <p class="field-hint">{{ 'notes.olderVersionHint' | transloco }}</p>
+          }
+        </article>
+        <p class="page-intro">{{ 'notes.webhookNote' | transloco }}</p>
+      }
+
+      <form class="settings-card full" (submit)="onSubmit($event)" novalidate>
+        <div class="card-header">
+          <h2>{{ 'notes.newVersionTitle' | transloco }}</h2>
         </div>
-      </div>
-    </form>
+        <div class="card-body">
+          <label class="form-field">
+            <span class="caps">{{ 'notes.endpoint' | transloco }}</span>
+            <input [formField]="form.callbackUrl" placeholder="https://" autocomplete="off" />
+            <app-field-error [state]="form.callbackUrl()" />
+          </label>
+          <label class="form-field">
+            <span class="caps">{{ 'notes.authType' | transloco }}</span>
+            <select [formField]="form.mode">
+              <option value="basic">{{ 'notes.mode.basic' | transloco }}</option>
+              <option value="oauth2ClientCredentials">{{ 'notes.mode.oauth2ClientCredentials' | transloco }}</option>
+              <option value="customHeader">{{ 'notes.mode.customHeader' | transloco }}</option>
+              <option value="staticBearerJwt">{{ 'notes.mode.staticBearerJwt' | transloco }}</option>
+            </select>
+          </label>
+
+          @switch (mode()) {
+            @case ('basic') {
+              <label class="form-field">
+                <span class="caps">{{ 'notes.username' | transloco }}</span>
+                <input [formField]="form.username" autocomplete="off" />
+                <app-field-error [state]="form.username()" />
+              </label>
+              <label class="form-field">
+                <span class="caps">{{ 'notes.password' | transloco }}</span>
+                <app-secret-field>
+                  <input [formField]="form.password" type="text" autocomplete="off" spellcheck="false" />
+                </app-secret-field>
+                <app-field-error [state]="form.password()" />
+              </label>
+            }
+            @case ('oauth2ClientCredentials') {
+              <label class="form-field">
+                <span class="caps">{{ 'notes.tokenUrl' | transloco }}</span>
+                <input [formField]="form.tokenUrl" placeholder="https://" autocomplete="off" />
+                <app-field-error [state]="form.tokenUrl()" />
+              </label>
+              <label class="form-field">
+                <span class="caps">{{ 'notes.clientId' | transloco }}</span>
+                <input [formField]="form.clientId" autocomplete="off" />
+                <app-field-error [state]="form.clientId()" />
+              </label>
+              <label class="form-field">
+                <span class="caps">{{ 'notes.clientSecret' | transloco }}</span>
+                <app-secret-field>
+                  <input [formField]="form.clientSecret" type="text" autocomplete="off" spellcheck="false" />
+                </app-secret-field>
+                <app-field-error [state]="form.clientSecret()" />
+              </label>
+              <label class="form-field">
+                <span class="caps">{{ 'notes.scope' | transloco }}</span>
+                <input [formField]="form.scope" autocomplete="off" />
+              </label>
+            }
+            @case ('customHeader') {
+              <label class="form-field">
+                <span class="caps">{{ 'notes.headerName' | transloco }}</span>
+                <input [formField]="form.headerName" autocomplete="off" placeholder="X-Merchant-Callback-Key" />
+                <app-field-error [state]="form.headerName()" />
+              </label>
+              <label class="form-field">
+                <span class="caps">{{ 'notes.headerValue' | transloco }}</span>
+                <app-secret-field>
+                  <input [formField]="form.headerValue" type="text" autocomplete="off" spellcheck="false" />
+                </app-secret-field>
+                <app-field-error [state]="form.headerValue()" />
+              </label>
+            }
+            @case ('staticBearerJwt') {
+              <label class="form-field">
+                <span class="caps">{{ 'notes.token' | transloco }}</span>
+                <app-secret-field>
+                  <input [formField]="form.token" type="text" autocomplete="off" spellcheck="false" />
+                </app-secret-field>
+                <app-field-error [state]="form.token()" />
+              </label>
+            }
+          }
+
+          @if (apiError(); as message) {
+            <p class="form-error" role="alert">{{ message | transloco }}</p>
+          }
+          <div class="form-actions end">
+            <button class="cta" type="submit" [disabled]="form().submitting()">
+              {{ (form().submitting() ? 'notes.updating' : 'notes.submitVersion') | transloco }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   </app-data-state>
 </section>

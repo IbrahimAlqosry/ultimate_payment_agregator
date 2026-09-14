@@ -10,28 +10,13 @@ export function hasPermission(user: AuthUser | null, permission: PlatformPermiss
 /**
  * Gates the Platform Operators *nav link's visibility only*. Per the real API this is
  * `platform.operators.read` — any Platform role can be granted it, it is not Admin-exclusive
- * (verified live: Admin, Maker, and Checker test accounts all carry it).
- *
- * Do NOT use this to gate the actual screen/route or any mutating action within it — see
- * `canAdministerOperators` below for that.
+ * (verified live: Admin, Maker, and Checker test accounts all carry it). The screen itself and
+ * every mutating action within it (invite, propose change, decide) are gated individually by
+ * their own real permission — `platform.operators.invite` / `.change` / `.decide` — via
+ * `hasPermission`/`canSubmit`/`canApprove`, not by this or any role check.
  */
 export function canManageOperators(user: AuthUser | null): boolean {
   return hasPermission(user, 'platform.operators.read');
-}
-
-/**
- * Gates the *legacy mock* Operators screen itself (route guard, and every invite/edit action
- * inside `features/users/*` and the mock backend's own `/operators` handlers). That screen
- * still models operator management as a single unilateral CRUD form — it has no maker-submit /
- * checker-decide flow at all, so no combination of the real `platform.operators.*` permissions
- * can correctly represent who should be allowed to use it (a Maker there could freely edit any
- * operator's role or invite one outright, which the real model never grants). Strict Admin-only
- * here, same as before the real-permissions pass, until the real (maker-checker) Platform
- * Operator administration API can back this screen — see docs/BACKEND_ISSUES.md; it's currently
- * blocked on a backend bug in the invite endpoint.
- */
-export function canAdministerOperators(user: AuthUser | null): boolean {
-  return user?.audience === 'operator' && user.role === 'admin';
 }
 
 export function isReadOnly(user: AuthUser | null): boolean {
@@ -46,6 +31,7 @@ const DECIDE_PERMISSION: Partial<Record<ApprovalEntity, PlatformPermission>> = {
   erp: PlatformPermission.ErpSystemsDecide,
   integration: PlatformPermission.IntegrationClientApprovalsDecide,
   operator: PlatformPermission.OperatorsDecide,
+  notification: PlatformPermission.NotificationEndpointsDecide,
 };
 
 /** Entity → the real `.submit` permission that gates the Maker-side action for it (creating an
@@ -55,6 +41,11 @@ const SUBMIT_PERMISSION: Partial<Record<ApprovalEntity, PlatformPermission>> = {
   institution: PlatformPermission.FinancialInstitutionOnboardingSubmit,
   erp: PlatformPermission.ErpSystemsSubmit,
   integration: PlatformPermission.IntegrationClientApprovalsSubmit,
+  notification: PlatformPermission.NotificationEndpointsSubmit,
+  /** Operators has a three-way split (invite / change / decide), not the usual two — `.invite`
+   * is gated separately (a distinct action, not "submitting an application"). This maps to
+   * `.change`, the Maker-side action for "propose a change to an existing operator." */
+  operator: PlatformPermission.OperatorsChange,
 };
 
 export function canApprove(user: AuthUser | null, entity: ApprovalEntity): boolean {

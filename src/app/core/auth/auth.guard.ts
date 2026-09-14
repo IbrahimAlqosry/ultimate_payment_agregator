@@ -1,6 +1,5 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
-import { canAdministerOperators } from './access';
 import { AuthService } from './auth.service';
 import { allowedAudiencesForPath } from './nav';
 import { Audience } from '@core/models';
@@ -10,15 +9,6 @@ export const authMatch: CanMatchFn = () => requireSession();
 
 export const guestGuard: CanActivateFn = () => rejectIfSignedIn();
 export const guestMatch: CanMatchFn = () => rejectIfSignedIn();
-
-export const adminGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-  if (!auth.isAuthenticated()) {
-    return router.createUrlTree(['/login']);
-  }
-  return canAdministerOperators(auth.user()) ? true : router.createUrlTree(['/dashboard']);
-};
 
 export const audienceGuard =
   (allowed: Audience[]): CanActivateFn =>

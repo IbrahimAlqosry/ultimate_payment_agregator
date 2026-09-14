@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, audienceGuard, authGuard, authMatch, guestGuard, guestMatch } from '@core/auth/auth.guard';
+import { audienceGuard, authGuard, authMatch, guestGuard, guestMatch } from '@core/auth/auth.guard';
 
 const guestAuth = {
   canMatch: [guestMatch],
@@ -70,6 +70,12 @@ export const routes: Routes = [
     title: 'setPassword.title',
     ...guestAuth,
     loadComponent: () => import('./features/login/set-password').then((m) => m.SetPassword),
+  },
+  {
+    path: 'accept-invitation',
+    title: 'acceptInvitation.title',
+    ...guestAuth,
+    loadComponent: () => import('./features/login/accept-invitation').then((m) => m.AcceptInvitation),
   },
   {
     path: '401',
@@ -164,6 +170,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/erp/erp-systems').then((m) => m.ErpSystems),
       },
       {
+        path: 'notification-reviews',
+        title: 'notes.reviewsTitle',
+        ...operatorOnly,
+        loadComponent: () => import('./features/notifications/notification-reviews').then((m) => m.NotificationReviews),
+      },
+      {
+        path: 'delivery-recovery/:id',
+        title: 'delivery.detailTitle',
+        ...operatorOnly,
+        loadComponent: () => import('./features/notifications/delivery-detail').then((m) => m.DeliveryDetail),
+      },
+      {
+        path: 'delivery-recovery',
+        title: 'delivery.title',
+        ...operatorOnly,
+        loadComponent: () => import('./features/notifications/delivery-recovery').then((m) => m.DeliveryRecovery),
+      },
+      {
         path: 'integration-requests',
         title: 'nav.integrationRequests',
         ...operatorOnly,
@@ -172,13 +196,19 @@ export const routes: Routes = [
       {
         path: 'operators/new',
         title: 'onboard.operatorTitle',
-        canActivate: [adminGuard],
+        ...operatorOnly,
         loadComponent: () => import('./features/users/add-operator').then((m) => m.AddOperator),
+      },
+      {
+        path: 'operators/:id',
+        title: 'detail.operatorTitle',
+        ...operatorOnly,
+        loadComponent: () => import('./features/users/operator-detail').then((m) => m.OperatorDetail),
       },
       {
         path: 'operators',
         title: 'nav.operators',
-        canActivate: [adminGuard],
+        ...operatorOnly,
         loadComponent: () => import('./features/users/users').then((m) => m.Users),
       },
       {
@@ -218,6 +248,12 @@ export const routes: Routes = [
         ...merchantOnly,
         data: { scope: 'mine', titleKey: 'points.mineTitle', introKey: 'points.mineIntro' },
         loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
+      },
+      {
+        path: 'payment-inquiry',
+        title: 'inquiry.title',
+        ...merchantOnly,
+        loadComponent: () => import('./features/orders/payment-inquiry').then((m) => m.PaymentInquiry),
       },
       {
         path: 'pp-approvals/decide',

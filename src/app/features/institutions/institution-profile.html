@@ -79,7 +79,7 @@
               <app-field-error [state]="contactForm.email()" />
             </label>
             @if (apiError(); as message) {
-              <p class="form-error" role="alert">{{ message }}</p>
+              <p class="form-error" role="alert">{{ message | transloco }}</p>
             }
             <div class="form-actions stretch">
               <button class="cta full" type="submit" [disabled]="contactForm().submitting() || auth.readOnly()">

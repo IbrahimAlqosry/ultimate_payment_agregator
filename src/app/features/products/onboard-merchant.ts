@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPhoneRules } from '@core/forms/field-rules';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ErpChoice } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
@@ -88,7 +88,7 @@ export class OnboardMerchant implements OnInit {
         this.toast.ok('toast.merchantSubmitted');
         await this.router.navigateByUrl('/merchants');
       } catch (err) {
-        this.apiError.set(readApiError(err).message);
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });

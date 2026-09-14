@@ -1,0 +1,110 @@
+<section class="page">
+  <a class="back-link" routerLink="/operators">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'actions.backToList' | transloco }}
+  </a>
+  <header class="page-head">
+    <h1>{{ 'detail.operatorTitle' | transloco }}</h1>
+    @if (row(); as op) {
+      <span class="badge" [class.ok]="op.status === 'active'" [class.warn]="op.status === 'pendingActivation' || op.status === 'suspended'" [class.danger]="op.status === 'disabled'">
+        {{ ('users.operatorStatus.' + op.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" (retry)="load()">
+    @if (row(); as op) {
+      <div class="settings-stack">
+        <article class="settings-card outlined full">
+          <h2>{{ 'detail.overview' | transloco }}</h2>
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'users.userId' | transloco }}</dt>
+              <dd><span class="mono">{{ op.userId }}</span></dd>
+            </div>
+            <div>
+              <dt>{{ 'users.role' | transloco }}</dt>
+              <dd>{{ ('role.' + op.role) | transloco }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'merchants.submitted' | transloco }}</dt>
+              <dd>{{ op.createdAt | date: 'medium' }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'reports.at' | transloco }}</dt>
+              <dd>{{ op.updatedAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+          <h2>{{ 'users.permissionsCol' | transloco }}</h2>
+          @if (op.permissions.length === 0) {
+            <p class="field-hint">{{ 'detail.noPermissions' | transloco }}</p>
+          } @else {
+            <div class="chip-row">
+              @for (p of op.permissions; track p) {
+                <span class="chip mono">{{ p }}</span>
+              }
+            </div>
+          }
+        </article>
+
+        @if (auth.canSubmit('operator')) {
+          <article class="settings-card outlined full">
+            <h2>{{ 'detail.proposeChange' | transloco }}</h2>
+
+            <div class="tabs" role="tablist">
+              <button type="button" class="tab" role="tab" [class.active]="changeType() === 'role'" (click)="setChangeType('role')">
+                {{ 'users.changeTypeValue.role' | transloco }}
+              </button>
+              <button type="button" class="tab" role="tab" [class.active]="changeType() === 'permissions'" (click)="setChangeType('permissions')">
+                {{ 'users.changeTypeValue.permissions' | transloco }}
+              </button>
+              <button type="button" class="tab" role="tab" [class.active]="changeType() === 'suspension'" (click)="setChangeType('suspension')">
+                {{ 'users.changeTypeValue.suspension' | transloco }}
+              </button>
+              <button type="button" class="tab" role="tab" [class.active]="changeType() === 'reactivation'" (click)="setChangeType('reactivation')">
+                {{ 'users.changeTypeValue.reactivation' | transloco }}
+              </button>
+            </div>
+
+            @if (changeType() === 'role') {
+              <label class="form-field">
+                <span class="caps">{{ 'onboard.assignRole' | transloco }}</span>
+                <select [ngModel]="newRole()" (ngModelChange)="newRole.set($event)">
+                  @for (r of roles; track r) {
+                    <option [value]="r">{{ ('role.' + r) | transloco }}</option>
+                  }
+                </select>
+              </label>
+            } @else if (changeType() === 'permissions') {
+              <p class="field-hint">{{ 'detail.permissionsReplaceHint' | transloco }}</p>
+              <div class="chip-row">
+                @for (p of catalog(); track p) {
+                  <label class="perm-chip" [class.active]="selectedPermissions().includes(p)">
+                    <input type="checkbox" [checked]="selectedPermissions().includes(p)" (change)="togglePermission(p)" />
+                    <span class="mono">{{ p }}</span>
+                  </label>
+                }
+              </div>
+            } @else if (changeType() === 'suspension') {
+              <p class="field-hint">{{ 'detail.suspensionHint' | transloco }}</p>
+            } @else {
+              <p class="field-hint">{{ 'detail.reactivationHint' | transloco }}</p>
+            }
+
+            @if (actionError(); as message) {
+              <p class="form-error" role="alert">{{ message | transloco }}</p>
+            }
+            @if (proposed()) {
+              <p class="note-box">{{ 'detail.changeProposedNote' | transloco }}</p>
+            }
+            <div class="form-actions end">
+              <button class="cta" type="button" [disabled]="submitting()" (click)="propose()">
+                {{ (submitting() ? 'detail.proposing' : 'detail.submitProposal') | transloco }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </app-data-state>
+</section>

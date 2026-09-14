@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-head">
     <h1>{{ 'users.title' | transloco }}</h1>
-    @if (auth.admin()) {
+    @if (auth.hasPermission(PlatformPermission.OperatorsInvite)) {
       <a class="btn btn-primary" routerLink="/operators/new">{{ 'cta.addOperator' | transloco }}</a>
     }
   </header>
@@ -10,69 +10,52 @@
     <button type="button" class="tab" role="tab" [class.active]="tab() === 'all'" (click)="setTab('all')">
       {{ 'users.tabAll' | transloco }}
     </button>
-    <button type="button" class="tab" role="tab" [class.active]="tab() === 'permissions'" (click)="setTab('permissions')">
-      {{ 'users.tabPermissions' | transloco }}
-    </button>
-    <button type="button" class="tab" role="tab" [class.active]="tab() === 'logs'" (click)="setTab('logs')">
-      {{ 'users.tabLogs' | transloco }}
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'requests'" (click)="setTab('requests')">
+      {{ 'list.pendingCount' | transloco: { count: pendingCount() } }}
     </button>
   </div>
 
   @if (tab() === 'all') {
-    <div class="filters">
-      <app-search-field [seed]="query" placeholderKey="users.search" (queryChange)="onQuery($event)" />
-      <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'users.status' | transloco">
-        <option value="">{{ 'filter.status' | transloco }}</option>
-        <option value="active">{{ 'badge.active' | transloco }}</option>
-        <option value="invited">{{ 'badge.invited' | transloco }}</option>
-        <option value="inactive">{{ 'badge.inactive' | transloco }}</option>
-      </select>
-    </div>
+    <p class="info-banner warn">{{ 'users.selfOnlyBanner' | transloco }}</p>
   }
 
-  @if (tab() === 'permissions') {
-    <p class="admin-only">{{ 'users.adminOnly' | transloco }}</p>
+  @if (actionError(); as message) {
+    <p class="form-error" role="alert">{{ message | transloco }}</p>
   }
 
-  <div class="card table-card">
-    <app-data-state
-      [loading]="loading()"
-      [error]="error()"
-      [empty]="tab() === 'all' ? filtered().length === 0 : tab() === 'logs' ? logs().length === 0 : all().length === 0"
-      [emptyKey]="tab() === 'logs' ? 'users.emptyLogs' : 'users.empty'"
-      (retry)="load()"
-    >
-      @if (tab() === 'all') {
+  @if (tab() === 'all') {
+    <div class="card table-card">
+      <app-data-state [loading]="loading()" [error]="error()" [empty]="operators().length === 0" emptyKey="users.empty" (retry)="loadOperators()">
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>{{ 'users.name' | transloco }}</th>
-                <th>{{ 'users.email' | transloco }}</th>
+                <th>{{ 'users.userId' | transloco }}</th>
                 <th>{{ 'users.role' | transloco }}</th>
-                <th>{{ 'users.lastLogin' | transloco }}</th>
                 <th>{{ 'users.status' | transloco }}</th>
+                <th>{{ 'users.permissionsCol' | transloco }}</th>
+                <th>{{ 'merchants.submitted' | transloco }}</th>
                 <th class="num">{{ 'actions.column' | transloco }}</th>
               </tr>
             </thead>
             <tbody>
-              @for (row of rows(); track row.id) {
+              @for (row of operators(); track row.userId) {
                 <tr>
+                  <td><span class="mono">{{ row.userId }}</span></td>
                   <td>
-                    <button class="table-link" type="button" (click)="openEdit(row)">{{ row.name }}</button>
-                  </td>
-                  <td class="muted">{{ row.email }}</td>
-                  <td>
-                    <span class="badge" [class]="roleClass(row.role)">{{ ('role.' + row.role) | transloco }}</span>
-                  </td>
-                  <td class="muted">{{ row.lastActive | date: 'medium' : undefined : locale.dateLocale() }}</td>
-                  <td>
-                    <span class="badge" [class.ok]="row.status === 'active'" [class.warn]="row.status === 'invited'" [class.danger]="row.status === 'inactive'">
-                      {{ ('badge.' + row.status) | transloco }}
+                    <span class="badge" [class.danger]="row.role === 'admin'" [class.ok]="row.role === 'maker'" [class.info]="row.role === 'checker'">
+                      {{ ('role.' + row.role) | transloco }}
                     </span>
                   </td>
                   <td>
-                    <app-approval-actions variant="edit" (edit)="openEdit(row)" />
+                    <span class="badge" [class.ok]="row.status === 'active'" [class.warn]="row.status === 'pendingActivation' || row.status === 'suspended'" [class.danger]="row.status === 'disabled'">
+                      {{ ('users.operatorStatus.' + row.status) | transloco }}
+                    </span>
+                  </td>
+                  <td class="muted">{{ 'users.permissionsCount' | transloco: { count: row.permissions.length } }}</td>
+                  <td class="muted">{{ row.createdAt | date: 'mediumDate' }}</td>
+                  <td>
+                    <app-approval-actions variant="manage" [viewHref]="'/operators/' + row.userId" />
                   </td>
                 </tr>
               }
@@ -80,143 +63,84 @@
           </table>
         </div>
         <footer class="table-foot">
-          <p>{{ 'list.showingOperators' | transloco: { shown: rows().length, total: filtered().length } }}</p>
-          <div class="pager">
-            <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-              <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
+          <p>{{ 'list.showingOperators' | transloco: { shown: operators().length, total: operators().length } }}</p>
+          @if (operatorsNextCursor()) {
+            <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMoreOperators()">
+              {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
             </button>
-            @for (n of pages(); track n) {
-              <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
-            }
-            <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-              <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
-            </button>
-          </div>
+          }
         </footer>
-      } @else if (tab() === 'permissions') {
-        <div class="table-wrap">
-          <table class="perm-matrix">
-            <thead>
-              <tr>
-                <th>{{ 'users.operatorRole' | transloco }}</th>
-                @for (mod of modules; track mod.id) {
-                  <th class="center">{{ mod.labelKey | transloco }}</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of all(); track row.id) {
-                <tr>
-                  <td>
-                    <strong>{{ row.name }}</strong>
-                    <span class="muted block">{{ ('role.' + row.role) | transloco }}</span>
-                  </td>
-                  @for (mod of modules; track mod.id) {
-                    <td class="center">
-                      <label class="perm-box">
-                        <input
-                          type="checkbox"
-                          [checked]="isChecked(row, mod.id)"
-                          (change)="togglePerm(row, mod.id)"
-                          [disabled]="savingPerms()"
-                          [attr.aria-label]="mod.labelKey | transloco"
-                        />
-                      </label>
-                    </td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        <div class="perm-actions">
-          <button class="btn-text" type="button" [disabled]="!permDirty() || savingPerms()" (click)="resetPermissions()">
-            {{ 'users.resetDefaults' | transloco }}
-          </button>
-          <button class="btn btn-primary" type="button" [disabled]="!permDirty() || savingPerms()" (click)="savePermissions()">
-            {{ (savingPerms() ? 'onboard.submitting' : 'users.saveChanges') | transloco }}
-          </button>
-        </div>
-      } @else {
+      </app-data-state>
+    </div>
+  } @else {
+    <div class="card table-card">
+      <app-data-state [loading]="requestsLoading()" [error]="requestsError()" [empty]="requests().length === 0" emptyKey="users.emptyRequests" (retry)="loadRequests()">
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>{{ 'users.logAt' | transloco }}</th>
-                <th>{{ 'users.name' | transloco }}</th>
-                <th>{{ 'users.logAction' | transloco }}</th>
-                <th>{{ 'users.logScreen' | transloco }}</th>
-                <th>{{ 'users.status' | transloco }}</th>
+                <th>{{ 'users.requestId' | transloco }}</th>
+                <th>{{ 'users.changeType' | transloco }}</th>
+                <th>{{ 'users.targetUserId' | transloco }}</th>
+                <th>{{ 'merchants.submitted' | transloco }}</th>
+                <th>{{ 'erp.status' | transloco }}</th>
+                <th class="num">{{ 'actions.column' | transloco }}</th>
               </tr>
             </thead>
             <tbody>
-              @for (row of logs(); track row.id) {
+              @for (row of requests(); track row.requestId) {
                 <tr>
-                  <td class="muted">{{ row.at | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                  <td><span class="mono">{{ row.requestId }}</span></td>
+                  <td>{{ ('users.changeTypeValue.' + row.changeType) | transloco }}</td>
+                  <td class="muted">{{ row.targetUserId || '—' }}</td>
+                  <td class="muted">{{ row.createdAt | date: 'mediumDate' }}</td>
                   <td>
-                    <strong>{{ row.actor }}</strong>
-                  </td>
-                  <td>{{ row.action }}</td>
-                  <td class="muted">{{ row.screen || row.entity }}</td>
-                  <td>
-                    <span class="badge" [class.ok]="row.result !== 'failed'" [class.danger]="row.result === 'failed'">
-                      {{ (row.result === 'failed' ? 'badge.failed' : 'users.logSuccess') | transloco }}
+                    <span class="badge" [class]="statusBadgeClass(row.status)">
+                      {{ ('users.requestStatus.' + row.status) | transloco }}
                     </span>
+                  </td>
+                  <td>
+                    <app-approval-actions
+                      variant="decide"
+                      [show]="row.status === 'pendingChecker' && auth.canApprove('operator')"
+                      (approve)="decide(row, 'approved')"
+                      (reject)="askReject(row)"
+                    />
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-      }
-    </app-data-state>
-  </div>
+        <footer class="table-foot">
+          <p>{{ 'list.showing' | transloco: { shown: requests().length, total: requests().length } }}</p>
+          @if (requestsNextCursor()) {
+            <button class="page-btn" type="button" [disabled]="requestsLoadingMore()" (click)="loadMoreRequests()">
+              {{ (requestsLoadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+            </button>
+          }
+        </footer>
+      </app-data-state>
+    </div>
+  }
 </section>
 
-@if (editing(); as row) {
+@if (rejecting(); as row) {
   <div class="overlay-modal">
-    <button class="overlay-backdrop" type="button" (click)="closeEdit()" [attr.aria-label]="'actions.cancel' | transloco"></button>
-    <article class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="edit-operator-title">
+    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
       <header class="overlay-head">
-        <h2 id="edit-operator-title">{{ 'users.editTitle' | transloco: { name: row.name } }}</h2>
-        <button type="button" class="overlay-close" (click)="closeEdit()">✕</button>
+        <h2>{{ 'actions.reject' | transloco }} — <span class="mono">{{ row.requestId }}</span></h2>
+        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
       </header>
-      <p class="status-line">
-        {{ 'users.statusLabel' | transloco }}
-        <span class="badge" [class.ok]="row.status === 'active'" [class.warn]="row.status === 'invited'" [class.danger]="row.status === 'inactive'">
-          {{ ('badge.' + row.status) | transloco }}
-        </span>
-      </p>
       <label class="form-field">
-        <span class="caps">{{ 'onboard.fullName' | transloco }}</span>
-        <input [ngModel]="editName()" (ngModelChange)="editName.set($event)" />
-      </label>
-      <label class="form-field">
-        <span class="caps">{{ 'onboard.workEmail' | transloco }}</span>
-        <input class="input-readonly" [value]="row.email" readonly />
-      </label>
-      <fieldset class="form-field">
-        <legend class="caps">{{ 'onboard.assignRole' | transloco }}</legend>
-        <div class="role-grid">
-          @for (option of roles; track option.id) {
-            <label class="role-option" [class.active]="editRole() === option.id">
-              <input type="checkbox" [checked]="editRole() === option.id" (change)="editRole.set(option.id)" />
-              <span>
-                <strong>{{ option.titleKey | transloco }}</strong>
-                <em>{{ option.hintKey | transloco }}</em>
-              </span>
-            </label>
-          }
-        </div>
-      </fieldset>
-      <label class="deactivate">
-        <input type="checkbox" [ngModel]="deactivate()" (ngModelChange)="deactivate.set($event)" />
-        {{ 'users.deactivate' | transloco }}
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
       </label>
       <div class="overlay-actions">
-        <button class="btn-text" type="button" (click)="closeEdit()">{{ 'actions.cancel' | transloco }}</button>
-        <button class="btn btn-primary" type="button" [disabled]="saving() || !editName().trim()" (click)="saveEdit()">
-          {{ 'users.saveChanges' | transloco }}
+        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+          {{ 'actions.confirmReject' | transloco }}
         </button>
       </div>
     </article>

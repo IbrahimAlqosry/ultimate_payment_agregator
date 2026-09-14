@@ -5,7 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules, applyPhoneRules } from '@core/forms/field-rules';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ErpChoice } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
@@ -107,8 +107,7 @@ export class Register implements OnInit {
         this.toast.ok('toast.registerOk');
         await this.router.navigateByUrl('/register-pending');
       } catch (err) {
-        this.apiError.set(readApiError(err).message);
-        this.toast.fail('toast.registerBad');
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });

@@ -1,0 +1,175 @@
+<section class="page">
+  <a class="back-link" routerLink="/delivery-recovery">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'actions.backToList' | transloco }}
+  </a>
+  <header class="page-head">
+    <h1>{{ 'delivery.detailTitle' | transloco }}</h1>
+    @if (row(); as d) {
+      <span class="badge" [class.warn]="d.state === 'authenticationPaused'" [class.danger]="d.state === 'deadLettered'">
+        {{ ('delivery.state.' + d.state) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !row()" (retry)="load()">
+    @if (row(); as d) {
+      <article class="detail-card">
+        <h2 class="section-title">{{ 'delivery.overview' | transloco }}</h2>
+        <dl class="info-grid">
+          <div>
+            <dt>{{ 'delivery.deliveryId' | transloco }}</dt>
+            <dd><span class="mono">{{ d.deliveryId }}</span></dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.eventId' | transloco }}</dt>
+            <dd><span class="mono">{{ d.eventId }}</span></dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.failureClassCol' | transloco }}</dt>
+            <dd>{{ ('delivery.failureClass.' + d.failureClass) | transloco }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.retryTier' | transloco }}</dt>
+            <dd>{{ d.retryTier }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.attemptsCol' | transloco }}</dt>
+            <dd>{{ d.attemptCount }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.publishedVersion' | transloco }}</dt>
+            <dd>{{ d.publishedEndpointConfigurationVersion }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.activeVersion' | transloco }}</dt>
+            <dd>{{ d.activeEndpointConfigurationVersion ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.createdAt' | transloco }}</dt>
+            <dd>{{ d.createdAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.updatedAt' | transloco }}</dt>
+            <dd>{{ d.updatedAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'delivery.completedAt' | transloco }}</dt>
+            <dd>{{ d.completedAt ? (d.completedAt | date: 'medium') : '—' }}</dd>
+          </div>
+          @if (d.originalDeliveryId) {
+            <div>
+              <dt>{{ 'delivery.originalDeliveryId' | transloco }}</dt>
+              <dd><a class="table-link" [routerLink]="['/delivery-recovery', d.originalDeliveryId]"><span class="mono">{{ d.originalDeliveryId }}</span></a></dd>
+            </div>
+          }
+          @if (d.replayDeliveryId) {
+            <div>
+              <dt>{{ 'delivery.replayDeliveryId' | transloco }}</dt>
+              <dd><a class="table-link" [routerLink]="['/delivery-recovery', d.replayDeliveryId]"><span class="mono">{{ d.replayDeliveryId }}</span></a></dd>
+            </div>
+          }
+        </dl>
+
+        @if (d.remediation; as rem) {
+          <h2 class="section-title">{{ 'delivery.remediationTitle' | transloco }}</h2>
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'delivery.remediationReason' | transloco }}</dt>
+              <dd>{{ ('delivery.reason.' + rem.reason) | transloco }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'delivery.remediationVersion' | transloco }}</dt>
+              <dd>{{ rem.endpointConfigurationVersion }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'delivery.remediationRecordedAt' | transloco }}</dt>
+              <dd>{{ rem.recordedAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+        }
+
+        @if (d.attempts.length > 0) {
+          <h2 class="section-title">{{ 'delivery.attemptsTitle' | transloco }}</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ 'delivery.attemptNumber' | transloco }}</th>
+                  <th>{{ 'delivery.attemptOutcome' | transloco }}</th>
+                  <th>{{ 'delivery.attemptHttpStatus' | transloco }}</th>
+                  <th>{{ 'delivery.failureClassCol' | transloco }}</th>
+                  <th>{{ 'delivery.attemptLatency' | transloco }}</th>
+                  <th>{{ 'delivery.attemptStartedAt' | transloco }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of d.attempts; track a.attemptId) {
+                  <tr>
+                    <td>{{ a.attemptNumber }}</td>
+                    <td>
+                      <span class="badge" [class.ok]="a.outcome === 'succeeded'" [class.danger]="a.outcome === 'authenticationFailed' || a.outcome === 'permanentlyFailed'" [class.warn]="a.outcome === 'transientFailed' || a.outcome === 'interruptedUnknown'">
+                        {{ ('delivery.attemptOutcomeValue.' + a.outcome) | transloco }}
+                      </span>
+                    </td>
+                    <td class="muted">{{ a.httpStatus ?? '—' }}</td>
+                    <td class="muted">{{ ('delivery.failureClass.' + a.failureClass) | transloco }}</td>
+                    <td class="muted">{{ a.latencyMilliseconds !== null ? (a.latencyMilliseconds + ' ms') : '—' }}</td>
+                    <td class="muted">{{ a.startedAt | date: 'medium' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (actionError(); as message) {
+          <p class="form-error" role="alert">{{ message | transloco }}</p>
+        }
+
+        @if (canRemediate()) {
+          <h2 class="section-title">{{ 'delivery.recoverTitle' | transloco }}</h2>
+          <label class="form-field">
+            <span class="caps">{{ 'delivery.remediationReason' | transloco }}</span>
+            <select [ngModel]="reason()" (ngModelChange)="reason.set($event)">
+              <option value="configurationUpdated">{{ 'delivery.reason.configurationUpdated' | transloco }}</option>
+              <option value="endpointRecovered">{{ 'delivery.reason.endpointRecovered' | transloco }}</option>
+              <option value="operatorVerified">{{ 'delivery.reason.operatorVerified' | transloco }}</option>
+            </select>
+          </label>
+          <div class="form-actions end">
+            <button class="cta" type="button" [disabled]="remediating()" (click)="remediate()">
+              {{ (remediating() ? 'delivery.recovering' : 'delivery.recordRecovery') | transloco }}
+            </button>
+          </div>
+        }
+
+        @if (canReplay()) {
+          <h2 class="section-title">{{ 'delivery.replayTitle' | transloco }}</h2>
+          <p class="field-hint">{{ 'delivery.replayHint' | transloco }}</p>
+          @if (replayResult(); as r) {
+            <dl class="info-grid">
+              <div>
+                <dt>{{ 'delivery.replayStatus' | transloco }}</dt>
+                <dd>{{ ('delivery.replayStatusValue.' + r.status) | transloco }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'delivery.replayDeliveryId' | transloco }}</dt>
+                <dd><a class="table-link" [routerLink]="['/delivery-recovery', r.deliveryId]"><span class="mono">{{ r.deliveryId }}</span></a></dd>
+              </div>
+            </dl>
+            <div class="form-actions end">
+              <button class="btn-review" type="button" (click)="newReplayAttempt()">{{ 'delivery.newReplayAttempt' | transloco }}</button>
+            </div>
+          } @else {
+            <div class="form-actions end">
+              <button class="cta" type="button" [disabled]="replaying()" (click)="replay()">
+                {{ (replaying() ? 'delivery.replaying' : 'delivery.requestReplay') | transloco }}
+              </button>
+            </div>
+          }
+        }
+      </article>
+    }
+  </app-data-state>
+</section>

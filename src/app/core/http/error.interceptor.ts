@@ -5,6 +5,7 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/notifications/toast.service';
 import { apiUrl, isApiRequest, requestPath } from './api-url';
+import { apiErrorMessageKey } from './http-error';
 import { isPlatformApiRequest, platformApiUrl } from './platform-api-url';
 
 const STATUS_PATHS = new Set(['/401', '/404', '/423', '/501', '/503']);
@@ -47,21 +48,17 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         !alreadyOnStatus
       ) {
         void router.navigateByUrl('/404');
-      } else if (error.status === 0) {
-        toast.fail('toast.network');
-      } else if (!onPlatformApi && error.status === 403) {
-        toast.fail('toast.forbidden');
-      } else if (!onPlatformApi && !onAuth && error.status === 400) {
-        toast.fail('toast.badRequest');
-      } else if (!onPlatformApi && !onAuth && error.status === 404) {
-        toast.fail('toast.notFound');
-      } else if (!onPlatformApi && !onAuth && error.status >= 500 && error.status !== 501 && error.status !== 503) {
-        toast.fail('toast.server');
+      } else if (!onAuth) {
+        // Every other request error — any status, platform API or legacy, load or submit,
+        // anywhere in the app — surfaces as one translated toast here, so no screen can ship a
+        // silent or raw-text failure. Components still set their own inline apiError signal
+        // (via the same apiErrorMessageKey) for contextual per-field copy; this is just the
+        // guaranteed, can't-forget-it notification layer on top. Auth screens (login/otp/
+        // register/accept-invitation/set-password/forgot) are excluded because they already show
+        // their own status-aware, friendlier copy (e.g. "wrong password" for a 401 instead of a
+        // generic "unauthorized") and would otherwise be double-toasted.
+        toast.fail(error.status === 0 ? 'toast.network' : apiErrorMessageKey(error));
       }
-      // Platform-API 400/403/404/409/5xx are left for the calling component: the guide's error
-      // model (concurrencyToken conflicts, per-field validation, maker=checker, empty states like
-      // integration-client's 404) needs contextual handling readApiError()'s problem+json parsing
-      // supports, not a blanket toast.
 
       return throwError(() => error);
     }),

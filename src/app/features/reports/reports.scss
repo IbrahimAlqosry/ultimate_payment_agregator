@@ -1,0 +1,38 @@
+.filter-card {
+  padding: 20px 24px;
+}
+
+.filter[type='text'],
+.filter[type='date'] {
+  background-image: none;
+  padding-inline-end: 14px;
+  min-width: 150px;
+}
+
+.btn-export {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 10px 20px;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.row-clickable:hover {
+  background: #f7f5f5;
+}
+
+.row-detail td {
+  background: #faf9f7;
+  padding: 16px 20px;
+}
+
+@media (max-width: 860px) {
+  .filter-card {
+    padding: 16px;
+  }
+}

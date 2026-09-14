@@ -1,0 +1,64 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'delivery.title' | transloco }}</h1>
+  </header>
+
+  <p class="info-banner">{{ 'delivery.banner' | transloco }}</p>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.active]="state() === 'all'" (click)="setState('all')">
+      {{ 'delivery.stateAll' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="state() === 'authenticationPaused'" (click)="setState('authenticationPaused')">
+      {{ 'delivery.state.authenticationPaused' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="state() === 'deadLettered'" (click)="setState('deadLettered')">
+      {{ 'delivery.state.deadLettered' | transloco }}
+    </button>
+  </div>
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="delivery.empty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'delivery.deliveryId' | transloco }}</th>
+              <th>{{ 'delivery.stateCol' | transloco }}</th>
+              <th>{{ 'delivery.failureClassCol' | transloco }}</th>
+              <th>{{ 'delivery.attemptsCol' | transloco }}</th>
+              <th>{{ 'delivery.updatedAt' | transloco }}</th>
+              <th class="num">{{ 'actions.column' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.deliveryId) {
+              <tr>
+                <td><span class="mono">{{ row.deliveryId }}</span></td>
+                <td>
+                  <span class="badge" [class.warn]="row.state === 'authenticationPaused'" [class.danger]="row.state === 'deadLettered'">
+                    {{ ('delivery.state.' + row.state) | transloco }}
+                  </span>
+                </td>
+                <td class="muted">{{ ('delivery.failureClass.' + row.failureClass) | transloco }}</td>
+                <td class="muted">{{ row.attemptCount }}</td>
+                <td class="muted">{{ row.updatedAt | date: 'medium' }}</td>
+                <td>
+                  <a class="btn-review" [routerLink]="['/delivery-recovery', row.deliveryId]">{{ 'actions.view' | transloco }}</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>

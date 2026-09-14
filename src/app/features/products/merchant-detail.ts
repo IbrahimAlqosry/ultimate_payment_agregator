@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { MerchantApplicationDetails } from '@core/models.platform';
@@ -79,7 +79,7 @@ export class MerchantDetail implements OnInit {
       },
       error: (err) => {
         this.acting.set(false);
-        this.actionError.set(readApiError(err).message);
+        this.actionError.set(apiErrorMessageKey(err));
         this.load();
       },
     });
@@ -108,7 +108,7 @@ export class MerchantDetail implements OnInit {
         },
         error: (err) => {
           this.acting.set(false);
-          this.actionError.set(readApiError(err).message);
+          this.actionError.set(apiErrorMessageKey(err));
           // A 409 means the application changed since we loaded it — refresh before retrying.
           this.load();
         },

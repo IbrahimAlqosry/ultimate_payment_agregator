@@ -1,9 +1,14 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AssistedMerchantOnboardingRequest,
+  AuditEventPage,
+  AuditSearchQuery,
   AuthMeResponse,
+  DeliveryAttentionState,
+  DeliveryRemediationRequest,
+  DeliveryReplayAcceptance,
   ErpChoicePage,
   ErpSystemChangeRequest,
   ErpSystemChangeRequestPage,
@@ -37,8 +42,19 @@ import {
   GovernedProfileChangeResponse,
   MerchantProfileResponse,
   MerchantProfileUpdateRequest,
+  NotificationEndpointConfigurationDecisionRequest,
+  NotificationEndpointConfigurationInput,
+  NotificationEndpointConfigurationMetadata,
+  NotificationEndpointConfigurationReview,
+  NotificationEndpointConfigurationReviewPage,
+  NotificationDelivery,
+  NotificationDeliveryPage,
   OtpChallengeResponse,
   PagedQuery,
+  PaymentInquiryRequest,
+  PaymentInquiryResponse,
+  PaymentMatchRequest,
+  PaymentMatchResponse,
   PaymentPoint,
   PaymentPointDecisionRequest,
   PlatformOperatorChangeDetails,
@@ -377,5 +393,129 @@ export class PlatformApi {
 
   decidePaymentPoint(paymentPointId: string, body: PaymentPointDecisionRequest) {
     return this.http.post<PaymentPoint>(platformApiUrl(`/api/v1/payment-points/${paymentPointId}/decision`), body);
+  }
+
+  // --- Merchant payment inquiry (v4.0 §13) ------------------------------------
+
+  /** Read-only POST — no CSRF, per the guide's explicit callout that this is the one mutating-
+   * verb request in the whole API that doesn't need it. */
+  inquirePayment(body: PaymentInquiryRequest) {
+    return this.http.post<PaymentInquiryResponse>(platformApiUrl('/api/v1/payment-inquiries'), body);
+  }
+
+  // --- Merchant payment matching (v4.0 §14) -----------------------------------
+
+  /** `idempotencyKey` must be the same value for a deliberate retry of this exact attempt, and a
+   * fresh one for a new attempt — see PaymentMatchRequest's doc comment. Interceptor-added
+   * headers (CSRF, correlation id) merge with this one, they don't replace it. */
+  matchByTransactionId(body: PaymentMatchRequest, idempotencyKey: string) {
+    return this.http.post<PaymentMatchResponse>(platformApiUrl('/api/v1/payment-matches/by-transaction-id'), body, {
+      headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+    });
+  }
+
+  matchByNotificationTap(body: PaymentMatchRequest, idempotencyKey: string) {
+    return this.http.post<PaymentMatchResponse>(platformApiUrl('/api/v1/payment-matches/by-notification-tap'), body, {
+      headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }),
+    });
+  }
+
+  // --- Merchant notification settings + Platform review (v4.0 §15) -----------
+
+  /** 404 means "no configuration exists yet" — the create-form empty state, not an error. */
+  getNotificationSettings() {
+    return this.http.get<NotificationEndpointConfigurationMetadata>(
+      platformApiUrl('/api/v1/notification-endpoint-configurations'),
+    );
+  }
+
+  submitNotificationSettings(body: NotificationEndpointConfigurationInput) {
+    return this.http.post<NotificationEndpointConfigurationMetadata>(
+      platformApiUrl('/api/v1/notification-endpoint-configurations'),
+      body,
+    );
+  }
+
+  listNotificationReviews(query: PagedQuery = {}) {
+    return this.http.get<NotificationEndpointConfigurationReviewPage>(
+      platformApiUrl('/api/v1/notification-endpoint-configurations/reviews'),
+      { params: pageParams(query) },
+    );
+  }
+
+  getNotificationReview(configurationId: string, version: number) {
+    return this.http.get<NotificationEndpointConfigurationReview>(
+      platformApiUrl(`/api/v1/notification-endpoint-configurations/${configurationId}/versions/${version}`),
+    );
+  }
+
+  makerSubmitNotificationReview(configurationId: string, version: number) {
+    return this.http.post<NotificationEndpointConfigurationReview>(
+      platformApiUrl(`/api/v1/notification-endpoint-configurations/${configurationId}/versions/${version}/maker-submit`),
+      null,
+    );
+  }
+
+  decideNotificationReview(
+    configurationId: string,
+    version: number,
+    body: NotificationEndpointConfigurationDecisionRequest,
+  ) {
+    return this.http.post<NotificationEndpointConfigurationReview>(
+      platformApiUrl(`/api/v1/notification-endpoint-configurations/${configurationId}/versions/${version}/decision`),
+      body,
+    );
+  }
+
+  // --- Platform delivery recovery and replay (v5.0 §16) ------------------------
+
+  listDeliveryAttention(query: PagedQuery & { state?: DeliveryAttentionState } = {}) {
+    let params = pageParams(query);
+    if (query.state) {
+      params = params.set('state', query.state);
+    }
+    return this.http.get<NotificationDeliveryPage>(platformApiUrl('/api/v1/notification-deliveries'), { params });
+  }
+
+  getDelivery(deliveryId: string) {
+    return this.http.get<NotificationDelivery>(platformApiUrl(`/api/v1/notification-deliveries/${deliveryId}`));
+  }
+
+  remediateDelivery(deliveryId: string, body: DeliveryRemediationRequest) {
+    return this.http.post<NotificationDelivery>(
+      platformApiUrl(`/api/v1/notification-deliveries/${deliveryId}/remediation`),
+      body,
+    );
+  }
+
+  replayDelivery(deliveryId: string, idempotencyKey: string) {
+    return this.http.post<DeliveryReplayAcceptance>(
+      platformApiUrl(`/api/v1/notification-deliveries/${deliveryId}/replay`),
+      null,
+      { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) },
+    );
+  }
+
+  // --- Platform audit search (v5.0 §17) -----------------------------------------
+
+  searchAuditEvents(query: AuditSearchQuery = {}) {
+    let params = pageParams(query);
+    const stringFields: (keyof AuditSearchQuery)[] = [
+      'accountId',
+      'action',
+      'outcome',
+      'entityType',
+      'entityReference',
+      'correlationId',
+      'from',
+      'to',
+    ];
+    for (const field of stringFields) {
+      const value = query[field];
+      if (value) {
+        params = params.set(field, value);
+      }
+    }
+    return this.http.get<AuditEventPage>(platformApiUrl('/api/v1/audit-events'), { params });
   }
 }

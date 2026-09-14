@@ -1,0 +1,89 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'notes.reviewsTitle' | transloco }}</h1>
+  </header>
+
+  <p class="info-banner">{{ 'notes.reviewsBanner' | transloco }}</p>
+
+  @if (actionError(); as message) {
+    <p class="form-error" role="alert">{{ message | transloco }}</p>
+  }
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="notes.reviewsEmpty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'notes.endpoint' | transloco }}</th>
+              <th>{{ 'notes.authType' | transloco }}</th>
+              <th>{{ 'notes.version' | transloco }}</th>
+              <th>{{ 'notes.submittedAt' | transloco }}</th>
+              <th>{{ 'erp.status' | transloco }}</th>
+              <th class="num">{{ 'actions.column' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.configurationId + ':' + row.version) {
+              <tr>
+                <td><span class="mono">{{ row.callbackUrl }}</span></td>
+                <td class="muted">{{ ('notes.mode.' + row.authenticationMode) | transloco }}</td>
+                <td class="muted">{{ row.version }}</td>
+                <td class="muted">{{ row.createdAt | date: 'medium' }}</td>
+                <td>
+                  <span class="badge" [class]="statusBadgeClass(row.status)">
+                    {{ (row.status === 'approved' ? 'badge.active' : 'appStatus.' + row.status) | transloco }}
+                  </span>
+                </td>
+                <td>
+                  @if (row.status === 'awaitingMaker' && auth.canSubmit('notification')) {
+                    <button class="btn-review" type="button" (click)="submitForReview(row)">
+                      {{ 'notes.submitForReview' | transloco }}
+                    </button>
+                  } @else {
+                    <app-approval-actions
+                      variant="decide"
+                      [show]="row.status === 'pendingChecker' && auth.canApprove('notification')"
+                      (approve)="decide(row, 'approved')"
+                      (reject)="askReject(row)"
+                    />
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>
+
+@if (rejecting(); as row) {
+  <div class="overlay-modal">
+    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
+      <header class="overlay-head">
+        <h2>{{ 'actions.reject' | transloco }} — {{ row.callbackUrl }}</h2>
+        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
+      </header>
+      <label class="form-field">
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+      </label>
+      <div class="overlay-actions">
+        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+          {{ 'actions.confirmReject' | transloco }}
+        </button>
+      </div>
+    </article>
+  </div>
+}

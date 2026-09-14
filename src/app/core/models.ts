@@ -21,7 +21,7 @@ export type ScreenModule =
   | 'operators'
   | 'reports'
   | 'settings';
-export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration' | 'operator';
+export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration' | 'operator' | 'notification';
 export type PointScope = 'all' | 'mine' | 'institution' | 'pending';
 
 export interface AuthUser {

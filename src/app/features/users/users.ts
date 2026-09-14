@@ -1,357 +1,102 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, HostListener, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { forkJoin } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { SCREEN_MODULES, defaultScreens } from '@core/auth/screens';
-import { AtlasApi } from '@core/http/atlas-api';
-import { LocaleService } from '@core/i18n/locale.service';
-import { AuditEvent, Operator, OperatorRole, OperatorStatus, ScreenModule } from '@core/models';
+import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import {
+  PlatformOperatorChangeDetails,
+  PlatformOperatorChangeStatus,
+  PlatformOperatorDetails,
+  PlatformPermission,
+} from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
-import { SearchField } from '@shared/search-field';
 
-type OperatorTab = 'all' | 'permissions' | 'logs';
+type OperatorTab = 'all' | 'requests';
 
+/**
+ * Platform Operator administration (guide v5.0 §8), replacing the old mock CRUD screen. There is
+ * no email/name on this resource at all — only `userId`. `GET .../operators` is still confirmed
+ * live-broken as of 2026-09-14 (returns only the caller's own record for every role — see
+ * docs/BACKEND_ISSUES.md Issue 3), so the "All Operators" tab currently only ever shows yourself;
+ * built to the real contract regardless so it's correct the moment that's fixed.
+ */
 @Component({
   selector: 'app-users',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, ApprovalActions, DataState, SearchField],
+  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, ApprovalActions, DataState],
   templateUrl: './users.html',
-  styles: `
-    .badge.role-admin {
-      background: #fdeded;
-      color: #c0392b;
-    }
-    .badge.role-checker {
-      background: #eef4fc;
-      color: #2f80ed;
-    }
-    .badge.role-maker {
-      background: #e8f6ed;
-      color: #1fa64d;
-    }
-    .badge.role-reader {
-      background: #f3f1f1;
-      color: #7e7676;
-    }
-    .admin-only {
-      margin: 0 0 12px auto;
-      width: fit-content;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: #fdeded;
-      color: #c0392b;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-    .perm-matrix th,
-    .perm-matrix td {
-      white-space: nowrap;
-    }
-    .perm-matrix .center {
-      text-align: center;
-    }
-    @media (max-width: 860px) {
-      .role-option {
-        width: 100%;
-      }
-    }
-    .perm-check {
-      color: #1fa64d;
-      font-weight: 700;
-    }
-    .block {
-      display: block;
-      margin-top: 2px;
-      font-size: 12px;
-    }
-    .status-line {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0;
-      font-size: 13px;
-      color: #7e7676;
-    }
-    .form-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .caps {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #7e7676;
-    }
-    .form-field input,
-    .input-readonly {
-      height: 44px;
-      border: 1px solid #d9d9d9;
-      border-radius: 8px;
-      padding: 0 14px;
-      font-size: 14px;
-    }
-    .input-readonly {
-      background: #f7f5f5;
-      color: #999;
-    }
-    .role-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 16px;
-    }
-    .role-option {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      width: 220px;
-      cursor: pointer;
-    }
-    .role-option em {
-      display: block;
-      font-style: normal;
-      font-size: 11px;
-      color: #7e7676;
-    }
-    .deactivate {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      color: #c33;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    .perm-box {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .perm-box input {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-      accent-color: #1fa64d;
-      cursor: pointer;
-    }
-    .perm-box input:disabled {
-      cursor: not-allowed;
-    }
-    .perm-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 16px 24px 8px;
-      border-top: 1px solid #f0eaea;
-    }
-    .perm-actions .btn-primary {
-      padding: 12px 24px;
-    }
-    button.table-link {
-      background: none;
-      border: 0;
-      padding: 0;
-      cursor: pointer;
-      font: inherit;
-    }
-  `,
+  styleUrl: '../../shared/list-page.scss',
 })
 export class Users {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
-  readonly locale = inject(LocaleService);
+  readonly PlatformPermission = PlatformPermission;
 
-  readonly loading = signal(true);
-  readonly error = signal(false);
-  readonly all = signal<Operator[]>([]);
-  readonly logs = signal<AuditEvent[]>([]);
   readonly tab = signal<OperatorTab>('all');
-  readonly statusFilter = signal('');
-  readonly page = signal(1);
-  readonly pageSize = 8;
-  query = '';
-  readonly editing = signal<Operator | null>(null);
-  readonly editName = signal('');
-  readonly editRole = signal<OperatorRole>('reader');
-  readonly deactivate = signal(false);
-  readonly saving = signal(false);
-  readonly drafts = signal<Record<string, ScreenModule[]>>({});
-  readonly savingPerms = signal(false);
 
-  readonly modules = SCREEN_MODULES;
-  readonly roles: { id: OperatorRole; titleKey: string; hintKey: string }[] = [
-    { id: 'maker', titleKey: 'role.maker', hintKey: 'onboard.roleMaker' },
-    { id: 'checker', titleKey: 'role.checker', hintKey: 'onboard.roleChecker' },
-    { id: 'reader', titleKey: 'role.reader', hintKey: 'onboard.roleReader' },
-    { id: 'admin', titleKey: 'role.admin', hintKey: 'onboard.roleAdmin' },
-  ];
+  // --- Operators directory ---
+  readonly loading = signal(true);
+  readonly loadingMore = signal(false);
+  readonly error = signal(false);
+  readonly operators = signal<PlatformOperatorDetails[]>([]);
+  readonly operatorsNextCursor = signal<string | null>(null);
 
-  readonly filtered = computed(() => {
-    const status = this.statusFilter();
-    return this.all().filter((row) => !status || row.status === status);
-  });
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
-  readonly pages = computed(() => Array.from({ length: this.pageCount() }, (_, index) => index + 1));
-  readonly rows = computed(() => {
-    const start = (this.page() - 1) * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
-  });
+  // --- Pending change requests ---
+  readonly requestsLoaded = signal(false);
+  readonly requestsLoading = signal(false);
+  readonly requestsLoadingMore = signal(false);
+  readonly requestsError = signal(false);
+  readonly requests = signal<PlatformOperatorChangeDetails[]>([]);
+  readonly requestsNextCursor = signal<string | null>(null);
+  readonly pendingCount = computed(() => this.requests().filter((row) => row.status === 'pendingChecker').length);
+
+  readonly rejecting = signal<PlatformOperatorChangeDetails | null>(null);
+  readonly reason = signal('');
+  readonly actionError = signal<string | null>(null);
 
   constructor() {
-    this.load();
-    this.loadLogs();
-  }
-
-  onQuery(query: string): void {
-    this.query = query;
-    this.page.set(1);
-    this.load(true);
-  }
-
-  setTab(tab: OperatorTab): void {
-    this.tab.set(tab);
-  }
-
-  onStatus(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value);
-    this.page.set(1);
-  }
-
-  goTo(page: number): void {
-    this.page.set(Math.min(this.pageCount(), Math.max(1, page)));
-  }
-
-  roleClass(role: OperatorRole): string {
-    return `role-${role}`;
-  }
-
-  screensFor(row: Operator): ScreenModule[] {
-    return this.drafts()[row.id] ?? (row.screens?.length ? [...row.screens] : defaultScreens(row.role));
-  }
-
-  isChecked(row: Operator, module: ScreenModule): boolean {
-    return this.screensFor(row).includes(module);
-  }
-
-  togglePerm(row: Operator, module: ScreenModule): void {
-    const current = this.screensFor(row);
-    const next = current.includes(module) ? current.filter((item) => item !== module) : [...current, module];
-    this.drafts.update((map) => ({ ...map, [row.id]: next }));
-  }
-
-  readonly permDirty = computed(() =>
-    this.all().some((row) => {
-      const draft = this.drafts()[row.id];
-      if (!draft) {
-        return false;
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab === 'requests' || tab === 'all') {
+        this.setTab(tab, false);
       }
-      const original = row.screens?.length ? row.screens : defaultScreens(row.role);
-      return [...draft].sort().join() !== [...original].sort().join();
-    }),
-  );
-
-  savePermissions(): void {
-    if (!this.permDirty() || this.savingPerms()) {
-      return;
-    }
-    const updates = this.all()
-      .filter((row) => this.drafts()[row.id])
-      .map((row) =>
-        this.api.updateOperator(row.id, {
-          name: row.name,
-          role: row.role,
-          status: row.status,
-          screens: this.screensFor(row),
-        }),
-      );
-    if (!updates.length) {
-      return;
-    }
-    this.savingPerms.set(true);
-    forkJoin(updates).subscribe({
-      next: () => {
-        this.savingPerms.set(false);
-        this.drafts.set({});
-        this.toast.ok('toast.permissionsSaved');
-        this.load(true);
-      },
-      error: () => {
-        this.savingPerms.set(false);
-        this.toast.fail('toast.saveFailed');
-      },
     });
+    this.loadOperators();
   }
 
-  resetPermissions(): void {
-    this.drafts.set({});
-  }
-
-  openEdit(row: Operator): void {
-    this.editing.set(row);
-    this.editName.set(row.name);
-    this.editRole.set(row.role);
-    this.deactivate.set(row.status === 'inactive');
-  }
-
-  closeEdit(): void {
-    this.editing.set(null);
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.editing()) {
-      this.closeEdit();
+  setTab(tab: OperatorTab, updateUrl = true): void {
+    this.tab.set(tab);
+    if (tab === 'requests' && !this.requestsLoaded()) {
+      this.loadRequests();
+    }
+    if (updateUrl) {
+      void this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' });
     }
   }
 
-  saveEdit(): void {
-    const row = this.editing();
-    if (!row || this.saving()) {
-      return;
-    }
-    const status: OperatorStatus = this.deactivate() ? 'inactive' : row.status === 'invited' ? 'invited' : 'active';
-    this.saving.set(true);
-    this.api
-      .updateOperator(row.id, {
-        name: this.editName().trim() || row.name,
-        role: this.editRole(),
-        status,
-      })
-      .subscribe({
-        next: () => {
-          this.saving.set(false);
-          this.toast.ok('toast.operatorUpdated');
-          this.closeEdit();
-          this.load(true);
-        },
-        error: () => {
-          this.saving.set(false);
-          this.toast.fail('toast.saveFailed');
-        },
-      });
+  statusBadgeClass(status: PlatformOperatorChangeStatus): { ok: boolean; warn: boolean; danger: boolean } {
+    return {
+      ok: status === 'applied',
+      warn: status === 'awaitingMaker' || status === 'pendingChecker' || status === 'applying' || status === 'pendingAcceptance',
+      danger: status === 'rejected' || status === 'applicationFailed',
+    };
   }
 
-  load(silent = false): void {
-    if (!silent) {
-      this.loading.set(true);
-    }
+  loadOperators(): void {
+    this.loading.set(true);
     this.error.set(false);
-    this.api.operators(this.query).subscribe({
-      next: (rows) => {
-        this.all.set(rows);
+    this.api.listOperators({ pageSize: 50 }).subscribe({
+      next: (page) => {
+        this.operators.set(page.items);
+        this.operatorsNextCursor.set(page.nextCursor);
         this.loading.set(false);
-        if (this.page() > this.pageCount()) {
-          this.page.set(this.pageCount());
-        }
       },
       error: () => {
         this.loading.set(false);
@@ -360,10 +105,89 @@ export class Users {
     });
   }
 
-  private loadLogs(): void {
-    this.api.audit().subscribe({
-      next: (rows) => {
-        this.logs.set(rows.filter((row) => row.role === 'admin' || row.role === 'maker' || row.role === 'checker' || row.role === 'reader'));
+  loadMoreOperators(): void {
+    const cursor = this.operatorsNextCursor();
+    if (!cursor || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.api.listOperators({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        this.operators.update((rows) => [...rows, ...page.items]);
+        this.operatorsNextCursor.set(page.nextCursor);
+        this.loadingMore.set(false);
+      },
+      error: () => this.loadingMore.set(false),
+    });
+  }
+
+  loadRequests(): void {
+    this.requestsLoading.set(true);
+    this.requestsError.set(false);
+    this.api.listOperatorRequests({ pageSize: 50 }).subscribe({
+      next: (page) => {
+        this.requests.set(page.items);
+        this.requestsNextCursor.set(page.nextCursor);
+        this.requestsLoading.set(false);
+        this.requestsLoaded.set(true);
+      },
+      error: () => {
+        this.requestsLoading.set(false);
+        this.requestsError.set(true);
+      },
+    });
+  }
+
+  loadMoreRequests(): void {
+    const cursor = this.requestsNextCursor();
+    if (!cursor || this.requestsLoadingMore()) {
+      return;
+    }
+    this.requestsLoadingMore.set(true);
+    this.api.listOperatorRequests({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        this.requests.update((rows) => [...rows, ...page.items]);
+        this.requestsNextCursor.set(page.nextCursor);
+        this.requestsLoadingMore.set(false);
+      },
+      error: () => this.requestsLoadingMore.set(false),
+    });
+  }
+
+  askReject(row: PlatformOperatorChangeDetails): void {
+    this.reason.set('');
+    this.rejecting.set(row);
+  }
+
+  cancelReject(): void {
+    this.rejecting.set(null);
+    this.reason.set('');
+  }
+
+  confirmReject(): void {
+    const row = this.rejecting();
+    if (!row || !this.reason().trim()) {
+      return;
+    }
+    this.decide(row, 'rejected', this.reason().trim());
+    this.cancelReject();
+  }
+
+  decide(row: PlatformOperatorChangeDetails, decision: 'approved' | 'rejected', rejectionReason?: string): void {
+    this.actionError.set(null);
+    if (!row.concurrencyToken) {
+      this.actionError.set(MISSING_CONCURRENCY_TOKEN_KEY);
+      this.toast.fail(MISSING_CONCURRENCY_TOKEN_KEY);
+      return;
+    }
+    this.api.decideOperatorRequest(row.requestId, { decision, concurrencyToken: row.concurrencyToken, rejectionReason }).subscribe({
+      next: () => {
+        this.toast.ok(decision === 'approved' ? 'toast.operatorRequestApproved' : 'toast.operatorRequestRejected');
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.actionError.set(apiErrorMessageKey(err));
+        this.loadRequests();
       },
     });
   }

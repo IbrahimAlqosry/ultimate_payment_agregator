@@ -3,7 +3,7 @@ import { FormField, form, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import { readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -45,7 +45,7 @@ export class AddPaymentPoint {
         this.toast.ok('toast.pointSubmitted');
         await this.router.navigateByUrl('/my-payment-points');
       } catch (err) {
-        this.apiError.set(readApiError(err).message);
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });

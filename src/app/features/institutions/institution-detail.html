@@ -75,7 +75,7 @@
         </dl>
 
         @if (actionError(); as message) {
-          <p class="form-error" role="alert">{{ message }}</p>
+          <p class="form-error" role="alert">{{ message | transloco }}</p>
         }
 
         @if (canSubmit()) {
@@ -125,7 +125,7 @@
           </div>
 
           @if (changeApiError(); as message) {
-            <p class="form-error" role="alert">{{ message }}</p>
+            <p class="form-error" role="alert">{{ message | transloco }}</p>
           }
 
           @if (proposing()) {

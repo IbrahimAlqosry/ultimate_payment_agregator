@@ -6,7 +6,7 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import { environment } from '@env/environment';
-import { canAdministerOperators, canApprove, canMutate } from '@core/auth/access';
+import { canApprove, canMutate } from '@core/auth/access';
 import { decodeJwtPayload } from '@core/auth/jwt';
 import {
   ApprovalRequest,
@@ -63,6 +63,13 @@ const credentialStore: Record<string, IntegrationCredentials> = {
   'Tadhamon Bank': { ...CREDENTIALS['Tadhamon Bank'] },
 };
 const profileStore = new Map<string, ReturnType<typeof profileFor>>();
+
+/** Mock-only rule for this file's still-unmigrated /operators endpoints — the real backend has
+ * no equivalent single-role gate (see access.ts's canManageOperators/hasPermission for the real
+ * platform.operators.* permission checks used by the actual UI). */
+function canAdministerOperatorsMock(user: AuthUser): boolean {
+  return user.audience === 'operator' && user.role === 'admin';
+}
 
 function currentProfile(user: AuthUser) {
   const existing = profileStore.get(user.id);
@@ -372,7 +379,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (req.method === 'GET' && (path === apiUrl('/operators') || path === apiUrl('/users'))) {
-    if (!canAdministerOperators(user)) {
+    if (!canAdministerOperatorsMock(user)) {
       return fail(403, 'FORBIDDEN');
     }
     if (query(req, 'fail') === '1') {
@@ -384,7 +391,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (req.method === 'POST' && path === apiUrl('/operators')) {
-    if (!canAdministerOperators(user)) {
+    if (!canAdministerOperatorsMock(user)) {
       return fail(403, 'FORBIDDEN');
     }
     const body = req.body as OperatorDraft;
@@ -412,7 +419,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   const operatorId = resourceId(path, 'operators');
   if (req.method === 'PUT' && operatorId) {
-    if (!canAdministerOperators(user)) {
+    if (!canAdministerOperatorsMock(user)) {
       return fail(403, 'FORBIDDEN');
     }
     const row = OPERATORS.find((item) => item.id === operatorId);

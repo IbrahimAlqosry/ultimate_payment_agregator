@@ -1,0 +1,153 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'inquiry.title' | transloco }}</h1>
+  </header>
+
+  <div class="settings-stack">
+    <form class="settings-card full" (submit)="onLookup($event)" novalidate>
+      <div class="card-header">
+        <h2>{{ 'inquiry.lookupTitle' | transloco }}</h2>
+      </div>
+      <div class="card-body">
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.financialInstitutionId' | transloco }}</span>
+          <input [formField]="lookupForm.financialInstitutionId" autocomplete="off" />
+          <app-field-error [state]="lookupForm.financialInstitutionId()" />
+          <p class="field-hint">{{ 'inquiry.fiIdHint' | transloco }}</p>
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.transactionId' | transloco }}</span>
+          <input [formField]="lookupForm.transactionId" autocomplete="off" />
+          <app-field-error [state]="lookupForm.transactionId()" />
+        </label>
+
+        @if (lookupError(); as message) {
+          <p class="form-error" role="alert">{{ message | transloco }}</p>
+        }
+        <div class="form-actions end">
+          <button class="cta" type="submit" [disabled]="lookupForm().submitting()">
+            {{ (lookupForm().submitting() ? 'inquiry.lookingUp' : 'inquiry.lookup') | transloco }}
+          </button>
+        </div>
+      </div>
+
+      @if (result(); as row) {
+        <div class="card-body padded">
+          <h2>{{ 'inquiry.resultTitle' | transloco }}</h2>
+          <dl class="info-grid">
+            <div>
+              <dt>{{ 'inquiry.transactionId' | transloco }}</dt>
+              <dd><span class="mono">{{ row.transactionId }}</span></dd>
+            </div>
+            <div>
+              <dt>{{ 'inquiry.transactionStatusLabel' | transloco }}</dt>
+              <dd>{{ ('inquiry.status.' + row.transactionStatus) | transloco }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'inquiry.date' | transloco }}</dt>
+              <dd>{{ row.transactionDate | date: 'medium' }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'inquiry.amount' | transloco }}</dt>
+              <dd>{{ row.amount }} {{ row.currency }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'inquiry.pointNumber' | transloco }}</dt>
+              <dd>{{ row.pointNumber }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'inquiry.matchStatusLabel' | transloco }}</dt>
+              <dd>
+                <span class="badge" [class.ok]="row.matchStatus !== 'unmatched' && row.matchStatus !== 'conflict'" [class.warn]="row.matchStatus === 'unmatched'" [class.danger]="row.matchStatus === 'conflict'">
+                  {{ ('inquiry.matchStatusValue.' + row.matchStatus) | transloco }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+          @if (row.matchStatus === 'unmatched') {
+            <div class="form-actions end">
+              <button class="cta" type="button" (click)="useForMatch()">{{ 'inquiry.useForMatch' | transloco }}</button>
+            </div>
+          }
+        </div>
+      }
+    </form>
+
+    <form class="settings-card full" (submit)="onMatch($event)" novalidate>
+      <div class="card-header">
+        <h2>{{ 'inquiry.matchTitle' | transloco }}</h2>
+      </div>
+      <div class="card-body">
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.matchMethodLabel' | transloco }}</span>
+          <select [formField]="matchForm.method">
+            <option value="transactionId">{{ 'inquiry.methodTransactionId' | transloco }}</option>
+            <option value="notificationTap">{{ 'inquiry.methodNotificationTap' | transloco }}</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.financialInstitutionId' | transloco }}</span>
+          <input [formField]="matchForm.financialInstitutionId" autocomplete="off" />
+          <app-field-error [state]="matchForm.financialInstitutionId()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.transactionId' | transloco }}</span>
+          <input [formField]="matchForm.transactionId" autocomplete="off" />
+          <app-field-error [state]="matchForm.transactionId()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.invoiceReference' | transloco }}</span>
+          <input [formField]="matchForm.invoiceReference" autocomplete="off" />
+          <app-field-error [state]="matchForm.invoiceReference()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.expectedAmount' | transloco }}</span>
+          <input type="number" [formField]="matchForm.expectedAmount" />
+          <app-field-error [state]="matchForm.expectedAmount()" />
+        </label>
+        <label class="form-field">
+          <span class="caps">{{ 'inquiry.currency' | transloco }}</span>
+          <select [formField]="matchForm.currency">
+            <option value="YER">YER</option>
+            <option value="SAR">SAR</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
+
+        @if (matchError(); as message) {
+          <p class="form-error" role="alert">{{ message | transloco }}</p>
+        }
+        <div class="form-actions end">
+          <button class="btn-review" type="button" (click)="newMatch()">{{ 'inquiry.newMatch' | transloco }}</button>
+          <button class="cta" type="submit" [disabled]="matchForm().submitting()">
+            {{ (matchForm().submitting() ? 'inquiry.matching' : 'inquiry.match') | transloco }}
+          </button>
+        </div>
+      </div>
+
+      @if (matchResult(); as outcome) {
+        <div class="card-body padded">
+          <h2>{{ (outcome.outcome === 'matched' ? 'inquiry.outcomeMatched' : 'inquiry.outcomeConflict') | transloco }}</h2>
+          <dl class="info-grid">
+            @if (outcome.conflictKind) {
+              <div>
+                <dt>{{ 'inquiry.conflictReasonLabel' | transloco }}</dt>
+                <dd>{{ ('inquiry.conflict.' + outcome.conflictKind) | transloco }}</dd>
+              </div>
+            }
+            <div>
+              <dt>{{ 'inquiry.recordedAt' | transloco }}</dt>
+              <dd>{{ outcome.recordedAt | date: 'medium' }}</dd>
+            </div>
+            @if (outcome.matchedAt) {
+              <div>
+                <dt>{{ 'inquiry.matchedAt' | transloco }}</dt>
+                <dd>{{ outcome.matchedAt | date: 'medium' }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+    </form>
+  </div>
+</section>

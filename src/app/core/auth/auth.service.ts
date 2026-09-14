@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
-import { canAdministerOperators, canApprove, canMutate, canSubmit, hasPermission, isReadOnly } from '@core/auth/access';
+import { canApprove, canMutate, canSubmit, hasPermission, isReadOnly } from '@core/auth/access';
 import { apiUrl } from '@core/http/api-url';
 import { LoadingService } from '@core/http/loading.service';
 import { PlatformApi } from '@core/http/platform-api';
@@ -66,7 +66,6 @@ export class AuthService {
   readonly user = computed(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => this.user() !== null);
   readonly readOnly = computed(() => isReadOnly(this.user()));
-  readonly admin = computed(() => canAdministerOperators(this.user()));
   readonly canMutate = computed(() => canMutate(this.user()));
   readonly csrfToken = computed(() => this.session()?.csrfToken ?? null);
   readonly otpExpiresAt = computed(() => this.pending()?.expiresAt ?? null);

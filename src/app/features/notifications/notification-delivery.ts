@@ -1,112 +1,82 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormField, form, required, submit, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
-import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
-import { NotificationWebhook, WebhookAuthType } from '@core/models';
+import { apiErrorMessageKey, readApiError } from '@core/http/http-error';
+import { PlatformApi } from '@core/http/platform-api';
+import { CallbackAuthenticationMode, CallbackAuthenticationRequest, NotificationEndpointConfigurationMetadata } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 import { FieldError } from '@shared/field-error';
 import { SecretField } from '@shared/secret-field';
 
+/** Real API (guide v4.0 §15): every save is a brand-new, complete, immutable version — there is
+ * no partial edit or "keep the old secret" option, and GET never returns any authentication
+ * value back (write-only by design). The Merchant only ever sees their latest *submitted*
+ * version here; whether it's actually the active one is a separate flag on the same object. */
 @Component({
   selector: 'app-notification-delivery',
-  imports: [FormField, TranslocoPipe, DataState, FieldError, SecretField],
+  imports: [DatePipe, FormField, TranslocoPipe, DataState, FieldError, SecretField],
   templateUrl: './notification-delivery.html',
-  styleUrl: '../../shared/form-page.scss',
-  styles: `
-    .webhook-card {
-      width: min(760px, 100%);
-      max-width: 760px;
-      padding: 0;
-      gap: 0;
-      border-radius: 16px;
-      box-shadow: 0 12px 12px rgba(0, 0, 0, 0.05);
-    }
-
-    .card-header {
-      padding: 24px 32px 16px;
-      border-bottom: 1px solid #dcd5d5;
-    }
-
-    .card-header h2 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .card-body {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      padding: 32px;
-    }
-
-    .caps {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #7e7676;
-    }
-
-    .form-actions.end {
-      justify-content: flex-end;
-      border-top: 0;
-      padding-top: 12px;
-    }
-
-    .btn-reset {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #dcd5d5;
-      background: #fff;
-      color: #444445;
-      border-radius: 8px;
-      padding: 12px 24px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-  `,
+  styleUrls: ['../../shared/form-page.scss', '../../shared/settings-page.scss'],
 })
 export class NotificationDelivery implements OnInit {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly toast = inject(ToastService);
-  readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly saved = signal<NotificationWebhook | null>(null);
+  readonly apiError = signal<string | null>(null);
+  readonly current = signal<NotificationEndpointConfigurationMetadata | null>(null);
 
   readonly form = form(
     signal({
-      endpointUrl: '',
-      port: '',
-      authType: 'bearer' as WebhookAuthType,
-      accessToken: '',
+      callbackUrl: '',
+      mode: 'basic' as CallbackAuthenticationMode,
+      username: '',
+      password: '',
+      tokenUrl: '',
       clientId: '',
       clientSecret: '',
+      scope: '',
+      headerName: '',
+      headerValue: '',
+      token: '',
     }),
     (p) => {
-      required(p.endpointUrl);
-      required(p.port);
-      required(p.authType);
-      validate(p.accessToken, ({ value, valueOf }) =>
-        valueOf(p.authType) === 'bearer' && !value().trim() ? { kind: 'required' } : undefined,
+      required(p.callbackUrl);
+      validate(p.callbackUrl, ({ value }) =>
+        value() && !value().startsWith('https://') ? { kind: 'httpsOnly' } : undefined,
+      );
+      validate(p.username, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'basic' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.password, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'basic' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.tokenUrl, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'oauth2ClientCredentials' && !value().trim() ? { kind: 'required' } : undefined,
       );
       validate(p.clientId, ({ value, valueOf }) =>
-        valueOf(p.authType) === 'oauth2' && !value().trim() ? { kind: 'required' } : undefined,
+        valueOf(p.mode) === 'oauth2ClientCredentials' && !value().trim() ? { kind: 'required' } : undefined,
       );
       validate(p.clientSecret, ({ value, valueOf }) =>
-        valueOf(p.authType) === 'oauth2' && !value().trim() ? { kind: 'required' } : undefined,
+        valueOf(p.mode) === 'oauth2ClientCredentials' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.headerName, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'customHeader' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.headerValue, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'customHeader' && !value().trim() ? { kind: 'required' } : undefined,
+      );
+      validate(p.token, ({ value, valueOf }) =>
+        valueOf(p.mode) === 'staticBearerJwt' && !value().trim() ? { kind: 'required' } : undefined,
       );
     },
   );
 
-  readonly oauth = computed(() => this.form.authType().value() === 'oauth2');
+  readonly mode = computed(() => this.form.mode().value());
 
   ngOnInit(): void {
     this.load();
@@ -115,56 +85,60 @@ export class NotificationDelivery implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(false);
-    this.api.webhook().subscribe({
+    this.api.getNotificationSettings().subscribe({
       next: (row) => {
-        this.apply(row);
+        this.current.set(row);
+        this.form().reset({ ...this.form().value(), callbackUrl: row.callbackUrl, mode: row.authenticationMode });
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.error.set(true);
+        // 404 is the documented empty state (no configuration submitted yet), not a real error.
+        if (readApiError(err).status !== 404) {
+          this.error.set(true);
+        }
       },
     });
   }
 
-  reset(): void {
-    const saved = this.saved();
-    if (saved) {
-      this.apply(saved);
-    }
-  }
-
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
+    this.apiError.set(null);
     await submit(this.form, async () => {
       try {
-        const saved = await firstValueFrom(this.api.saveWebhook(this.payload()));
-        this.apply(saved);
-        this.toast.ok('toast.webhookUpdated');
-      } catch {
-        /* error interceptor already toasts */
+        const saved = await firstValueFrom(this.api.submitNotificationSettings(this.payload()));
+        this.current.set(saved);
+        this.toast.ok('toast.notificationSettingsSubmitted');
+      } catch (err) {
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });
   }
 
-  private apply(row: NotificationWebhook): void {
-    this.saved.set(row);
-    this.form().reset({
-      endpointUrl: row.endpointUrl,
-      port: row.port,
-      authType: row.authType,
-      accessToken: row.accessToken,
-      clientId: row.clientId,
-      clientSecret: row.clientSecret,
-    });
-  }
-
-  private payload(): NotificationWebhook {
-    const value = this.form().value();
-    return {
-      status: this.saved()?.status ?? 'approved',
-      ...value,
-    };
+  private payload(): { callbackUrl: string; authentication: CallbackAuthenticationRequest } {
+    const v = this.form().value();
+    let authentication: CallbackAuthenticationRequest;
+    switch (v.mode) {
+      case 'basic':
+        authentication = { mode: 'basic', username: v.username, password: v.password };
+        break;
+      case 'oauth2ClientCredentials':
+        authentication = {
+          mode: 'oauth2ClientCredentials',
+          tokenUrl: v.tokenUrl,
+          clientId: v.clientId,
+          clientSecret: v.clientSecret,
+          ...(v.scope.trim() ? { scope: v.scope.trim() } : {}),
+        };
+        break;
+      case 'customHeader':
+        authentication = { mode: 'customHeader', headerName: v.headerName, headerValue: v.headerValue };
+        break;
+      case 'staticBearerJwt':
+        authentication = { mode: 'staticBearerJwt', token: v.token };
+        break;
+    }
+    return { callbackUrl: v.callbackUrl, authentication };
   }
 }

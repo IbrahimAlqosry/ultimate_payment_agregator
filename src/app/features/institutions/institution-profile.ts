@@ -4,7 +4,7 @@ import { email, FormField, form, required, submit } from '@angular/forms/signals
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { MISSING_CONCURRENCY_TOKEN_MESSAGE, readApiError } from '@core/http/http-error';
+import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { FinancialInstitutionSelfProfileResponse } from '@core/models.platform';
@@ -66,7 +66,7 @@ export class InstitutionProfile {
     this.apiError.set(null);
     await submit(this.contactForm, async () => {
       if (!this.concurrencyToken) {
-        this.apiError.set(MISSING_CONCURRENCY_TOKEN_MESSAGE);
+        this.apiError.set(MISSING_CONCURRENCY_TOKEN_KEY);
         return undefined;
       }
       const value = this.contactForm().value();
@@ -80,7 +80,7 @@ export class InstitutionProfile {
         this.apply(saved);
         this.toast.ok('toast.contactUpdated');
       } catch (err) {
-        this.apiError.set(readApiError(err).message);
+        this.apiError.set(apiErrorMessageKey(err));
       }
       return undefined;
     });
