@@ -22,7 +22,6 @@ export type ScreenModule =
   | 'reports'
   | 'settings';
 export type ApprovalEntity = 'merchant' | 'institution' | 'erp' | 'point' | 'integration' | 'operator' | 'notification';
-export type PointScope = 'all' | 'mine' | 'institution' | 'pending';
 
 export interface AuthUser {
   id: string;
@@ -270,7 +269,6 @@ export interface DashboardPayload {
   pendingErpApprovals: number;
   activeMerchants: number;
   weeklyActivity: number[];
-  pendingPoints: PaymentPoint[];
   pendingMerchants: Merchant[];
   activePaymentPoints: number;
   pendingPaymentPoints: number;
@@ -365,12 +363,6 @@ export interface InboxItem {
   at: string;
   unread: boolean;
   href: string;
-}
-
-export interface PaymentPointDraft {
-  institutionName: string;
-  pointCode: string;
-  kind: PointKind;
 }
 
 export interface ApprovalRequest {

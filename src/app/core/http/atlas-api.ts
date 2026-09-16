@@ -24,9 +24,6 @@ import {
   OperatorDraft,
   OperatorUpdate,
   PaymentNotification,
-  PaymentPoint,
-  PaymentPointDraft,
-  PointScope,
   Settlement,
 } from '@core/models';
 import { apiUrl } from './api-url';
@@ -95,20 +92,6 @@ export class AtlasApi {
 
   erpOptions() {
     return this.http.get<string[]>(apiUrl('/erp-options'));
-  }
-
-  paymentPoints(q = '', scope: PointScope = 'all', status = '') {
-    return this.http.get<PaymentPoint[]>(apiUrl('/payment-points'), {
-      params: this.params({ q, status }).set('scope', scope),
-    });
-  }
-
-  paymentPoint(id: string) {
-    return this.http.get<PaymentPoint>(apiUrl(`/payment-points/${id}`));
-  }
-
-  createPaymentPoint(payload: PaymentPointDraft) {
-    return this.http.post<PaymentPoint>(apiUrl('/payment-points'), payload);
   }
 
   erps(q = '', status = '') {

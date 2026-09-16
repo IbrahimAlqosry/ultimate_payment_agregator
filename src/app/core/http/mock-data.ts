@@ -454,46 +454,10 @@ export function profileFor(user: AuthUser): AccountProfile {
   };
 }
 
-export function resolvePointScope(user: AuthUser, requested = 'all'): string {
-  if (user.audience === 'merchant') {
-    return 'mine';
-  }
-  if (user.audience === 'institution') {
-    return requested === 'pending' ? 'pending' : 'institution';
-  }
-  return requested || 'all';
-}
-
-export function scopedPoints(user: AuthUser, scope: string, q = ''): PaymentPoint[] {
-  const resolved = resolvePointScope(user, scope);
+export function scopedNotifications(user: AuthUser, q = ''): PaymentNotification[] {
   // Fail closed, not open: an org-scoped view with no orgName to scope by (e.g. a real-backend
   // login, which never carries one — see AuthService.composeUser) must return nothing, never
   // silently fall through to every merchant's/institution's rows.
-  let rows: PaymentPoint[];
-  if (resolved === 'mine') {
-    rows = user.orgName ? PAYMENT_POINTS.filter((row) => row.merchantName === user.orgName) : [];
-  } else if (resolved === 'institution' || resolved === 'pending') {
-    rows = user.orgName ? PAYMENT_POINTS.filter((row) => row.institutionName === user.orgName) : [];
-    if (resolved === 'pending') {
-      rows = rows.filter((row) => row.status === 'pending');
-    }
-  } else {
-    rows = PAYMENT_POINTS;
-  }
-  const needle = q.trim().toLowerCase();
-  if (!needle) {
-    return rows;
-  }
-  return rows.filter((row) =>
-    [row.pointCode, row.merchantName, row.institutionName, row.status, row.currency]
-      .join(' ')
-      .toLowerCase()
-      .includes(needle),
-  );
-}
-
-export function scopedNotifications(user: AuthUser, q = ''): PaymentNotification[] {
-  // Fail closed — see the matching comment in scopedPoints().
   let rows: PaymentNotification[];
   if (user.audience === 'merchant') {
     rows = user.orgName ? NOTIFICATIONS.filter((row) => row.merchantName === user.orgName) : [];
@@ -539,7 +503,6 @@ export function buildDashboard(user: AuthUser): DashboardPayload {
     pendingErpApprovals: ERPS.filter((row) => row.status === 'pending').length,
     activeMerchants: MERCHANTS.filter((row) => row.status === 'approved').length,
     weeklyActivity: WEEKLY_ACTIVITY,
-    pendingPoints: PAYMENT_POINTS.filter((row) => row.status === 'pending').slice(0, 6),
     pendingMerchants: MERCHANTS.filter((row) => row.status === 'pending'),
     activePaymentPoints: orgPoints.filter((row) => row.status === 'approved').length,
     pendingPaymentPoints: orgPoints.filter((row) => row.status === 'pending').length,

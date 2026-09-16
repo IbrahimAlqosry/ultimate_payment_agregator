@@ -76,7 +76,6 @@ export function navLinks(user: AuthUser | null): NavLink[] {
   const links: NavLink[] = [
     { path: '/dashboard', label: 'nav.dashboard', icon: 'layout-dashboard' },
     { path: '/merchants', label: 'nav.merchantMgmt', icon: 'users-2' },
-    { path: '/payment-points', label: 'nav.points', icon: 'credit-card' },
     { path: '/institutions', label: 'nav.fiMgmt', icon: 'building' },
     { path: '/erp-systems', label: 'nav.erpList', icon: 'cpu' },
     { path: '/notification-reviews', label: 'nav.notificationReviews', icon: 'bell' },
@@ -111,7 +110,6 @@ export function allowedAudiencesForPath(path: string): Audience[] | null {
     '/bootstrap-reissues',
     '/operators',
     '/reports',
-    '/payment-points',
   ];
   const merchantOnly = ['/my-payment-points', '/payment-inquiry', '/my-integration-user', '/notification-delivery'];
   const institutionOnly = [

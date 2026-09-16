@@ -122,7 +122,6 @@ describe('role access', () => {
 describe('navLinks', () => {
   it('shows platform operators to anyone with the real platform.operators.read grant', () => {
     expect(navLinks(admin).some((link) => link.path === '/operators')).toBe(true);
-    expect(navLinks(admin).some((link) => link.path === '/payment-points')).toBe(true);
     expect(navLinks(maker).some((link) => link.path === '/operators')).toBe(true);
     expect(navLinks(checker).some((link) => link.path === '/operators')).toBe(true);
     expect(navLinks(reader).some((link) => link.path === '/operators')).toBe(true);

@@ -23,8 +23,6 @@ import {
   OperatorRole,
   OperatorUpdate,
   OtpStartResponse,
-  PaymentPointDraft,
-  PointKind,
   InstitutionContactUpdate,
   MerchantAccountDetails,
 } from '@core/models';
@@ -44,12 +42,9 @@ import {
   MERCHANTS,
   MERCHANT_WEBHOOK,
   OPERATORS,
-  PAYMENT_POINTS,
   SETTLEMENTS,
   profileFor,
   scopedNotifications,
-  resolvePointScope,
-  scopedPoints,
 } from './mock-data';
 
 const LATENCY_MS = 380;
@@ -543,59 +538,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return ok(row, 201);
   }
 
-  const pointId = resourceId(path, 'payment-points');
-  if (req.method === 'GET' && pointId) {
-    const row = PAYMENT_POINTS.find((item) => item.id === pointId);
-    if (!row) {
-      return fail(404, 'NOT_FOUND');
-    }
-    if (user.audience === 'merchant' && row.merchantName !== user.orgName) {
-      return fail(403, 'FORBIDDEN');
-    }
-    if (user.audience === 'institution' && row.institutionName !== user.orgName) {
-      return fail(403, 'FORBIDDEN');
-    }
-    return ok(row);
-  }
-
-  if (req.method === 'GET' && (path === apiUrl('/payment-points') || path === apiUrl('/orders'))) {
-    const scope = resolvePointScope(user, req.params.get('scope') ?? 'all');
-    const status = query(req, 'status');
-    let rows = scopedPoints(user, scope, query(req, 'q'));
-    if (status && status !== 'all') {
-      rows = rows.filter((row) => row.status === status);
-    }
-    return ok(rows);
-  }
-
-  if (req.method === 'POST' && path === apiUrl('/payment-points')) {
-    if (user.audience !== 'merchant' || !canMutate(user)) {
-      return fail(403, 'FORBIDDEN');
-    }
-    const body = req.body as PaymentPointDraft;
-    const institution = INSTITUTIONS.find((item) => item.name === body.institutionName);
-    const merchant = MERCHANTS.find((item) => item.legalName === user.orgName);
-    const kind: PointKind = body.kind === 'merchant_point' ? 'merchant_point' : 'wallet';
-    const row = {
-      id: `pp-${Date.now()}`,
-      pointCode: body.pointCode.trim(),
-      kind,
-      merchantName: user.orgName ?? 'Unknown merchant',
-      institutionName: institution?.name ?? body.institutionName,
-      institutionType: institution?.type ?? 'bank',
-      currency: 'YER' as const,
-      status: 'pending' as const,
-      submittedAt: new Date().toISOString(),
-      merchantCr: merchant?.crNumber ?? '',
-      submittedBy: user.name,
-      erpSystem: merchant?.erpSystem ?? '',
-      linkedAccount: `${institution?.name ?? body.institutionName} ****${body.pointCode.slice(-4)}`,
-    };
-    PAYMENT_POINTS.unshift(row);
-    audit(user, 'Requested payment point', row.pointCode, row.institutionName);
-    return ok(row, 201);
-  }
-
   if (req.method === 'GET' && path === apiUrl('/fi-options')) {
     const rows = INSTITUTIONS.filter((row) => row.status === 'approved').map((row) => ({
       name: row.name,
@@ -773,7 +715,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     if (!canApprove(user, body.entity)) {
       return fail(403, 'FORBIDDEN');
     }
-    const applied = applyDecision(user, body);
+    const applied = applyDecision(body);
     if (!applied) {
       return fail(404, 'NOT_FOUND');
     }
@@ -792,7 +734,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   return fail(404, 'NOT_FOUND');
 };
 
-function applyDecision(user: AuthUser, body: ApprovalRequest): boolean {
+function applyDecision(body: ApprovalRequest): boolean {
   const status = body.decision;
   if (body.entity === 'merchant') {
     const row = MERCHANTS.find((item) => item.id === body.id);
@@ -826,15 +768,5 @@ function applyDecision(user: AuthUser, body: ApprovalRequest): boolean {
     row.status = status;
     return true;
   }
-  const row = PAYMENT_POINTS.find((item) => item.id === body.id);
-  if (!row) {
-    return false;
-  }
-  if (user.audience === 'institution' && row.institutionName !== user.orgName) {
-    return false;
-  }
-  row.status = status;
-  row.actionedAt = new Date().toISOString();
-  row.actionedBy = user.name;
-  return true;
+  return false;
 }

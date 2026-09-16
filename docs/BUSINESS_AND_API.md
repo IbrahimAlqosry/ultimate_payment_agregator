@@ -61,13 +61,108 @@ Operator roles: **Maker, Checker, Reader, Admin** (an operator can hold more tha
 one, e.g. Checker + Reader). An **Admin** can create new operators and assign
 roles, and may also act as Checker, but **can never act as Maker**.
 
-**Current implementation gap**: the mock backend enforces role-based *who can
-approve* (`canApprove` in `core/auth/access.ts`), but does **not** track or block
-"the checker must be a different person than the maker" — there's no persisted
-maker identity on the request to compare against. This needs a real backend
-data model (see `ApprovalRequest` in the BRD's §5 data entities) with `MakerUserId`
-/ `CheckerUserId` fields and a server-side check that rejects `CheckerUserId ===
-MakerUserId`.
+**Not independently verified**: whether the real backend actually blocks the
+*same individual* from being both maker and checker **on one specific request**
+(as opposed to merely gating actions by permission grant) has not been tested
+against the live environment — doing so needs a single operator account holding
+both Maker and Checker roles simultaneously, which no available test account
+does (each of the three live test accounts — Admin, Maker, Checker — holds
+exactly one role). Structurally, the real permission catalog already makes
+self-approval hard by construction: every `.submit` grant (Maker-only) and its
+matching `.decide` grant (Admin/Checker-only) are mutually exclusive per role
+(see §2a) — but if one operator is ever granted **both** roles, whether the
+backend additionally checks "the request's `MakerUserId` differs from the
+deciding user" is still unconfirmed either way.
+
+## 2a. Real permission grants per role — live-verified 2026-09-16
+
+Every Platform Operator screen/action in this app is gated by a real
+`platform.*` grant string returned in `GET /auth/me`'s `permissions` array —
+**not** by role name directly (see `hasPermission`/`canApprove`/`canSubmit` in
+`core/auth/access.ts`). The full catalog (32 grants) is confirmed live via
+`GET /platform-operator-administration/permissions`, and the exact set held by
+each role below was read directly from `GET /auth/me` against the live test
+accounts, not inferred from documentation:
+
+| Resource | Grant | Admin | Maker | Checker | Reader* |
+|---|---|:-:|:-:|:-:|:-:|
+| Merchant onboarding | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Financial Institution onboarding | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Merchant bootstrap-reissue (first-time credential recovery) | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| FI bootstrap-reissue (first-time credential recovery) | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Integration-client approvals | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| ERP System List | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Merchant/FI profile change proposals | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Notification endpoint configs | `.submit` | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Notification deliveries (recovery) | `.remediate` | ✅ | | ✅ | |
+| | `.replay` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Platform Operators directory/admin | `.invite` | ✅ | ✅ | | |
+| | `.change` (propose role/permission/suspension update) | | ✅ | | |
+| | `.decide` | ✅ | | ✅ | |
+| | `.read` | ✅ | ✅ | ✅ | ✅ |
+| Audit log | `.read` | ✅ | ✅ | ✅ | ✅ |
+
+\* **Reader has no live test account in this environment.** The Reader row
+above is the *documented intent* (read-only across every resource, no
+submit/decide/invite/change grants anywhere) carried over from the integration
+guide, not something re-confirmed against a live `GET /auth/me` response —
+verify it once a Reader test account exists.
+
+**Read-through implications, not obvious from the table alone:**
+- **Maker and Checker/Admin are structurally disjoint** for every maker-checker
+  resource: a Maker can create/propose but never decide; Admin/Checker can
+  decide but never create/propose. The one resource that breaks this clean
+  submit/decide split is **Platform Operators**: `.invite` (send a fresh
+  invitation) is held by **both** Admin and Maker, while `.change` (propose an
+  update to an *existing* operator's role/permissions/suspension) is
+  **Maker-only** and still requires an Admin/Checker `.decide` — so "invite a
+  new operator" and "change an existing operator" are gated differently even
+  though both look like Maker-side actions in the UI.
+- **Admin ≠ superset of Checker** in one respect: Admin does **not** hold
+  `platform.operators.change` (cannot themselves propose an operator change,
+  only decide one and invite new operators), whereas Checker holds neither
+  `.invite` nor `.change`. No live role holds all four `operators.*` grants at
+  once.
+- **Notification-deliveries recovery** (`delivery-detail.ts`'s "Remediate" and
+  "Replay" actions) is Admin/Checker-only, with no Maker-submit step at all —
+  Maker can only *view* delivery status, never trigger recovery.
+- **`platform.audit.read`** is the one grant every Platform role — including
+  Maker — holds; the Reports/Audit Log screen is not maker-checker gated.
+
+### Merchant and Financial Institution users hold no `platform.*` grants
+
+`GET /auth/me` for both audiences always returns `"permissions": []`
+(confirmed live for a Merchant session; FI session not independently
+tested — this environment has no FI test credential, and there is no
+debug/mail-capture endpoint to obtain one, only real email delivery — but
+expected to be the same session-scoped design as `GET /payment-points`).
+Authorization for these two audiences is **not**
+grant-based at all — it's **session-audience-scoped**: a Merchant session can
+only ever act on that Merchant's own data (create/list its own payment points,
+edit its own profile, configure its own notification endpoint, manage its own
+Integration user), and a Financial Institution session can only ever act on
+its own linked payment points (approve/reject, first-time credential reissue
+request) and its own profile/Integration user. There is no finer-grained
+permission model on top of that for either audience — every Interactive user
+of a given Merchant/FI account can do everything that account's audience is
+allowed to do.
 
 ## 3. Authentication rules (BR-AUTH-*)
 
@@ -316,6 +411,15 @@ config, provided the real API matches (or is adapted to match) the shape below.
 
 ### Current mock endpoint inventory (for the backend diff)
 
+**Stale as a "what's still mock" list.** Nearly every screen now talks to the
+real backend (`PlatformApi` in `src/app/core/http/platform-api.ts`) — Merchant/FI/ERP/Operator
+list+detail+approve-reject, payment points, notification endpoint config,
+bootstrap-reissue, account settings' password/business-profile forms. What's
+still genuinely mock (`AtlasApi`) is just the dashboard KPI aggregates
+(`dashboard.ts`) and the FI notification delivery log (`notifications.ts`) —
+narrower than this inventory below suggests. Kept as-is as a historical "what
+the UI originally expected" reference, not a current status list.
+
 All prefixed with `environment.apiUrl` (currently `/api`); see `AtlasApi` and
 `AuthService` for exact call sites.
 
@@ -328,7 +432,6 @@ GET  /operators               POST /operators           PUT  /operators/:id
 GET  /merchants                POST /merchants          GET  /merchants/:id
 GET  /institutions             POST /institutions       GET  /institutions/:id
 GET  /fi-options               GET  /erp-options
-GET  /payment-points           POST /payment-points      GET  /payment-points/:id
 GET  /erps                     POST /erps                GET  /erps/:id
 GET  /integration-requests     GET  /integration-users
 GET  /notifications
@@ -337,7 +440,7 @@ GET  /inbox
 GET  /settlements
 
 GET  /profile
-PUT  /profile/merchant         PUT  /profile/operator    PUT  /profile/password
+PUT  /profile/merchant         PUT  /profile/operator
 PUT  /institution-profile/contact
 GET  /institution-profile
 
@@ -358,11 +461,21 @@ hold the backend to.
 
 ## 9. Where to look for more detail
 
-- Full BRD: shared separately (not stored in this repo as of writing) — covers
-  Sections 1–16 including field-level form definitions (§6), user stories with
-  acceptance criteria (§7, §13), proposed data entities (§5, §12), and the two
-  foundational API schemas in full (§14).
+- Full BRD: `docs/Aggregator_Platform_BRD.docx` / `.pdf` — covers Sections 1–16
+  including field-level form definitions (§6), user stories with acceptance
+  criteria (§7, §13), proposed data entities (§5, §12), and the two
+  foundational API schemas in full (§14). Binary Office documents, not editable
+  from this repo directly — §2a above is this file's living, text-editable
+  supplement covering real per-role permissions, kept current against the live
+  backend rather than the BRD's original static design.
+- `docs/BACKEND_ISSUES.md` — currently open backend issues/feature requests
+  only (fixed items are removed once re-verified, full history in git).
 - `README.md` (repo root) — how to run the app, demo login credentials, the
   interceptor stack, and design tokens.
-- `src/app/core/models.ts` — current TypeScript shape of every entity.
-- `src/app/core/http/mock-data.ts` — what the mock backend seeds/returns today.
+- `src/app/core/models.ts` — current TypeScript shape of every mock-era entity.
+- `src/app/core/models.platform.ts` — current TypeScript shape of every real
+  backend entity, including the full `PlatformPermission` catalog.
+- `src/app/core/auth/access.ts` — the real permission-gating logic (`hasPermission`/
+  `canApprove`/`canSubmit`) that §2a's table documents.
+- `src/app/core/http/mock-data.ts` — what the mock backend seeds/returns today
+  (only the Platform-operator-wide screens still on mock data use this).
