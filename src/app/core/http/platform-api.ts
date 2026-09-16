@@ -6,6 +6,9 @@ import {
   AuditEventPage,
   AuditSearchQuery,
   AuthMeResponse,
+  BootstrapReissueDetails,
+  BootstrapReissuePage,
+  ChangePasswordRequest,
   DeliveryAttentionState,
   DeliveryRemediationRequest,
   DeliveryReplayAcceptance,
@@ -19,6 +22,7 @@ import {
   FinancialInstitutionApplicationDetails,
   FinancialInstitutionApplicationPage,
   FinancialInstitutionBootstrapRequest,
+  FinancialInstitutionChoicePage,
   FinancialInstitutionOnboardingRequest,
   IntegrationClientCredentialOnce,
   IntegrationClientMetadata,
@@ -57,6 +61,7 @@ import {
   PaymentMatchResponse,
   PaymentPoint,
   PaymentPointDecisionRequest,
+  PaymentPointPage,
   PlatformOperatorChangeDetails,
   PlatformOperatorChangeInput,
   PlatformOperatorChangePage,
@@ -79,12 +84,13 @@ function pageParams(query: PagedQuery = {}): HttpParams {
 }
 
 /**
- * Typed client for the real Payment Aggregator backend. Per the v3.0 guide this now covers
- * auth, onboarding, Integration Client, Platform Operator administration, ERP systems,
- * Merchant/FI profiles, and payment points (create + FI decide only — no list/GET API exists
- * for payment points). Dashboard, ERP-choice-independent payment-point browsing, reports,
- * settlements, and notification-webhook config still have no real backend and stay on
- * `AtlasApi`/the mock.
+ * Typed client for the real Payment Aggregator backend. Covers auth, onboarding (incl. v6.0's
+ * first-time credential reissue), Integration Client, Platform Operator administration, ERP
+ * systems, Merchant/FI profiles, payment points (create, FI's pending-approval queue, decide —
+ * still no general list/GET-by-id or Merchant own-point list), payment inquiry/matching,
+ * notification settings/review/delivery-recovery, and audit search. Dashboard, Merchant/FI-side
+ * payment-point browsing beyond the FI pending queue, and reports still have no real backend
+ * equivalent and stay on `AtlasApi`/the mock.
  */
 @Injectable({ providedIn: 'root' })
 export class PlatformApi {
@@ -109,6 +115,12 @@ export class PlatformApi {
 
   logout() {
     return this.http.post(platformApiUrl('/api/v1/auth/logout'), null);
+  }
+
+  /** Any authenticated portal session (Platform/Merchant/FI). Success (`204`) revokes the
+   * session server-side — the caller must treat it as an implicit logout. */
+  changePassword(body: ChangePasswordRequest) {
+    return this.http.post(platformApiUrl('/api/v1/auth/password/change'), body);
   }
 
   bootstrapMerchant(body: MerchantBootstrapRequest) {
@@ -385,10 +397,38 @@ export class PlatformApi {
     );
   }
 
+  // --- Financial institution choices (guide v6.0 §12.1, Merchant session) ------
+
+  getFinancialInstitutionChoices(query: PagedQuery = {}) {
+    return this.http.get<FinancialInstitutionChoicePage>(platformApiUrl('/api/v1/financial-institutions/choices'), {
+      params: pageParams(query),
+    });
+  }
+
   // --- Payment points ---------------------------------------------------------
+
+  /** New endpoint (2026-09-16 OpenAPI update) — Merchant/FI session only, auto-scoped to the
+   * caller's own points (own-merchant or own-institution). Confirmed live `403` for Platform
+   * sessions — there is still no operator-wide "all payment points" view. */
+  listPaymentPoints(query: PagedQuery = {}) {
+    return this.http.get<PaymentPointPage>(platformApiUrl('/api/v1/payment-points'), { params: pageParams(query) });
+  }
+
+  getPaymentPoint(paymentPointId: string) {
+    return this.http.get<PaymentPoint>(platformApiUrl(`/api/v1/payment-points/${paymentPointId}`));
+  }
 
   createPaymentPoint(body: CreatePaymentPointRequest) {
     return this.http.post<PaymentPoint>(platformApiUrl('/api/v1/payment-points'), body);
+  }
+
+  /** Guide v6.0 §12.3 — FI session only; returns just that FI's own pending points. A cursor is
+   * only valid while its row is still pending, so callers should restart from page one after
+   * any decision rather than continuing an old cursor. */
+  listPendingPaymentPoints(query: PagedQuery = {}) {
+    return this.http.get<PaymentPointPage>(platformApiUrl('/api/v1/payment-points/pending-approval'), {
+      params: pageParams(query),
+    });
   }
 
   decidePaymentPoint(paymentPointId: string, body: PaymentPointDecisionRequest) {
@@ -517,5 +557,63 @@ export class PlatformApi {
       }
     }
     return this.http.get<AuditEventPage>(platformApiUrl('/api/v1/audit-events'), { params });
+  }
+
+  // --- First-time credential reissue (v6.0 §7.2-7.4) ----------------------------
+  // Separate permission family from ordinary onboarding grants (platform.{merchant,financial-
+  // institution}-bootstrap-reissue.*). Submit takes the application's id, no body; eligibility
+  // is checked server-side only (409 if not eligible right now).
+
+  submitMerchantBootstrapReissue(applicationId: string) {
+    return this.http.post<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/merchant-onboarding/applications/${applicationId}/bootstrap-reissues`),
+      null,
+    );
+  }
+
+  listMerchantBootstrapReissues(query: PagedQuery = {}) {
+    return this.http.get<BootstrapReissuePage>(platformApiUrl('/api/v1/merchant-onboarding/bootstrap-reissues'), {
+      params: pageParams(query),
+    });
+  }
+
+  getMerchantBootstrapReissue(requestId: string) {
+    return this.http.get<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/merchant-onboarding/bootstrap-reissues/${requestId}`),
+    );
+  }
+
+  decideMerchantBootstrapReissue(requestId: string, body: OnboardingDecisionRequest) {
+    return this.http.post<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/merchant-onboarding/bootstrap-reissues/${requestId}/decision`),
+      body,
+    );
+  }
+
+  submitFinancialInstitutionBootstrapReissue(applicationId: string) {
+    return this.http.post<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/financial-institution-onboarding/applications/${applicationId}/bootstrap-reissues`),
+      null,
+    );
+  }
+
+  listFinancialInstitutionBootstrapReissues(query: PagedQuery = {}) {
+    return this.http.get<BootstrapReissuePage>(
+      platformApiUrl('/api/v1/financial-institution-onboarding/bootstrap-reissues'),
+      { params: pageParams(query) },
+    );
+  }
+
+  getFinancialInstitutionBootstrapReissue(requestId: string) {
+    return this.http.get<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/financial-institution-onboarding/bootstrap-reissues/${requestId}`),
+    );
+  }
+
+  decideFinancialInstitutionBootstrapReissue(requestId: string, body: OnboardingDecisionRequest) {
+    return this.http.post<BootstrapReissueDetails>(
+      platformApiUrl(`/api/v1/financial-institution-onboarding/bootstrap-reissues/${requestId}/decision`),
+      body,
+    );
   }
 }

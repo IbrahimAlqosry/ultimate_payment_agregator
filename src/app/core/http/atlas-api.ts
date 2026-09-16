@@ -6,7 +6,6 @@ import {
   InstitutionContactUpdate,
   MerchantAccountDetails,
   OperatorAccountDetails,
-  PasswordChange,
   AuditEvent,
   DashboardPayload,
   ErpDraft,
@@ -174,10 +173,6 @@ export class AtlasApi {
 
   updateOperatorProfile(payload: { name: string; phone: string } & OperatorAccountDetails) {
     return this.http.put<AccountProfile>(apiUrl('/profile/operator'), payload);
-  }
-
-  updatePassword(payload: PasswordChange) {
-    return this.http.put(apiUrl('/profile/password'), payload);
   }
 
   updateInstitutionContact(payload: InstitutionContactUpdate) {

@@ -1,65 +1,26 @@
 <section class="page">
   <header class="page-head">
-    <div class="title-row">
-      <h1>{{ titleKey() | transloco }}</h1>
-      @if (layout() === 'fi-pending') {
-        <span class="count-badge">{{ 'points.pendingBadge' | transloco: { count: filtered().length } }}</span>
-      }
-    </div>
-    @if (layout() === 'merchant' && auth.canMutate()) {
-      <a class="btn btn-primary" routerLink="/my-payment-points/new">{{ 'cta.addPoint' | transloco }}</a>
-    }
-    @if (layout() === 'fi-pending') {
-      <a class="btn btn-primary" routerLink="/pp-approvals/decide">{{ 'points.decideById' | transloco }}</a>
-    }
+    <h1>{{ 'points.title' | transloco }}</h1>
   </header>
-  @if (layout() === 'fi-pending') {
-    <p class="info-banner">{{ 'points.decideByIdHint' | transloco }}</p>
-  }
 
-  @if (layout() === 'operator' || layout() === 'fi-all') {
-    <div class="tabs" role="tablist">
-      <button type="button" class="tab" role="tab" [class.active]="tab() === 'all'" (click)="setTab('all')">
-        {{ 'list.allPoints' | transloco }}
-      </button>
-      <button type="button" class="tab" role="tab" [class.active]="tab() === 'pending'" (click)="setTab('pending')">
-        {{ 'list.pendingCount' | transloco: { count: pendingCount() } }}
-      </button>
-    </div>
-  }
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'all'" (click)="setTab('all')">
+      {{ 'list.allPoints' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="tab() === 'pending'" (click)="setTab('pending')">
+      {{ 'list.pendingCount' | transloco: { count: pendingCount() } }}
+    </button>
+  </div>
 
-  @if (layout() === 'fi-all') {
-    <div class="filters">
-      <select class="filter" [value]="statusDraft()" (change)="onStatusDraft($event)" [attr.aria-label]="'points.status' | transloco">
-        <option value="">{{ 'filter.statusAll' | transloco }}</option>
-        <option value="approved">{{ 'badge.approved' | transloco }}</option>
-        <option value="pending">{{ 'badge.pending' | transloco }}</option>
-        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
-      </select>
-      <label class="filter-date">
-        <input type="date" [value]="fromDraft()" (change)="fromDraft.set($any($event.target).value)" [attr.aria-label]="'filter.fromDate' | transloco" />
-        <img src="icons/calendar.svg" width="14" height="14" alt="" />
-      </label>
-      <label class="filter-date">
-        <input type="date" [value]="toDraft()" (change)="toDraft.set($any($event.target).value)" [attr.aria-label]="'filter.toDate' | transloco" />
-        <img src="icons/calendar.svg" width="14" height="14" alt="" />
-      </label>
-      <div class="filter-actions">
-        <button class="btn btn-ghost" type="button" (click)="clearFilters()">{{ 'filter.clear' | transloco }}</button>
-        <button class="btn btn-primary" type="button" (click)="applyFilters()">{{ 'filter.apply' | transloco }}</button>
-      </div>
-    </div>
-  } @else if (layout() === 'operator' || layout() === 'merchant') {
-    <div class="filters">
-      <app-search-field [seed]="query" placeholderKey="points.search" (queryChange)="onQuery($event)" />
-      <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'points.status' | transloco">
-        <option value="">{{ 'filter.status' | transloco }}</option>
-        <option value="approved">{{ 'badge.approved' | transloco }}</option>
-        <option value="pending">{{ 'badge.pending' | transloco }}</option>
-        <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
-      </select>
-    </div>
-  }
+  <div class="filters">
+    <app-search-field [seed]="query" placeholderKey="points.search" (queryChange)="onQuery($event)" />
+    <select class="filter" [value]="statusFilter()" (change)="onStatus($event)" [attr.aria-label]="'points.status' | transloco">
+      <option value="">{{ 'filter.status' | transloco }}</option>
+      <option value="approved">{{ 'badge.approved' | transloco }}</option>
+      <option value="pending">{{ 'badge.pending' | transloco }}</option>
+      <option value="rejected">{{ 'badge.rejected' | transloco }}</option>
+    </select>
+  </div>
 
   <div class="card table-card">
     <app-data-state
@@ -73,153 +34,64 @@
         <table>
           <thead>
             <tr>
-              @if (layout() === 'merchant') {
-                <th>{{ 'points.code' | transloco }}</th>
-                <th>{{ 'points.fiName' | transloco }}</th>
-                <th>{{ 'points.dateAdded' | transloco }}</th>
-                <th class="num">{{ 'points.status' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              } @else if (layout() === 'fi-pending') {
-                <th>{{ 'points.merchant' | transloco }}</th>
-                <th>{{ 'points.code' | transloco }}</th>
-                <th>{{ 'points.type' | transloco }}</th>
-                <th>{{ 'points.submitted' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              } @else if (layout() === 'fi-all') {
-                <th>{{ 'points.merchant' | transloco }}</th>
-                <th>{{ 'points.code' | transloco }}</th>
-                <th>{{ 'points.type' | transloco }}</th>
-                <th>{{ 'points.status' | transloco }}</th>
-                <th>{{ 'points.submitted' | transloco }}</th>
-                <th>{{ 'points.actionedAt' | transloco }}</th>
-                <th>{{ 'points.actionedBy' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              } @else {
-                <th>{{ 'points.merchant' | transloco }}</th>
-                <th>{{ 'points.code' | transloco }}</th>
-                <th>{{ 'points.institution' | transloco }}</th>
-                <th>{{ 'points.type' | transloco }}</th>
-                <th>{{ 'points.status' | transloco }}</th>
-                <th>{{ 'points.submitted' | transloco }}</th>
-                <th>{{ 'actions.column' | transloco }}</th>
-              }
+              <th>{{ 'points.merchant' | transloco }}</th>
+              <th>{{ 'points.code' | transloco }}</th>
+              <th>{{ 'points.institution' | transloco }}</th>
+              <th>{{ 'points.type' | transloco }}</th>
+              <th>{{ 'points.status' | transloco }}</th>
+              <th>{{ 'points.submitted' | transloco }}</th>
+              <th>{{ 'actions.column' | transloco }}</th>
             </tr>
           </thead>
           <tbody>
             @for (row of rows(); track row.id) {
               <tr>
-                @if (layout() === 'merchant') {
-                  <td>
-                    <a class="table-link" [routerLink]="['/my-payment-points', row.id]">{{ row.pointCode }}</a>
-                  </td>
-                  <td>{{ row.institutionName }}</td>
-                  <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td class="num">
-                    <span
-                      class="badge"
-                      [class.ok]="row.status === 'approved'"
-                      [class.warn]="row.status === 'pending'"
-                      [class.danger]="row.status === 'rejected'"
-                    >
-                      {{ ('badge.' + row.status) | transloco }}
-                    </span>
-                  </td>
-                  <td>
-                    <app-approval-actions
-                      [variant]="row.status === 'pending' ? 'review' : 'manage'"
-                      [viewHref]="'/my-payment-points/' + row.id"
-                    />
-                  </td>
-                } @else if (layout() === 'fi-pending') {
-                  <td>
-                    <a class="table-link" [routerLink]="['/pp-approvals', row.id]">{{ row.merchantName }}</a>
-                  </td>
-                  <td class="muted">{{ row.pointCode }}</td>
-                  <td>{{ ('kind.' + row.kind) | transloco }}</td>
-                  <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td>
-                    <app-approval-actions
-                      variant="review"
-                      [viewHref]="'/pp-approvals/' + row.id"
-                    />
-                  </td>
-                } @else if (layout() === 'fi-all') {
-                  <td>
-                    <a class="table-link" [routerLink]="['/all-payment-points', row.id]">{{ row.merchantName }}</a>
-                  </td>
-                  <td class="muted">{{ row.pointCode }}</td>
-                  <td>{{ ('kind.' + row.kind) | transloco }}</td>
-                  <td>
-                    <span
-                      class="badge"
-                      [class.ok]="row.status === 'approved'"
-                      [class.warn]="row.status === 'pending'"
-                      [class.danger]="row.status === 'rejected'"
-                    >
-                      {{ ('badge.' + row.status) | transloco }}
-                    </span>
-                  </td>
-                  <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td class="muted">
-                    {{ row.actionedAt ? (row.actionedAt | date: 'mediumDate' : undefined : locale.dateLocale()) : '—' }}
-                  </td>
-                  <td class="muted">{{ row.actionedBy || '—' }}</td>
-                  <td>
-                    <app-approval-actions
-                      [variant]="row.status === 'pending' ? 'review' : 'manage'"
-                      [viewHref]="'/all-payment-points/' + row.id"
-                    />
-                  </td>
-                } @else {
-                  <td>
-                    <a class="table-link" routerLink="/merchants" [queryParams]="{ q: row.merchantName }">{{
-                      row.merchantName
-                    }}</a>
-                  </td>
-                  <td>
-                    <a class="table-link" [routerLink]="['/payment-points', row.id]">{{ row.pointCode }}</a>
-                  </td>
-                  <td>{{ row.institutionName }}</td>
-                  <td>{{ ('kind.' + row.kind) | transloco }}</td>
-                  <td>
-                    <span
-                      class="badge"
-                      [class.ok]="row.status === 'approved'"
-                      [class.warn]="row.status === 'pending'"
-                      [class.danger]="row.status === 'rejected'"
-                    >
-                      {{ ('badge.' + row.status) | transloco }}
-                    </span>
-                  </td>
-                  <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
-                  <td>
-                    <app-approval-actions
-                      [variant]="row.status === 'pending' ? 'review' : 'manage'"
-                      [viewHref]="'/payment-points/' + row.id"
-                    />
-                  </td>
-                }
+                <td>
+                  <a class="table-link" routerLink="/merchants" [queryParams]="{ q: row.merchantName }">{{
+                    row.merchantName
+                  }}</a>
+                </td>
+                <td>
+                  <a class="table-link" [routerLink]="['/payment-points', row.id]">{{ row.pointCode }}</a>
+                </td>
+                <td>{{ row.institutionName }}</td>
+                <td>{{ ('kind.' + row.kind) | transloco }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.ok]="row.status === 'approved'"
+                    [class.warn]="row.status === 'pending'"
+                    [class.danger]="row.status === 'rejected'"
+                  >
+                    {{ ('badge.' + row.status) | transloco }}
+                  </span>
+                </td>
+                <td class="muted">{{ row.submittedAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                <td>
+                  <app-approval-actions
+                    [variant]="row.status === 'pending' ? 'review' : 'manage'"
+                    [viewHref]="'/payment-points/' + row.id"
+                  />
+                </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-      @if (layout() !== 'fi-pending') {
-        <footer class="table-foot">
-          <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
-          <div class="pager">
-            <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
-              <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
-            </button>
-            @for (n of pages(); track n) {
-              <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
-            }
-            <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
-              <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
-            </button>
-          </div>
-        </footer>
-      }
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: filtered().length } }}</p>
+        <div class="pager">
+          <button class="page-btn ghost" type="button" (click)="goTo(page() - 1)" [disabled]="page() === 1">
+            <img src="icons/chevron-left.svg" width="14" height="14" alt="" />
+          </button>
+          @for (n of pages(); track n) {
+            <button class="page-btn" type="button" [class.active]="page() === n" (click)="goTo(n)">{{ n }}</button>
+          }
+          <button class="page-btn" type="button" (click)="goTo(page() + 1)" [disabled]="page() >= pageCount()">
+            <img src="icons/chevron-right.svg" width="14" height="14" alt="" />
+          </button>
+        </div>
+      </footer>
     </app-data-state>
   </div>
 </section>

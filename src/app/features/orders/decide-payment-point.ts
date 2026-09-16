@@ -9,10 +9,10 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { PaymentPoint } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 
-/** There is no list/GET endpoint for payment points at all (confirmed in the v3.0 guide's
- * OpenAPI spec — only create and this decision endpoint exist), so the FI operator can't browse
- * to a pending point the way every other approval screen in this app works. They get the point's
- * `id` from the Merchant out-of-band and decide on it directly by pasting it in here; the record
+/** Guide v6.0 §12.3 added a real pending-approval queue for the FI (see pp-approvals.ts, now the
+ * primary screen for this workflow). This "decide by ID" form stays as a manual fallback — e.g.
+ * a point the loaded queue page hasn't reached yet — since there's still no general list/GET-by-id
+ * endpoint (only create + this decision endpoint + the FI's own pending list exist). The record
  * shown below the form is only ever the one just decided (the decision response), not a lookup. */
 @Component({
   selector: 'app-decide-payment-point',

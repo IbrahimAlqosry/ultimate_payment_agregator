@@ -7,7 +7,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { MerchantApplicationDetails } from '@core/models.platform';
+import { MerchantApplicationDetails, PlatformPermission } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 
@@ -37,6 +37,15 @@ export class MerchantDetail implements OnInit {
   // is unknown client-side. Gate by record status instead — the server enforces who may act.
   readonly canSubmit = () => this.row()?.status === 'awaitingMaker' && this.auth.canSubmit('merchant');
   readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('merchant');
+
+  // Guide v6.0 §7.2 — first-time password replacement for an already-active application whose
+  // user never completed setup. Eligibility (expired/failed/exhausted credential) is checked
+  // server-side only; the button just needs the record to be active and the right grant.
+  readonly canRequestReissue = () =>
+    this.row()?.status === 'active' && this.auth.hasPermission(PlatformPermission.MerchantBootstrapReissueSubmit);
+  readonly reissueSubmitting = signal(false);
+  readonly reissueSubmitted = signal(false);
+  readonly reissueError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.load();
@@ -113,5 +122,25 @@ export class MerchantDetail implements OnInit {
           this.load();
         },
       });
+  }
+
+  requestReissue(): void {
+    const row = this.row();
+    if (!row || this.reissueSubmitting()) {
+      return;
+    }
+    this.reissueSubmitting.set(true);
+    this.reissueError.set(null);
+    this.api.submitMerchantBootstrapReissue(row.applicationId).subscribe({
+      next: () => {
+        this.reissueSubmitting.set(false);
+        this.reissueSubmitted.set(true);
+        this.toast.ok('toast.reissueRequested');
+      },
+      error: (err) => {
+        this.reissueSubmitting.set(false);
+        this.reissueError.set(apiErrorMessageKey(err));
+      },
+    });
   }
 }

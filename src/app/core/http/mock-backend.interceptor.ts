@@ -23,7 +23,6 @@ import {
   OperatorRole,
   OperatorUpdate,
   OtpStartResponse,
-  PasswordChange,
   PaymentPointDraft,
   PointKind,
   InstitutionContactUpdate,
@@ -341,17 +340,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     };
     profileStore.set(user.id, next);
     return ok(next);
-  }
-
-  if (req.method === 'PUT' && path === apiUrl('/profile/password')) {
-    if (!canMutate(user)) {
-      return fail(403, 'FORBIDDEN');
-    }
-    const body = req.body as PasswordChange;
-    if (!body.next || body.next.length < 8 || body.next !== body.confirm) {
-      return fail(400, 'INVALID_PASSWORD');
-    }
-    return ok({ ok: true });
   }
 
   if (req.method === 'PUT' && path === apiUrl('/institution-profile/contact')) {

@@ -1,8 +1,8 @@
 <section class="page">
-  <p class="crumb">{{ crumbKey() | transloco }}</p>
-  <a class="back-link" [routerLink]="listPath()">
+  <p class="crumb">{{ 'detail.pointCrumb' | transloco }}</p>
+  <a class="back-link" routerLink="/payment-points">
     <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
-    {{ backKey() | transloco }}
+    {{ 'actions.backToList' | transloco }}
   </a>
   <header class="page-head">
     <h1>{{ 'detail.pointTitle' | transloco }}</h1>
@@ -59,31 +59,6 @@
             <dd>{{ point.institutionName }}</dd>
           </div>
         </dl>
-        @if (point.status === 'pending') {
-          <p class="warn-note">
-            <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
-            <span>{{ 'detail.pointWarning' | transloco }}</span>
-          </p>
-        }
-        @if (point.status === 'pending' && auth.canApprove('point')) {
-          <div class="form-actions end">
-            <button class="btn-reject" type="button" (click)="showReject.set(!showReject())">
-              {{ 'actions.rejectRequest' | transloco }}
-            </button>
-            <button class="cta" type="button" (click)="decide('approved')">{{ 'actions.approveRequest' | transloco }}</button>
-          </div>
-          @if (showReject()) {
-            <div class="reject-panel">
-              <label class="form-field">
-                <span>{{ 'detail.rejectionReason' | transloco }}</span>
-                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
-              </label>
-              <button class="cta cta-danger" type="button" [disabled]="!reason().trim()" (click)="decide('rejected')">
-                {{ 'actions.confirmReject' | transloco }}
-              </button>
-            </div>
-          }
-        }
       </article>
     }
   </app-data-state>

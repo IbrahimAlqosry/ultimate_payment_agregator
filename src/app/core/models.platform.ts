@@ -48,6 +48,16 @@ export const PlatformPermission = {
   NotificationDeliveriesReplay: 'platform.notification-deliveries.replay',
   /** Guide v5.0 §17 — read-only. */
   AuditRead: 'platform.audit.read',
+  /** Guide v6.0 §7.2 — separate from the ordinary onboarding grants. Gates the Platform
+   * "request a replacement first-time password" recovery action for an already-`active`
+   * assisted Merchant/FI whose user never completed first-time setup (expired/failed
+   * credential). Maker submits, a different Checker/Admin decides, Reader can only view. */
+  MerchantBootstrapReissueSubmit: 'platform.merchant-bootstrap-reissue.submit',
+  MerchantBootstrapReissueDecide: 'platform.merchant-bootstrap-reissue.decide',
+  MerchantBootstrapReissueRead: 'platform.merchant-bootstrap-reissue.read',
+  FinancialInstitutionBootstrapReissueSubmit: 'platform.financial-institution-bootstrap-reissue.submit',
+  FinancialInstitutionBootstrapReissueDecide: 'platform.financial-institution-bootstrap-reissue.decide',
+  FinancialInstitutionBootstrapReissueRead: 'platform.financial-institution-bootstrap-reissue.read',
 } as const;
 
 export type PlatformPermission = (typeof PlatformPermission)[keyof typeof PlatformPermission];
@@ -82,6 +92,14 @@ export interface LoginRequest {
 export interface VerifyOtpRequest {
   challengeId: string;
   code: string;
+}
+
+/** `POST /auth/password/change` — any authenticated portal session (Platform/Merchant/FI).
+ * Success revokes the current session (the server expires `__Host-pa-session` in the response),
+ * so the UI must treat a `204` here as an implicit logout, not just a form reset. */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface MerchantBootstrapRequest {
@@ -349,11 +367,14 @@ export interface ErpSystemChangeRequestPage {
 
 export type PlatformOperatorStatus = 'pendingActivation' | 'active' | 'suspended' | 'disabled';
 
-/** No email/name field exists on this resource at all — the real API only ever
- * identifies an operator by userId (guide v3.0 §10). The UI can't show a directory
- * of human-readable operator names; it can only show role/status/permissions per id. */
+/** Guide v6.0 §8.1: both list rows and direct detail now carry `email`. List scope still
+ * differs by the caller's own role — Admin sees operators across every Platform account, while
+ * Maker/Checker/Reader still see only their own account's operators (same as before) — but
+ * direct `GET /operators/{userId}` remains scoped to the caller's own account even for Admin, so
+ * an Admin can see a cross-account row in the list yet get 404 opening its detail. */
 export interface PlatformOperatorDetails {
   userId: string;
+  email: string;
   role: PlatformOperatorRole;
   status: PlatformOperatorStatus;
   permissions: string[];
@@ -497,9 +518,23 @@ export interface GovernedProfileChangePage {
 }
 
 // --- Payment points -----------------------------------------------------------
-// No list/GET-by-id endpoint exists at all (confirmed in the live OpenAPI spec) — only create
-// and the FI's decide action. A Merchant gets the created record's `id` from the create
-// response; there is no other way to look one up later.
+// Guide v6.0 §12: the FI now has a real pending-approval queue (`GET
+// /payment-points/pending-approval`) and the Merchant now has a real FI directory (`GET
+// /financial-institutions/choices`). There is STILL no general list/GET-by-id, no Merchant
+// own-point list, and no FI "all points" (approved/rejected history) endpoint — those gaps
+// remain and stay on mock data. A Merchant otherwise gets the created record's `id` from the
+// create response only.
+
+export interface FinancialInstitutionChoice {
+  financialInstitutionId: string;
+  legalName: string;
+  institutionType: PlatformInstitutionType;
+}
+
+export interface FinancialInstitutionChoicePage {
+  items: FinancialInstitutionChoice[];
+  nextCursor: string | null;
+}
 
 export interface CreatePaymentPointRequest {
   financialInstitutionId: string;
@@ -517,6 +552,14 @@ export interface PaymentPoint {
   rejectionReason: string | null;
   createdAt: string;
   decidedAt: string | null;
+}
+
+/** `GET /payment-points/pending-approval` (FI session) — only ever `pendingFinancialInstitution`
+ * rows for the signed-in FI, ordered by pointNumber then id ascending. A cursor is only valid
+ * while its row is still pending for this FI, so restart from page one after any decision. */
+export interface PaymentPointPage {
+  items: PaymentPoint[];
+  nextCursor: string | null;
 }
 
 /** No `concurrencyToken` at all — unlike every other decision request in this API. */
@@ -803,7 +846,10 @@ export type AuditAction =
   | 'deliveryReplayTerminal'
   | 'platformOperatorInvitationSubmitted'
   | 'platformOperatorChangeSubmitted'
-  | 'platformOperatorChangeApplied';
+  | 'platformOperatorChangeApplied'
+  /** Guide v6.0 — system-actor event recording a successful background completion of
+   * Merchant/FI onboarding once credential delivery finally succeeds. */
+  | 'credentialDeliveryReconciled';
 
 export type AuditOutcome =
   | 'succeeded'
@@ -915,4 +961,34 @@ export interface AuditSearchQuery {
   to?: string;
   pageSize?: number;
   cursor?: string;
+}
+
+// --- First-time credential reissue (guide v6.0 §7.2-7.4) ----------------------
+// New this version: first-time Merchant/FI passwords now have a fixed 24-hour lifetime. This
+// is the Platform recovery flow for an already-`active` application whose user never completed
+// first-time setup because their credential expired, failed to deliver, or exhausted delivery
+// attempts — a Maker submits, a different Checker/Admin decides, using separate
+// `platform.{merchant,financial-institution}-bootstrap-reissue.*` grants (not the ordinary
+// onboarding grants). Eligibility is checked server-side only — there is no eligibility/
+// delivery-status GET, so a `409` on submit just means "not eligible right now."
+
+export type BootstrapReissueStatus = 'pendingChecker' | 'approved' | 'rejected';
+
+/** Shared shape for both Merchant and FI reissue requests — same 9 fields either way. */
+export interface BootstrapReissueDetails {
+  requestId: string;
+  applicationId: string;
+  accountId: string;
+  userId: string;
+  expectedGeneration: number;
+  status: BootstrapReissueStatus;
+  submittedAt: string;
+  updatedAt: string;
+  decidedAt: string | null;
+  concurrencyToken: string;
+}
+
+export interface BootstrapReissuePage {
+  items: BootstrapReissueDetails[];
+  nextCursor: string | null;
 }

@@ -19,11 +19,11 @@ import { DataState } from '@shared/data-state';
 type OperatorTab = 'all' | 'requests';
 
 /**
- * Platform Operator administration (guide v5.0 §8), replacing the old mock CRUD screen. There is
- * no email/name on this resource at all — only `userId`. `GET .../operators` is still confirmed
- * live-broken as of 2026-09-14 (returns only the caller's own record for every role — see
- * docs/BACKEND_ISSUES.md Issue 3), so the "All Operators" tab currently only ever shows yourself;
- * built to the real contract regardless so it's correct the moment that's fixed.
+ * Platform Operator administration (guide v5.0 §8, updated v6.0 §8.1), replacing the old mock
+ * CRUD screen. Operators now carry `email`. List scope: Admin sees operators across every
+ * Platform account; Maker/Checker/Reader still see only their own account's operators — the
+ * banner below reflects that. Direct `GET .../operators/{userId}` stays scoped to the caller's
+ * own account even for Admin, so opening a cross-account row's detail can 404.
  */
 @Component({
   selector: 'app-users',

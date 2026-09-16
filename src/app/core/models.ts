@@ -240,12 +240,6 @@ export interface AccountProfile {
   operator?: OperatorAccountDetails;
 }
 
-export interface PasswordChange {
-  current: string;
-  next: string;
-  confirm: string;
-}
-
 export interface InstitutionContactUpdate {
   contactName: string;
   jobTitle: string;

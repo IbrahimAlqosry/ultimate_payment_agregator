@@ -46,6 +46,15 @@ export class InstitutionDetail implements OnInit {
   readonly canSubmit = () => this.row()?.status === 'awaitingMaker' && this.auth.canSubmit('institution');
   readonly canDecide = () => this.row()?.status === 'pendingChecker' && this.auth.canApprove('institution');
 
+  // Guide v6.0 §7.2 — first-time password replacement for an already-active application whose
+  // user never completed setup. Eligibility is checked server-side only.
+  readonly canRequestReissue = () =>
+    this.row()?.status === 'active' &&
+    this.auth.hasPermission(PlatformPermission.FinancialInstitutionBootstrapReissueSubmit);
+  readonly reissueSubmitting = signal(false);
+  readonly reissueSubmitted = signal(false);
+  readonly reissueError = signal<string | null>(null);
+
   // --- Platform-governed profile changes (only meaningful once the FI is active) --------------
   readonly governedProfile = signal<FinancialInstitutionProfileResponse | null>(null);
   readonly changes = signal<GovernedProfileChangeResponse[]>([]);
@@ -294,5 +303,25 @@ export class InstitutionDetail implements OnInit {
           this.load();
         },
       });
+  }
+
+  requestReissue(): void {
+    const row = this.row();
+    if (!row || this.reissueSubmitting()) {
+      return;
+    }
+    this.reissueSubmitting.set(true);
+    this.reissueError.set(null);
+    this.api.submitFinancialInstitutionBootstrapReissue(row.applicationId).subscribe({
+      next: () => {
+        this.reissueSubmitting.set(false);
+        this.reissueSubmitted.set(true);
+        this.toast.ok('toast.reissueRequested');
+      },
+      error: (err) => {
+        this.reissueSubmitting.set(false);
+        this.reissueError.set(apiErrorMessageKey(err));
+      },
+    });
   }
 }

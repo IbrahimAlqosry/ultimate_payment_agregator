@@ -1,11 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormField, form, required, submit } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import {
+  FinancialInstitutionChoice,
   PaymentCurrency,
   PaymentInquiryResponse,
   PaymentMatchMethod,
@@ -13,10 +14,11 @@ import {
 } from '@core/models.platform';
 import { FieldError } from '@shared/field-error';
 
-/** Merchant payment inquiry (guide v4.0 §13) + matching (§14). Inquiry has no FI directory to pick
- * from — same out-of-band UUID convention already used by add-payment-point.ts. A found,
- * unmatched transaction can be carried straight into the match form below via "useForMatch()"
- * rather than retyping its FI/transaction id.
+/** Merchant payment inquiry (guide v4.0 §13) + matching (§14). Guide v6.0 §12.1 gives the
+ * Merchant a real FI directory (`GET /financial-institutions/choices`) that also populates the
+ * FI selector here, replacing the earlier out-of-band-UUID convention. A found, unmatched
+ * transaction can be carried straight into the match form below via "useForMatch()" rather than
+ * retyping its FI/transaction id.
  *
  * Idempotency-Key handling (guide §14.4): one key per distinct reviewed attempt, reused only for
  * an exact retry of that same attempt. A plain resubmit with the form unchanged (e.g. after a
@@ -31,8 +33,12 @@ import { FieldError } from '@shared/field-error';
   templateUrl: './payment-inquiry.html',
   styleUrls: ['../../shared/form-page.scss', '../../shared/settings-page.scss'],
 })
-export class PaymentInquiry {
+export class PaymentInquiry implements OnInit {
   private readonly api = inject(PlatformApi);
+
+  readonly institutions = signal<FinancialInstitutionChoice[]>([]);
+  readonly institutionsLoading = signal(true);
+  readonly institutionsFailed = signal(false);
 
   readonly lookupError = signal<string | null>(null);
   readonly result = signal<PaymentInquiryResponse | null>(null);
@@ -68,6 +74,28 @@ export class PaymentInquiry {
   );
 
   readonly matchMethod = computed(() => this.matchForm.method().value());
+
+  ngOnInit(): void {
+    this.loadInstitutions();
+  }
+
+  private loadInstitutions(cursor?: string, acc: FinancialInstitutionChoice[] = []): void {
+    this.api.getFinancialInstitutionChoices({ pageSize: 50, cursor }).subscribe({
+      next: (page) => {
+        const items = [...acc, ...page.items];
+        if (page.nextCursor) {
+          this.loadInstitutions(page.nextCursor, items);
+          return;
+        }
+        this.institutions.set(items);
+        this.institutionsLoading.set(false);
+      },
+      error: () => {
+        this.institutionsLoading.set(false);
+        this.institutionsFailed.set(true);
+      },
+    });
+  }
 
   async onLookup(event: Event): Promise<void> {
     event.preventDefault();

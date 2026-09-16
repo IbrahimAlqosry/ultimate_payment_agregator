@@ -148,10 +148,14 @@ export class AccountSettings {
   async onPassword(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.passwordForm, async () => {
+      const { current, next } = this.passwordForm().value();
       try {
-        await firstValueFrom(this.api.updatePassword(this.passwordForm().value()));
+        // Success revokes the session server-side — sign the user out rather than just
+        // resetting the form, so the UI doesn't keep acting on a session that's already dead.
+        await firstValueFrom(this.platformApi.changePassword({ currentPassword: current, newPassword: next }));
         this.passwordForm().reset({ current: '', next: '', confirm: '' });
         this.toast.ok('toast.passwordUpdated');
+        this.auth.logout(true);
       } catch {
         /* interceptor */
       }

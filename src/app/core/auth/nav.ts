@@ -82,6 +82,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
     { path: '/notification-reviews', label: 'nav.notificationReviews', icon: 'bell' },
     { path: '/delivery-recovery', label: 'nav.deliveryRecovery', icon: 'refresh-cw' },
     { path: '/integration-requests', label: 'nav.integrationRequests', icon: 'git-pull-request' },
+    { path: '/bootstrap-reissues', label: 'nav.bootstrapReissues', icon: 'lock' },
   ];
 
   if (canManageOperators(user)) {
@@ -107,6 +108,7 @@ export function allowedAudiencesForPath(path: string): Audience[] | null {
     '/notification-reviews',
     '/delivery-recovery',
     '/integration-requests',
+    '/bootstrap-reissues',
     '/operators',
     '/reports',
     '/payment-points',

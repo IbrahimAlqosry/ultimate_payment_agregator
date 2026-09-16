@@ -1,0 +1,76 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'nav.ppApprovals' | transloco }}</h1>
+    <a class="btn-review" routerLink="/pp-approvals/decide">{{ 'points.decideById' | transloco }}</a>
+  </header>
+
+  <p class="info-banner">{{ 'points.approvalsIntro' | transloco }}</p>
+
+  @if (actionError(); as message) {
+    <p class="form-error" role="alert">{{ message | transloco }}</p>
+  }
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="points.approvalsEmpty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'points.code' | transloco }}</th>
+              <th>{{ 'points.merchantId' | transloco }}</th>
+              <th>{{ 'points.submitted' | transloco }}</th>
+              <th class="num">{{ 'actions.column' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td class="mono">{{ row.pointNumber }}</td>
+                <td class="mono muted">{{ row.merchantId }}</td>
+                <td class="muted">{{ row.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                <td>
+                  <app-approval-actions
+                    variant="decide"
+                    [show]="!acting()"
+                    (approve)="decide(row, 'approved')"
+                    (reject)="askReject(row)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>
+
+@if (rejecting(); as row) {
+  <div class="overlay-modal">
+    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
+      <header class="overlay-head">
+        <h2>{{ 'actions.reject' | transloco }} — <span class="mono">{{ row.pointNumber }}</span></h2>
+        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
+      </header>
+      <label class="form-field">
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+      </label>
+      <div class="overlay-actions">
+        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+          {{ 'actions.confirmReject' | transloco }}
+        </button>
+      </div>
+    </article>
+  </div>
+}

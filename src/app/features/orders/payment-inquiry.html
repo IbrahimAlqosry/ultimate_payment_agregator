@@ -11,9 +11,18 @@
       <div class="card-body">
         <label class="form-field">
           <span class="caps">{{ 'inquiry.financialInstitutionId' | transloco }}</span>
-          <input [formField]="lookupForm.financialInstitutionId" autocomplete="off" />
+          <select [formField]="lookupForm.financialInstitutionId">
+            <option value="">{{ (institutionsLoading() ? 'onboard.fiLoading' : 'onboard.fiPh') | transloco }}</option>
+            @for (fi of institutions(); track fi.financialInstitutionId) {
+              <option [value]="fi.financialInstitutionId">{{ fi.legalName }}</option>
+            }
+          </select>
           <app-field-error [state]="lookupForm.financialInstitutionId()" />
-          <p class="field-hint">{{ 'inquiry.fiIdHint' | transloco }}</p>
+          @if (institutionsFailed()) {
+            <p class="field-hint error">{{ 'apiError.generic' | transloco }}</p>
+          } @else if (!institutionsLoading() && institutions().length === 0) {
+            <p class="field-hint error">{{ 'onboard.fiEmpty' | transloco }}</p>
+          }
         </label>
         <label class="form-field">
           <span class="caps">{{ 'inquiry.transactionId' | transloco }}</span>
@@ -87,7 +96,12 @@
         </label>
         <label class="form-field">
           <span class="caps">{{ 'inquiry.financialInstitutionId' | transloco }}</span>
-          <input [formField]="matchForm.financialInstitutionId" autocomplete="off" />
+          <select [formField]="matchForm.financialInstitutionId">
+            <option value="">{{ (institutionsLoading() ? 'onboard.fiLoading' : 'onboard.fiPh') | transloco }}</option>
+            @for (fi of institutions(); track fi.financialInstitutionId) {
+              <option [value]="fi.financialInstitutionId">{{ fi.legalName }}</option>
+            }
+          </select>
           <app-field-error [state]="matchForm.financialInstitutionId()" />
         </label>
         <label class="form-field">

@@ -1,0 +1,90 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ 'reissues.title' | transloco }}</h1>
+  </header>
+
+  <p class="info-banner">{{ 'reissues.banner' | transloco }}</p>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" [class.active]="kind() === 'merchant'" (click)="setKind('merchant')">
+      {{ 'reissues.tabMerchant' | transloco }}
+    </button>
+    <button type="button" class="tab" role="tab" [class.active]="kind() === 'financialInstitution'" (click)="setKind('financialInstitution')">
+      {{ 'reissues.tabFi' | transloco }}
+    </button>
+  </div>
+
+  @if (actionError(); as message) {
+    <p class="form-error" role="alert">{{ message | transloco }}</p>
+  }
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="reissues.empty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'users.requestId' | transloco }}</th>
+              <th>{{ 'detail.applicationId' | transloco }}</th>
+              <th>{{ 'merchants.submitted' | transloco }}</th>
+              <th>{{ 'erp.status' | transloco }}</th>
+              <th class="num">{{ 'actions.column' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.requestId) {
+              <tr>
+                <td><span class="mono">{{ row.requestId }}</span></td>
+                <td class="mono muted">{{ row.applicationId }}</td>
+                <td class="muted">{{ row.submittedAt | date: 'mediumDate' }}</td>
+                <td>
+                  <span class="badge" [class.warn]="row.status === 'pendingChecker'" [class.ok]="row.status === 'approved'" [class.danger]="row.status === 'rejected'">
+                    {{ ('reissues.status.' + row.status) | transloco }}
+                  </span>
+                </td>
+                <td>
+                  <app-approval-actions
+                    variant="decide"
+                    [show]="row.status === 'pendingChecker' && canDecide() && !acting()"
+                    (approve)="decide(row, 'approved')"
+                    (reject)="askReject(row)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>
+
+@if (rejecting(); as row) {
+  <div class="overlay-modal">
+    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
+    <article class="overlay-panel" role="dialog" aria-modal="true">
+      <header class="overlay-head">
+        <h2>{{ 'actions.reject' | transloco }} — <span class="mono">{{ row.requestId }}</span></h2>
+        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
+      </header>
+      <label class="form-field">
+        <span>{{ 'detail.rejectionReason' | transloco }}</span>
+        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
+      </label>
+      <div class="overlay-actions">
+        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
+        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
+          {{ 'actions.confirmReject' | transloco }}
+        </button>
+      </div>
+    </article>
+  </div>
+}

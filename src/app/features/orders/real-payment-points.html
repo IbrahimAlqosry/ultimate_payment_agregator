@@ -1,0 +1,49 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ (mode() === 'merchant' ? 'points.mineTitle' : 'points.institutionTitle') | transloco }}</h1>
+    @if (mode() === 'merchant') {
+      <a class="btn btn-primary" routerLink="/my-payment-points/new">{{ 'cta.addPoint' | transloco }}</a>
+    }
+  </header>
+
+  <p class="info-banner">{{ (mode() === 'merchant' ? 'points.mineIntro' : 'points.institutionIntro') | transloco }}</p>
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="points.empty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'points.code' | transloco }}</th>
+              <th>{{ (mode() === 'merchant' ? 'points.institution' : 'points.merchantId') | transloco }}</th>
+              <th>{{ 'points.status' | transloco }}</th>
+              <th>{{ 'points.submitted' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td class="mono">{{ row.pointNumber }}</td>
+                <td class="mono muted">{{ mode() === 'merchant' ? row.financialInstitutionId : row.merchantId }}</td>
+                <td>
+                  <span class="badge" [class.ok]="row.status === 'approved'" [class.warn]="row.status === 'pendingFinancialInstitution'" [class.danger]="row.status === 'rejected' || row.status === 'disabled'">
+                    {{ (row.status === 'approved' ? 'badge.active' : 'badge.' + row.status) | transloco }}
+                  </span>
+                </td>
+                <td class="muted">{{ row.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>

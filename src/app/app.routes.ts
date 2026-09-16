@@ -212,6 +212,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/users').then((m) => m.Users),
       },
       {
+        path: 'bootstrap-reissues',
+        title: 'reissues.title',
+        ...operatorOnly,
+        loadComponent: () => import('./features/users/bootstrap-reissues').then((m) => m.BootstrapReissues),
+      },
+      {
         path: 'reports',
         title: 'nav.reports',
         ...operatorOnly,
@@ -237,17 +243,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/add-payment-point').then((m) => m.AddPaymentPoint),
       },
       {
-        path: 'my-payment-points/:id',
-        title: 'detail.pointTitle',
-        ...merchantOnly,
-        loadComponent: () => import('./features/orders/point-detail').then((m) => m.PointDetail),
-      },
-      {
         path: 'my-payment-points',
         title: 'nav.myPoints',
         ...merchantOnly,
-        data: { scope: 'mine', titleKey: 'points.mineTitle', introKey: 'points.mineIntro' },
-        loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
+        data: { mode: 'merchant' },
+        loadComponent: () => import('./features/orders/real-payment-points').then((m) => m.RealPaymentPoints),
       },
       {
         path: 'payment-inquiry',
@@ -262,30 +262,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/decide-payment-point').then((m) => m.DecidePaymentPoint),
       },
       {
-        path: 'pp-approvals/:id',
-        title: 'detail.pointTitle',
-        ...institutionOnly,
-        loadComponent: () => import('./features/orders/point-detail').then((m) => m.PointDetail),
-      },
-      {
         path: 'pp-approvals',
         title: 'nav.ppApprovals',
         ...institutionOnly,
-        data: { scope: 'pending', titleKey: 'points.approvalsTitle', introKey: 'points.approvalsIntro' },
-        loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
-      },
-      {
-        path: 'all-payment-points/:id',
-        title: 'detail.pointTitle',
-        ...institutionOnly,
-        loadComponent: () => import('./features/orders/point-detail').then((m) => m.PointDetail),
+        loadComponent: () => import('./features/orders/pp-approvals').then((m) => m.PpApprovals),
       },
       {
         path: 'all-payment-points',
         title: 'nav.allPoints',
         ...institutionOnly,
-        data: { scope: 'institution', titleKey: 'points.institutionTitle', introKey: 'points.institutionIntro' },
-        loadComponent: () => import('./features/orders/orders').then((m) => m.Orders),
+        data: { mode: 'institution' },
+        loadComponent: () => import('./features/orders/real-payment-points').then((m) => m.RealPaymentPoints),
       },
       {
         path: 'notification-delivery',

@@ -15,7 +15,7 @@
     </button>
   </div>
 
-  @if (tab() === 'all') {
+  @if (tab() === 'all' && auth.user()?.role !== 'admin') {
     <p class="info-banner warn">{{ 'users.selfOnlyBanner' | transloco }}</p>
   }
 
@@ -30,7 +30,7 @@
           <table>
             <thead>
               <tr>
-                <th>{{ 'users.userId' | transloco }}</th>
+                <th>{{ 'users.email' | transloco }}</th>
                 <th>{{ 'users.role' | transloco }}</th>
                 <th>{{ 'users.status' | transloco }}</th>
                 <th>{{ 'users.permissionsCol' | transloco }}</th>
@@ -41,7 +41,7 @@
             <tbody>
               @for (row of operators(); track row.userId) {
                 <tr>
-                  <td><span class="mono">{{ row.userId }}</span></td>
+                  <td>{{ row.email }}</td>
                   <td>
                     <span class="badge" [class.danger]="row.role === 'admin'" [class.ok]="row.role === 'maker'" [class.info]="row.role === 'checker'">
                       {{ ('role.' + row.role) | transloco }}

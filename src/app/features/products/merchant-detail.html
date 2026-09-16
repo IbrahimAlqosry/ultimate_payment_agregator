@@ -105,6 +105,22 @@
           }
         }
 
+        @if (canRequestReissue()) {
+          <div class="reject-panel">
+            <p class="field-hint">{{ 'detail.reissueHint' | transloco }}</p>
+            @if (reissueError(); as message) {
+              <p class="form-error" role="alert">{{ message | transloco }}</p>
+            }
+            @if (reissueSubmitted()) {
+              <p class="note-box">{{ 'detail.reissueSubmittedNote' | transloco }}</p>
+            } @else {
+              <button class="btn-review" type="button" [disabled]="reissueSubmitting()" (click)="requestReissue()">
+                {{ (reissueSubmitting() ? 'onboard.submitting' : 'detail.requestReissue') | transloco }}
+              </button>
+            }
+          </div>
+        }
+
         <a class="cancel-link" routerLink="/merchants">{{ 'actions.backToList' | transloco }}</a>
       </article>
     }

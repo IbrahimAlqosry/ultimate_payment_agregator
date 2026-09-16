@@ -12,9 +12,18 @@
     <div class="card-body">
       <label class="form-field">
         <span class="caps">{{ 'onboard.fiId' | transloco }}</span>
-        <input [formField]="form.financialInstitutionId" [placeholder]="'onboard.fiIdPh' | transloco" />
+        <select [formField]="form.financialInstitutionId">
+          <option value="">{{ (institutionsLoading() ? 'onboard.fiLoading' : 'onboard.fiPh') | transloco }}</option>
+          @for (fi of institutions(); track fi.financialInstitutionId) {
+            <option [value]="fi.financialInstitutionId">{{ fi.legalName }}</option>
+          }
+        </select>
+        @if (institutionsFailed()) {
+          <p class="field-hint error">{{ 'apiError.generic' | transloco }}</p>
+        } @else if (!institutionsLoading() && institutions().length === 0) {
+          <p class="field-hint error">{{ 'onboard.fiEmpty' | transloco }}</p>
+        }
         <app-field-error [state]="form.financialInstitutionId()" />
-        <span class="field-hint">{{ 'onboard.fiIdHint' | transloco }}</span>
       </label>
       <label class="form-field">
         <span class="caps">{{ 'onboard.pointCode' | transloco }}</span>
