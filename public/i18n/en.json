@@ -999,7 +999,8 @@
     "phone": "Enter a phone number with at least 7 digits.",
     "uuid": "Enter a valid ERP system ID (a UUID, e.g. aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa).",
     "expiryAfterSigned": "Expiry date must be later than the signed date.",
-    "httpsOnly": "Enter a URL that starts with https://."
+    "httpsOnly": "Enter a URL that starts with https://.",
+    "formInvalid": "Check the highlighted fields and try again."
   },
   "apiError": {
     "badRequest": "The request could not be processed. Please check the form and try again.",

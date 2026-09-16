@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FormField, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, form, required, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -181,7 +182,7 @@ export class InstitutionDetail implements OnInit {
     if (!applicationId || !profile) {
       return;
     }
-    await submit(this.changeForm, async () => {
+    await submitChecked(this.changeForm, this.toast, async () => {
       const v = this.changeForm().value();
       try {
         await new Promise<void>((resolve, reject) => {

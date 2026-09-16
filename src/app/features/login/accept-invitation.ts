@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, form, required, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -41,7 +42,7 @@ export class AcceptInvitation {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(false);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       const { invitationSecret, password } = this.form().value();
       try {
         await firstValueFrom(this.api.acceptOperatorInvitation({ invitationSecret, password }));

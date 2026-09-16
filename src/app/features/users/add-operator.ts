@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { email, FormField, form, required, submit } from '@angular/forms/signals';
+import { email, FormField, form, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { PlatformOperatorRole } from '@core/models.platform';
@@ -65,7 +66,7 @@ export class AddOperator {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       try {
         await firstValueFrom(
           this.api.inviteOperator({

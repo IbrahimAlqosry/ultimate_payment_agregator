@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormField, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, form, required, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey, readApiError } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { CallbackAuthenticationMode, CallbackAuthenticationRequest, NotificationEndpointConfigurationMetadata } from '@core/models.platform';
@@ -104,7 +105,7 @@ export class NotificationDelivery implements OnInit {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       try {
         const saved = await firstValueFrom(this.api.submitNotificationSettings(this.payload()));
         this.current.set(saved);

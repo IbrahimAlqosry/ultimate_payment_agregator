@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { FormField, email, form, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
+import { submitChecked } from '@core/forms/submit-checked';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
@@ -27,7 +28,7 @@ export class Forgot {
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.forgotForm, async () => {
+    await submitChecked(this.forgotForm, this.toast, async () => {
       const emailValue = this.forgotForm.email().value();
       try {
         await firstValueFrom(this.auth.forgot(emailValue));

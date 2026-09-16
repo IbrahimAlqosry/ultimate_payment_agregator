@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormField, form, required, submit } from '@angular/forms/signals';
+import { FormField, form, required } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import {
@@ -12,6 +13,7 @@ import {
   PaymentMatchMethod,
   PaymentMatchResponse,
 } from '@core/models.platform';
+import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 
 /** Merchant payment inquiry (guide v4.0 §13) + matching (§14). Guide v6.0 §12.1 gives the
@@ -35,6 +37,7 @@ import { FieldError } from '@shared/field-error';
 })
 export class PaymentInquiry implements OnInit {
   private readonly api = inject(PlatformApi);
+  private readonly toast = inject(ToastService);
 
   readonly institutions = signal<FinancialInstitutionChoice[]>([]);
   readonly institutionsLoading = signal(true);
@@ -101,7 +104,7 @@ export class PaymentInquiry implements OnInit {
     event.preventDefault();
     this.lookupError.set(null);
     this.result.set(null);
-    await submit(this.lookupForm, async () => {
+    await submitChecked(this.lookupForm, this.toast, async () => {
       try {
         const found = await firstValueFrom(this.api.inquirePayment(this.lookupForm().value()));
         this.result.set(found);
@@ -148,7 +151,7 @@ export class PaymentInquiry implements OnInit {
   async onMatch(event: Event): Promise<void> {
     event.preventDefault();
     this.matchError.set(null);
-    await submit(this.matchForm, async () => {
+    await submitChecked(this.matchForm, this.toast, async () => {
       const v = this.matchForm().value();
       const body = {
         financialInstitutionId: v.financialInstitutionId,

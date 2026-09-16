@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit } from '@angular/forms/signals';
+import { FormField, email, form, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -34,7 +35,7 @@ export class Login {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(false);
-    await submit(this.loginForm, async () => {
+    await submitChecked(this.loginForm, this.toast, async () => {
       const { email, password } = this.loginForm().value();
       try {
         // The real backend now exposes GET /auth/me, called right after OTP verification — the

@@ -1,8 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormField, form, required, submit } from '@angular/forms/signals';
+import { FormField, form, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { FinancialInstitutionChoice } from '@core/models.platform';
@@ -63,7 +64,7 @@ export class AddPaymentPoint implements OnInit {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       try {
         await firstValueFrom(this.api.createPaymentPoint(this.form().value()));
         this.toast.ok('toast.pointSubmitted');

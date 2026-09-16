@@ -1,10 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormField, email, form, maxLength, required, submit, validate } from '@angular/forms/signals';
+import { FormField, email, form, maxLength, required, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules, applyPhoneRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ErpChoice } from '@core/models.platform';
@@ -91,7 +92,7 @@ export class Register implements OnInit {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.registerForm, async () => {
+    await submitChecked(this.registerForm, this.toast, async () => {
       const { legalName, contactName, commercialRegistrationNumber, email, phone, erpSystemId, password } =
         this.registerForm().value();
       try {

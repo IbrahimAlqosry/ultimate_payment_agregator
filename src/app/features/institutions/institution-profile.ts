@@ -1,9 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { email, FormField, form, required, submit } from '@angular/forms/signals';
+import { email, FormField, form, required } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -64,7 +65,7 @@ export class InstitutionProfile {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.contactForm, async () => {
+    await submitChecked(this.contactForm, this.toast, async () => {
       if (!this.concurrencyToken) {
         this.apiError.set(MISSING_CONCURRENCY_TOKEN_KEY);
         return undefined;

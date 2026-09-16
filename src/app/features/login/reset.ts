@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, form, submit, validate } from '@angular/forms/signals';
+import { FormField, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
@@ -31,7 +32,7 @@ export class Reset {
 
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.resetForm, async () => {
+    await submitChecked(this.resetForm, this.toast, async () => {
       this.toast.ok('toast.passwordUpdated');
       await this.router.navigateByUrl('/reset-success');
       return undefined;

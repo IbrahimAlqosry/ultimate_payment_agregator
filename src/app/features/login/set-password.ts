@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, email, form, required, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
 import { AuthScreen } from './auth-screen';
@@ -69,7 +70,7 @@ export class SetPassword {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(false);
-    await submit(this.setPasswordForm, async () => {
+    await submitChecked(this.setPasswordForm, this.toast, async () => {
       const { email: emailValue, temporaryPassword, newPassword } = this.setPasswordForm().value();
       const body = { email: emailValue, temporaryPassword, newPassword };
       const request$ =

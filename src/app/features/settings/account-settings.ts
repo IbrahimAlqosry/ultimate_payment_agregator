@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { email, FormField, form, required, submit, validate } from '@angular/forms/signals';
+import { email, FormField, form, required, validate } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
 import { applyPasswordRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { AtlasApi } from '@core/http/atlas-api';
 import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
@@ -100,7 +101,7 @@ export class AccountSettings {
   async onMerchant(event: Event): Promise<void> {
     event.preventDefault();
     this.merchantApiError.set(null);
-    await submit(this.merchantForm, async () => {
+    await submitChecked(this.merchantForm, this.toast, async () => {
       if (!this.merchantConcurrencyToken) {
         this.merchantApiError.set(MISSING_CONCURRENCY_TOKEN_KEY);
         return undefined;
@@ -127,7 +128,7 @@ export class AccountSettings {
 
   async onOperator(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.operatorForm, async () => {
+    await submitChecked(this.operatorForm, this.toast, async () => {
       try {
         const saved = await firstValueFrom(
           this.api.updateOperatorProfile({
@@ -147,7 +148,7 @@ export class AccountSettings {
 
   async onPassword(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.passwordForm, async () => {
+    await submitChecked(this.passwordForm, this.toast, async () => {
       const { current, next } = this.passwordForm().value();
       try {
         // Success revokes the session server-side — sign the user out rather than just

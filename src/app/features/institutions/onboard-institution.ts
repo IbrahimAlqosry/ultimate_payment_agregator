@@ -1,9 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, email, form, required, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { applyPhoneRules } from '@core/forms/field-rules';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { PlatformInstitutionType } from '@core/models.platform';
@@ -65,7 +66,7 @@ export class OnboardInstitution {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       const v = this.form().value();
       try {
         await firstValueFrom(

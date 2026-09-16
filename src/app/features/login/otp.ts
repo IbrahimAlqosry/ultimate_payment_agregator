@@ -1,9 +1,10 @@
 import { Component, inject, OnDestroy, signal } from '@angular/core';
-import { form, minLength, pattern, required, submit } from '@angular/forms/signals';
+import { form, minLength, pattern, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { ToastService } from '@core/notifications/toast.service';
 import { FieldError } from '@shared/field-error';
@@ -94,7 +95,7 @@ export class Otp implements OnDestroy {
   async onVerify(event?: Event): Promise<void> {
     event?.preventDefault();
     this.apiError.set(false);
-    await submit(this.otpForm, async () => {
+    await submitChecked(this.otpForm, this.toast, async () => {
       try {
         await firstValueFrom(this.auth.verifyOtp(this.otpForm.code().value()));
         this.toast.ok('toast.welcome');

@@ -1,8 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormField, email, form, required, submit, validate } from '@angular/forms/signals';
+import { FormField, email, form, required, validate } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { ToastService } from '@core/notifications/toast.service';
@@ -87,7 +88,7 @@ export class AddErp implements OnInit {
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(null);
-    await submit(this.form, async () => {
+    await submitChecked(this.form, this.toast, async () => {
       const body = this.form().value();
       const id = this.erpSystemId();
       try {
