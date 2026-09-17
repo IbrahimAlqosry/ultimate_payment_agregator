@@ -184,7 +184,7 @@
                   <div class="form-field">
                     <span class="caps">{{ 'settings.status' | transloco }}</span>
                     <div class="locked-input">
-                      <span class="role-badge">{{ ('users.operatorStatus.' + pp.status) | transloco }}</span>
+                      <span class="badge ok">{{ ('users.operatorStatus.' + pp.status) | transloco }}</span>
                     </div>
                   </div>
                 }
@@ -218,6 +218,38 @@
                 </div>
               </article>
             }
+          </div>
+          <div class="settings-col">
+            <form class="settings-card flush" (submit)="onPassword($event)" novalidate>
+              <div class="card-body padded">
+                <h2>{{ 'settings.changePassword' | transloco }}</h2>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.currentPassword' | transloco }}</span>
+                  <input [formField]="passwordForm.current" type="password" autocomplete="current-password" />
+                  <app-field-error [state]="passwordForm.current()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.newPassword' | transloco }}</span>
+                  <input [formField]="passwordForm.next" type="password" autocomplete="new-password" />
+                  <app-field-error [state]="passwordForm.next()" />
+                </label>
+                <label class="form-field">
+                  <span class="caps">{{ 'settings.confirmPassword' | transloco }}</span>
+                  <input [formField]="passwordForm.confirm" type="password" autocomplete="new-password" />
+                  <app-field-error [state]="passwordForm.confirm()" />
+                </label>
+                <div class="rules-hint">
+                  <p>{{ 'settings.passwordRequirements' | transloco }}</p>
+                  <ul>
+                    <li>{{ 'settings.opRule8' | transloco }}</li>
+                    <li>{{ 'settings.opRuleMix' | transloco }}</li>
+                  </ul>
+                </div>
+                <button class="cta full" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
+                  {{ 'settings.updatePassword' | transloco }}
+                </button>
+              </div>
+            </form>
             <article class="settings-card flush">
               <div class="card-body padded">
                 <h2>{{ 'settings.notifPrefs' | transloco }}</h2>
@@ -244,36 +276,6 @@
               </div>
             </article>
           </div>
-          <form class="settings-card flush narrow" (submit)="onPassword($event)" novalidate>
-            <div class="card-body padded">
-              <h2>{{ 'settings.changePassword' | transloco }}</h2>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.currentPassword' | transloco }}</span>
-                <input [formField]="passwordForm.current" type="password" autocomplete="current-password" />
-                <app-field-error [state]="passwordForm.current()" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.newPassword' | transloco }}</span>
-                <input [formField]="passwordForm.next" type="password" autocomplete="new-password" />
-                <app-field-error [state]="passwordForm.next()" />
-              </label>
-              <label class="form-field">
-                <span class="caps">{{ 'settings.confirmPassword' | transloco }}</span>
-                <input [formField]="passwordForm.confirm" type="password" autocomplete="new-password" />
-                <app-field-error [state]="passwordForm.confirm()" />
-              </label>
-              <div class="rules-hint">
-                <p>{{ 'settings.passwordRequirements' | transloco }}</p>
-                <ul>
-                  <li>{{ 'settings.opRule8' | transloco }}</li>
-                  <li>{{ 'settings.opRuleMix' | transloco }}</li>
-                </ul>
-              </div>
-              <button class="cta full" type="submit" [disabled]="passwordForm().submitting() || auth.readOnly()">
-                {{ 'settings.updatePassword' | transloco }}
-              </button>
-            </div>
-          </form>
         </div>
         <article class="settings-card full flush diagnostics">
           <div class="card-body padded">

@@ -39,7 +39,23 @@ fixed/working as of 2026-09-16 and removed. Full history is in git
    is the problem. Not blocking (worked around via the proxy config), but worth a fix or at least
    a clearer error so the next person testing against the remote domain doesn't lose time on it.
 
+2. **Feature request: no Platform Operator self-profile edit endpoint at all.** Checked the full
+   `/openapi/v1.json` (2026-09-17) and guide v7.0 §8.6 — `GET /platform-operators/me` is
+   explicitly documented as read-only ("no edit/email-change action"), and no `PUT`/`PATCH`
+   equivalent exists anywhere in the spec. This means there is currently no real way for a
+   Platform Operator to change their own display name, phone number, or notification
+   preferences. In the UI, Account Settings' "Profile Info" form (name/phone) and its
+   "Notification Preferences" toggles (email/SMS) are really one single mock feature, not two
+   separate ones: the toggles save immediately on change, and the "Profile Info" form's Update
+   Profile button also resends the current toggle state alongside name/phone in the same call —
+   both paths ultimately hit the one old mock `PUT /profile/operator` endpoint
+   (`AtlasApi.updateOperatorProfile`), which has no real counterpart. Contrast with Merchant
+   (`PUT /profiles/merchant`) and FI (`PUT /profiles/financial-institution`), which both have
+   real self-edit endpoints — Platform Operators are the one audience missing this entirely.
+   Needs a real `PUT/PATCH /platform-operators/me` (or similar) before either control can be
+   wired to anything real; until then both remain flagged as mock/prototype-only in the UI.
+
 ---
 
-*Last checked live 2026-09-16: the `Host` header requirement still returns an unhelpful generic
-`400`.*
+*Last checked live 2026-09-17: the `Host` header requirement still returns an unhelpful generic
+`400`; the full OpenAPI spec still has no Platform Operator self-edit endpoint of any kind.*

@@ -1,8 +1,13 @@
 .shell {
-  min-height: 100dvh;
+  /* Capped at the viewport, not min-height: a tall page (e.g. a long audit table) must not grow
+     the whole shell past the viewport — that dragged the sidebar (an align-items:stretch flex
+     sibling of .main) along with it, so its bottom "Account Settings" link needed scrolling the
+     entire page to reach. .main below is the one scroll container; sidebar stays fixed-height. */
+  height: 100dvh;
   display: flex;
   align-items: stretch;
   background: var(--bg);
+  overflow: hidden;
 }
 
 .sidebar {
@@ -167,8 +172,13 @@ nav a:focus-visible,
 .main {
   flex: 1 1 0;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  /* The page's one scroll container — .topbar's position:sticky sticks to the top of this box
+     as .content scrolls beneath it, while .sidebar (a separate flex sibling in .shell) never
+     moves. */
+  overflow-y: auto;
 }
 
 .topbar {
