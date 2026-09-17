@@ -155,11 +155,13 @@
     "reports": "Reports / Audit Log",
     "settings": "Account Settings",
     "myPoints": "My Payment Points",
+    "myPaymentHistory": "Payment History",
     "paymentInquiry": "Payment Inquiry",
     "myIntegration": "My Integration User",
     "notificationDelivery": "Notification Delivery",
     "ppApprovals": "Payment Point Approvals",
     "allPoints": "All Payment Points",
+    "allPaymentHistory": "Payment History",
     "notifications": "Notifications",
     "integrationUser": "Integration User",
     "institutionProfile": "Institution Profile",
@@ -209,14 +211,6 @@
     },
     "overviewMerchant": "Overview of {{org}}",
     "overviewFi": "{{org}} — Overview",
-    "range": {
-      "label": "Time range",
-      "hour": "Hour",
-      "day": "24h",
-      "today": "Today",
-      "week": "Week",
-      "month": "Month"
-    },
     "revenue": "Notifications (7 days)",
     "orders": "Pending requests",
     "customers": "Active merchants",
@@ -225,35 +219,21 @@
     "pending": "Pending requests",
     "merchants": "Active merchants",
     "sla": "On-SLA point approvals",
-    "slaTitle": "Payment Point Approval SLA",
-    "slaOnTime": "On-Time",
     "slaWindow": "1 working day for payment-point approval",
-    "slaTarget": "SLA TARGET",
-    "slaTargetValue": "1 Working Day",
-    "slaOnTimeApprovals": "On-Time Approvals ({{count}})",
-    "slaOverdueApprovals": "Overdue Approvals ({{count}})",
-    "slaApprovedOf": "{{approved}} of {{total}} Approved",
-    "slaProcessed": "processed within active service limits",
-    "week": "Weekly Activity",
     "recent": "Payment points awaiting the bank",
     "lowStock": "Merchant applications pending",
-    "recentNotes": "Recent Notifications",
-    "recentActivity": "Recent Activity",
     "errors": "HTTP error pages",
     "errorsIntro": "These buttons hit dummy endpoints. The error interceptor routes each status to its page.",
+    "noAccess": "No access",
+    "generatedAt": "Updated {{at}}",
+    "paymentPointsTitle": "Payment Points",
+    "paymentsTitle": "Payments",
+    "windowLabel": "{{from}} – {{to}}",
     "kpi": {
       "pendingMerchants": "Pending Merchant Approvals",
       "pendingFis": "Pending FI Approvals",
-      "pendingErps": "Pending ERP Approvals",
-      "activeMerchants": "Active Merchants",
-      "activePoints": "Active Payment Points",
-      "pendingPoints": "Pending Payment Points",
-      "integrationUser": "Integration User Status",
-      "notificationUser": "Notification User Status",
-      "pendingPp": "Pending PP Approvals",
-      "approvedPp": "Approved Payment Points",
-      "notesMonth": "Notifications This Month",
-      "integrationActive": "Integration User Status"
+      "pendingOperatorRequests": "Pending Operator Requests",
+      "pointsTotal": "Total"
     }
   },
   "actions": {
@@ -416,6 +396,19 @@
     },
     "recordedAt": "Recorded At",
     "matchedAt": "Matched At"
+  },
+  "history": {
+    "mineTitle": "My Payment History",
+    "mineIntro": "Every accepted payment linked to your account, across all your banks and wallets.",
+    "institutionTitle": "All Payment History",
+    "institutionIntro": "Every accepted payment linked to your institution, across all merchants.",
+    "transactionIdPh": "Search transaction ID",
+    "anyStatus": "Any transaction status",
+    "anyMatch": "Any match status",
+    "from": "From",
+    "to": "To",
+    "empty": "No accepted payments match that filter.",
+    "acceptedAt": "Accepted"
   },
   "delivery": {
     "title": "Delivery Recovery",
@@ -874,6 +867,7 @@
     "smsNotifHint": "Receive instant alerts on critical security modifications.",
     "profileInfo": "Profile Information",
     "emailAddress": "Email Address",
+    "status": "Status",
     "phoneNumber": "Phone Number",
     "notifPrefs": "Notification Preferences"
   },
@@ -1236,46 +1230,44 @@
   },
   "inbox": {
     "title": "Notifications",
-    "viewAll": "View All",
+    "viewAll": "Load more",
     "empty": "No notifications yet.",
     "minutesAgo": "{{n}} min ago",
     "hoursAgo": "{{n}} hours ago",
-    "daysAgo": "{{n}} days ago",
-    "merchantPending": {
-      "title": "Merchant awaiting review",
-      "body": "{{name}} is waiting for checker approval."
+    "daysAgo": "{{n}} days ago"
+  },
+  "notif": {
+    "kind": {
+      "paymentPointSubmitted": "Payment point submitted",
+      "paymentPointApproved": "Payment point approved",
+      "paymentPointRejected": "Payment point rejected",
+      "integrationClientCredentialsRotated": "Integration credentials rotated",
+      "notificationEndpointApproved": "Notification settings approved",
+      "notificationEndpointRejected": "Notification settings rejected",
+      "deliveryAuthenticationPaused": "Delivery authentication paused",
+      "deliveryDeadLettered": "Delivery needs attention",
+      "deliveryRemediated": "Delivery recovery recorded",
+      "platformOperatorChangeApplied": "Operator account updated",
+      "merchantOnboardingApprovalSubmitted": "Merchant application submitted for review",
+      "financialInstitutionOnboardingApprovalSubmitted": "FI application submitted for review",
+      "erpSystemApprovalSubmitted": "ERP change submitted for review",
+      "profileChangeApprovalSubmitted": "Profile change submitted for review",
+      "integrationClientRotationApprovalSubmitted": "Credential rotation submitted for review",
+      "notificationEndpointApprovalSubmitted": "Notification settings submitted for review",
+      "platformOperatorInvitationSubmitted": "Operator invitation submitted for review",
+      "platformOperatorChangeSubmitted": "Operator change submitted for review"
     },
-    "fiExpiring": {
-      "title": "FI contract needs attention",
-      "body": "{{name}} has a pending or expiring contract."
-    },
-    "erpResubmitted": {
-      "title": "ERP resubmitted",
-      "body": "{{name}} was sent back for review."
-    },
-    "roleRequest": {
-      "title": "Operator invite pending",
-      "body": "{{name}} has not completed first login."
-    },
-    "auditFlag": {
-      "title": "Unusual login flagged",
-      "body": "A console login from {{ip}} was logged."
-    },
-    "paymentReceived": {
-      "title": "Payment notification received",
-      "body": "Invoice {{invoice}} was posted to your ERP endpoint."
-    },
-    "pointApproved": {
-      "title": "Payment point approved",
-      "body": "Point {{code}} is now active."
-    },
-    "pointPending": {
-      "title": "Payment point awaiting you",
-      "body": "{{name}} submitted a point that needs approval."
-    },
-    "noteDelivered": {
-      "title": "Notification delivered",
-      "body": "Invoice {{invoice}} was delivered successfully."
+    "outcome": {
+      "submitted": "Awaiting decision",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "succeeded": "Succeeded",
+      "paused": "Paused",
+      "deadLettered": "Attention needed",
+      "reactivated": "Reactivated",
+      "suspended": "Suspended",
+      "permissionsChanged": "Permissions changed",
+      "roleChanged": "Role changed"
     }
   }
 }

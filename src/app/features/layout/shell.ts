@@ -1,10 +1,11 @@
 import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@core/auth/auth.service';
-import { SETTINGS_LINK, inboxPath, navLinks, portalKey, searchPath, searchPlaceholderKey } from '@core/auth/nav';
-import { AtlasApi } from '@core/http/atlas-api';
-import { InboxItem } from '@core/models';
+import { SETTINGS_LINK, navLinks, portalKey, searchPath, searchPlaceholderKey } from '@core/auth/nav';
+import { PlatformApi } from '@core/http/platform-api';
+import { PortalNotificationItem, PortalNotificationResource } from '@core/models.platform';
 import { LanguageSwitch } from '@shared/language-switch';
 
 @Component({
@@ -14,13 +15,16 @@ import { LanguageSwitch } from '@shared/language-switch';
   styleUrl: './shell.scss',
 })
 export class Shell {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly menuOpen = signal(false);
   readonly confirmSignOut = signal(false);
   readonly inboxOpen = signal(false);
-  readonly inboxItems = signal<InboxItem[]>([]);
+  readonly inboxItems = signal<PortalNotificationItem[]>([]);
+  readonly unreadCount = signal(0);
+  private readonly nextCursor = signal<string | null>(null);
+  readonly loadingMore = signal(false);
   readonly searchQuery = signal('');
   readonly settings = SETTINGS_LINK;
 
@@ -30,11 +34,11 @@ export class Shell {
     return audience === 'operator' ? null : portalKey(audience);
   });
   readonly searchKey = computed(() => searchPlaceholderKey(this.auth.user()?.audience));
-  readonly inboxHref = computed(() => inboxPath(this.auth.user()?.audience));
-  readonly unreadCount = computed(() => this.inboxItems().filter((item) => item.unread).length);
+  readonly hasMoreItems = computed(() => this.nextCursor() !== null);
 
   constructor() {
     this.loadInbox();
+    this.loadUnreadCount();
     effect((onCleanup) => {
       document.body.classList.toggle('nav-lock', this.menuOpen() || this.confirmSignOut());
       onCleanup(() => document.body.classList.remove('nav-lock'));
@@ -81,15 +85,107 @@ export class Shell {
     this.inboxOpen.set(false);
   }
 
-  openItem(item: InboxItem): void {
-    this.inboxItems.update((rows) => rows.map((row) => (row.id === item.id ? { ...row, unread: false } : row)));
+  async openItem(item: PortalNotificationItem): Promise<void> {
     this.inboxOpen.set(false);
-    void this.router.navigateByUrl(item.href);
+    if (!item.isRead) {
+      this.inboxItems.update((rows) =>
+        rows.map((row) => (row.notificationId === item.notificationId ? { ...row, isRead: true } : row)),
+      );
+      this.unreadCount.update((count) => Math.max(0, count - 1));
+      try {
+        await firstValueFrom(this.api.markPortalNotificationRead(item.notificationId));
+      } catch {
+        /* interceptor toasts the failure; the optimistic read state is a minor, harmless drift */
+      }
+    }
+    const href = this.resolveHref(item.resource, item.workflow);
+    if (href) {
+      void this.router.navigate(href.path, { queryParams: href.queryParams });
+    }
   }
 
-  viewAll(): void {
-    this.inboxOpen.set(false);
-    void this.router.navigateByUrl(this.inboxHref());
+  /** Guide v7.0 §19.5 — the feed supplies a resource type/id but no navigation URL. Map only to
+   * screens this app actually has; when nothing fits (e.g. a `governedProfile` approval, which
+   * has no standalone review screen), return null and just show the alert, per the guide's
+   * explicit "do not invent a detail link." */
+  private resolveHref(
+    resource: PortalNotificationResource,
+    workflow: PortalNotificationItem['workflow'],
+  ): { path: string[]; queryParams?: Record<string, string> } | null {
+    const audience = this.auth.user()?.audience;
+    switch (resource.type) {
+      case 'paymentPoint':
+        if (audience === 'merchant') {
+          return { path: ['/my-payment-points'] };
+        }
+        if (audience === 'institution') {
+          return { path: ['/all-payment-points'] };
+        }
+        return null;
+      case 'integrationClient':
+        if (audience === 'merchant') {
+          return { path: ['/my-integration-user'] };
+        }
+        if (audience === 'institution') {
+          return { path: ['/integration-user'] };
+        }
+        return null;
+      case 'notificationEndpointConfiguration':
+        if (audience === 'merchant') {
+          return { path: ['/notification-delivery'] };
+        }
+        if (audience === 'operator') {
+          return { path: ['/notification-reviews'] };
+        }
+        return null;
+      case 'notificationDelivery':
+        return audience === 'operator' ? { path: ['/delivery-recovery', resource.id] } : null;
+      case 'platformOperatorInvitation':
+      case 'platformOperatorChange':
+        return audience === 'operator' ? { path: ['/operators'], queryParams: { tab: 'requests' } } : null;
+      case 'approvalRequest':
+        return this.resolveApprovalWorkflowHref(workflow);
+      default:
+        return null;
+    }
+  }
+
+  private resolveApprovalWorkflowHref(
+    workflow: PortalNotificationItem['workflow'],
+  ): { path: string[]; queryParams?: Record<string, string> } | null {
+    switch (workflow) {
+      case 'merchantOnboarding':
+        return { path: ['/merchants'], queryParams: { tab: 'pending' } };
+      case 'financialInstitutionOnboarding':
+        return { path: ['/institutions'], queryParams: { tab: 'pending' } };
+      case 'erpSystem':
+        return { path: ['/erp-systems'], queryParams: { tab: 'pending' } };
+      case 'integrationClient':
+        return { path: ['/integration-requests'] };
+      case 'notificationEndpointConfiguration':
+        return { path: ['/notification-reviews'] };
+      case 'platformOperator':
+        return { path: ['/operators'], queryParams: { tab: 'requests' } };
+      default:
+        // 'governedProfile' and null: no standalone review screen exists to link to.
+        return null;
+    }
+  }
+
+  loadMore(): void {
+    const cursor = this.nextCursor();
+    if (!cursor || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.api.listPortalNotifications(false, cursor).subscribe({
+      next: (page) => {
+        this.inboxItems.update((rows) => [...rows, ...page.items]);
+        this.nextCursor.set(page.nextCursor);
+        this.loadingMore.set(false);
+      },
+      error: () => this.loadingMore.set(false),
+    });
   }
 
   onSearch(event: Event): void {
@@ -147,8 +243,17 @@ export class Shell {
   }
 
   private loadInbox(): void {
-    this.api.inbox().subscribe({
-      next: (rows) => this.inboxItems.set(rows),
+    this.api.listPortalNotifications(false).subscribe({
+      next: (page) => {
+        this.inboxItems.set(page.items);
+        this.nextCursor.set(page.nextCursor);
+      },
+    });
+  }
+
+  private loadUnreadCount(): void {
+    this.api.getPortalNotificationUnreadCount().subscribe({
+      next: (result) => this.unreadCount.set(result.count),
     });
   }
 }

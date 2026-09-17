@@ -171,15 +171,23 @@
                   <span class="caps">{{ 'settings.emailAddress' | transloco }}</span>
                   <div class="locked-input">
                     <img src="icons/lock.svg" width="14" height="14" alt="" />
-                    <span>{{ user.email }}</span>
+                    <span>{{ platformProfile()?.email ?? user.email }}</span>
                   </div>
                 </label>
                 <label class="form-field">
                   <span class="caps">{{ 'settings.role' | transloco }}</span>
                   <div class="locked-input">
-                    <span class="role-badge">{{ ('role.' + user.role) | transloco }}</span>
+                    <span class="role-badge">{{ ('role.' + (platformProfile()?.role ?? user.role)) | transloco }}</span>
                   </div>
                 </label>
+                @if (platformProfile(); as pp) {
+                  <div class="form-field">
+                    <span class="caps">{{ 'settings.status' | transloco }}</span>
+                    <div class="locked-input">
+                      <span class="role-badge">{{ ('users.operatorStatus.' + pp.status) | transloco }}</span>
+                    </div>
+                  </div>
+                }
                 <label class="form-field">
                   <span class="caps">{{ 'settings.phoneNumber' | transloco }}</span>
                   <input [formField]="operatorForm.phone" />
@@ -194,6 +202,22 @@
                 }
               </div>
             </form>
+            @if (platformProfile(); as pp) {
+              <article class="settings-card flush">
+                <div class="card-body padded">
+                  <h2>{{ 'users.permissionsCol' | transloco }}</h2>
+                  @if (pp.permissions.length === 0) {
+                    <p class="field-hint">{{ 'detail.noPermissions' | transloco }}</p>
+                  } @else {
+                    <div class="chip-row">
+                      @for (permission of pp.permissions; track permission) {
+                        <span class="chip mono">{{ permission }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </article>
+            }
             <article class="settings-card flush">
               <div class="card-body padded">
                 <h2>{{ 'settings.notifPrefs' | transloco }}</h2>

@@ -1,5 +1,5 @@
 import { canApprove, canManageOperators, isReadOnly } from './access';
-import { inboxPath, navLinks, portalKey, searchPath, searchPlaceholderKey } from './nav';
+import { navLinks, portalKey, searchPath, searchPlaceholderKey } from './nav';
 import { AuthUser } from '@core/models';
 
 // Permission sets below are copied verbatim from live GET /auth/me responses (verified against
@@ -131,6 +131,7 @@ describe('navLinks', () => {
     expect(navLinks(merchant).map((link) => link.path)).toEqual([
       '/dashboard',
       '/my-payment-points',
+      '/my-payment-history',
       '/payment-inquiry',
       '/my-integration-user',
       '/notification-delivery',
@@ -145,7 +146,6 @@ describe('navLinks', () => {
     expect(portalKey('merchant')).toBe('shell.merchantPortal');
     expect(portalKey('institution')).toBe('shell.fiPortal');
     expect(searchPlaceholderKey('operator')).toBe('shell.searchOperator');
-    expect(inboxPath('merchant')).toBe('/notification-delivery');
     expect(searchPath('operator')).toBe('/merchants');
     expect(searchPath('merchant')).toBe('/my-payment-points');
     expect(searchPath('institution')).toBe('/all-payment-points');

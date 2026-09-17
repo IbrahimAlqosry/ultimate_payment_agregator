@@ -27,16 +27,6 @@ export function searchPlaceholderKey(audience: Audience | undefined): string {
   return 'shell.searchOperator';
 }
 
-export function inboxPath(audience: Audience | undefined): string {
-  if (audience === 'merchant') {
-    return '/notification-delivery';
-  }
-  if (audience === 'institution') {
-    return '/notifications';
-  }
-  return '/reports';
-}
-
 export function searchPath(audience: Audience | undefined): string {
   if (audience === 'merchant') {
     return '/my-payment-points';
@@ -56,6 +46,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
     return [
       { path: '/dashboard', label: 'nav.dashboard', icon: 'layout-dashboard' },
       { path: '/my-payment-points', label: 'nav.myPoints', icon: 'credit-card' },
+      { path: '/my-payment-history', label: 'nav.myPaymentHistory', icon: 'calendar' },
       { path: '/payment-inquiry', label: 'nav.paymentInquiry', icon: 'search' },
       { path: '/my-integration-user', label: 'nav.myIntegration', icon: 'user-key' },
       { path: '/notification-delivery', label: 'nav.notificationDelivery', icon: 'circle-x' },
@@ -67,6 +58,7 @@ export function navLinks(user: AuthUser | null): NavLink[] {
       { path: '/dashboard', label: 'nav.dashboard', icon: 'layout-dashboard' },
       { path: '/pp-approvals', label: 'nav.ppApprovals', icon: 'credit-card' },
       { path: '/all-payment-points', label: 'nav.allPoints', icon: 'circle-check' },
+      { path: '/all-payment-history', label: 'nav.allPaymentHistory', icon: 'calendar' },
       { path: '/notifications', label: 'nav.notifications', icon: 'bell' },
       { path: '/integration-user', label: 'nav.integrationUser', icon: 'user-key' },
       { path: '/institution-profile', label: 'nav.institutionProfile', icon: 'building' },
@@ -111,10 +103,17 @@ export function allowedAudiencesForPath(path: string): Audience[] | null {
     '/operators',
     '/reports',
   ];
-  const merchantOnly = ['/my-payment-points', '/payment-inquiry', '/my-integration-user', '/notification-delivery'];
+  const merchantOnly = [
+    '/my-payment-points',
+    '/my-payment-history',
+    '/payment-inquiry',
+    '/my-integration-user',
+    '/notification-delivery',
+  ];
   const institutionOnly = [
     '/pp-approvals',
     '/all-payment-points',
+    '/all-payment-history',
     '/notifications',
     '/integration-user',
     '/institution-profile',

@@ -247,40 +247,6 @@ export interface InstitutionContactUpdate {
   email: string;
 }
 
-export type ActivityStatus = 'completed' | 'delivered' | 'rejected' | 'pending';
-
-export interface DashboardActivity {
-  id: string;
-  at: string;
-  activityKey: string;
-  merchant: string;
-  status: ActivityStatus;
-}
-
-export interface DashboardPayload {
-  audience: Audience;
-  slaRate: number;
-  slaOnTimeCount: number;
-  slaOverdueCount: number;
-  slaApprovedCount: number;
-  slaTotalCount: number;
-  pendingMerchantApprovals: number;
-  pendingFiApprovals: number;
-  pendingErpApprovals: number;
-  activeMerchants: number;
-  weeklyActivity: number[];
-  pendingMerchants: Merchant[];
-  activePaymentPoints: number;
-  pendingPaymentPoints: number;
-  integrationUserStatus: IntegrationStatus;
-  notificationUserStatus: ApprovalStatus;
-  recentNotifications: PaymentNotification[];
-  pendingPpApprovals: number;
-  approvedPaymentPoints: number;
-  notificationsThisMonth: number;
-  recentActivity: DashboardActivity[];
-}
-
 export interface LoginResponse {
   token: string;
   user: AuthUser;
@@ -352,17 +318,6 @@ export interface OperatorUpdate {
   role: OperatorRole;
   status: OperatorStatus;
   screens?: ScreenModule[];
-}
-
-export interface InboxItem {
-  id: string;
-  audience: Audience;
-  titleKey: string;
-  bodyKey: string;
-  params?: Record<string, string>;
-  at: string;
-  unread: boolean;
-  href: string;
 }
 
 export interface ApprovalRequest {

@@ -1,39 +1,31 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '@core/auth/auth.service';
-import { AtlasApi } from '@core/http/atlas-api';
-import { DashboardPayload } from '@core/models';
+import { PlatformApi } from '@core/http/platform-api';
+import { LocaleService } from '@core/i18n/locale.service';
+import { DashboardSummaryResponse, PlatformAccountType } from '@core/models.platform';
 import { DataState } from '@shared/data-state';
 
-const WEEK_KEYS = ['week.sat', 'week.sun', 'week.mon', 'week.tue', 'week.wed', 'week.thu', 'week.fri'];
-
-export type DashRange = 'hour' | 'day' | 'today' | 'week' | 'month';
-
+/** Guide v7.0 §18 — real GET /dashboard/summary, replacing the previous mock dashboard's
+ * time-range selector, SLA donut, weekly-activity chart, and recent-activity tables: none of
+ * that has a real equivalent (the summary is one fixed, non-configurable snapshot per
+ * accountType — see docs/BUSINESS_AND_API.md and DashboardSummaryResponse's doc comment). */
 @Component({
   selector: 'app-dashboard',
-  imports: [TranslocoPipe, DecimalPipe, DatePipe, DataState, RouterLink],
+  imports: [TranslocoPipe, DatePipe, DataState, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
-  private readonly api = inject(AtlasApi);
+  private readonly api = inject(PlatformApi);
   readonly auth = inject(AuthService);
-  readonly weekKeys = WEEK_KEYS;
-  readonly highlightIndex = 2;
-  readonly ranges: { id: DashRange; key: string }[] = [
-    { id: 'hour', key: 'dashboard.range.hour' },
-    { id: 'day', key: 'dashboard.range.day' },
-    { id: 'today', key: 'dashboard.range.today' },
-    { id: 'week', key: 'dashboard.range.week' },
-    { id: 'month', key: 'dashboard.range.month' },
-  ];
-  readonly timeRange = signal<DashRange>('week');
+  readonly locale = inject(LocaleService);
 
   readonly loading = signal(true);
   readonly error = signal(false);
-  readonly data = signal<DashboardPayload | null>(null);
+  readonly data = signal<DashboardSummaryResponse | null>(null);
 
   constructor() {
     this.load();
@@ -42,7 +34,7 @@ export class Dashboard {
   load(): void {
     this.loading.set(true);
     this.error.set(false);
-    this.api.dashboard().subscribe({
+    this.api.getDashboardSummary().subscribe({
       next: (payload) => {
         this.data.set(payload);
         this.loading.set(false);
@@ -54,19 +46,18 @@ export class Dashboard {
     });
   }
 
-  barHeight(value: number, series: number[]): string {
-    const max = Math.max(...series, 1);
-    return `${Math.round((value / max) * 100)}%`;
+  historyPath(accountType: PlatformAccountType): string {
+    return accountType === 'merchant' ? '/my-payment-history' : '/all-payment-history';
   }
 
-  scaled(value: number): number {
-    const factor: Record<DashRange, number> = {
-      hour: 0.12,
-      day: 0.35,
-      today: 0.5,
-      week: 1,
-      month: 2.1,
-    };
-    return Math.max(0, Math.round(value * factor[this.timeRange()]));
+  /** For the payment-notifications breakdown tiles: the summary's own window, plus the tile's
+   * status/match filter, so a tap lands on the already-filtered payment-history rows instead of
+   * an unfiltered list. */
+  historyParams(
+    windowStart: string,
+    windowEnd: string,
+    extra: { status?: string; match?: string } = {},
+  ): Record<string, string> {
+    return { from: windowStart, to: windowEnd, ...extra };
   }
 }

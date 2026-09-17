@@ -38,6 +38,7 @@ import {
   MerchantOnboardingReceipt,
   OnboardingDecisionRequest,
   CreatePaymentPointRequest,
+  DashboardSummaryResponse,
   FinancialInstitutionContactUpdateRequest,
   FinancialInstitutionProfileResponse,
   FinancialInstitutionSelfProfileResponse,
@@ -55,10 +56,13 @@ import {
   NotificationDeliveryPage,
   OtpChallengeResponse,
   PagedQuery,
+  PaymentHistoryQuery,
   PaymentInquiryRequest,
   PaymentInquiryResponse,
   PaymentMatchRequest,
   PaymentMatchResponse,
+  PaymentNotificationLogEntry,
+  PaymentNotificationLogPage,
   PaymentPoint,
   PaymentPointDecisionRequest,
   PaymentPointPage,
@@ -70,6 +74,9 @@ import {
   PlatformOperatorInvitationRequest,
   PlatformOperatorPage,
   PlatformOperatorPermissionCatalog,
+  PlatformOperatorSelfProfileResponse,
+  PortalNotificationPage,
+  PortalNotificationUnreadCountResponse,
   SelfServiceMerchantOnboardingRequest,
   VerifyOtpRequest,
 } from '@core/models.platform';
@@ -111,6 +118,14 @@ export class PlatformApi {
    * returns them. Requires only the session cookie, no CSRF (it's a GET). */
   getMe() {
     return this.http.get<AuthMeResponse>(platformApiUrl('/api/v1/auth/me'));
+  }
+
+  /** Guide v7.0 §8.6 — the signed-in Platform Operator's own identity (email, role, status,
+   * real permissions), available to every active role with no `platform.operators.read` grant
+   * needed. `/auth/me` stays the source of truth for session capabilities; this is for display
+   * (header/account menu, "My profile") where an email/creation date is actually needed. */
+  getMyPlatformProfile() {
+    return this.http.get<PlatformOperatorSelfProfileResponse>(platformApiUrl('/api/v1/platform-operators/me'));
   }
 
   logout() {
@@ -441,6 +456,76 @@ export class PlatformApi {
    * verb request in the whole API that doesn't need it. */
   inquirePayment(body: PaymentInquiryRequest) {
     return this.http.post<PaymentInquiryResponse>(platformApiUrl('/api/v1/payment-inquiries'), body);
+  }
+
+  // --- Payment history (v7.0 §13.4-13.7) --------------------------------------
+  // Merchant sees its own records across FIs; FI sees its own records across Merchants. Ordering
+  // and the cursor's meaning are both session/role-dependent per the guide — treat it as opaque.
+
+  listPaymentHistory(query: PaymentHistoryQuery = {}) {
+    let params = new HttpParams();
+    if (query.cursor) {
+      params = params.set('cursor', query.cursor);
+    }
+    params = params.set('pageSize', String(query.pageSize ?? 50));
+    if (query.financialInstitutionId) {
+      params = params.set('financialInstitutionId', query.financialInstitutionId);
+    }
+    if (query.paymentPointId) {
+      params = params.set('paymentPointId', query.paymentPointId);
+    }
+    if (query.transactionId) {
+      params = params.set('transactionId', query.transactionId);
+    }
+    if (query.transactionStatus) {
+      params = params.set('transactionStatus', query.transactionStatus);
+    }
+    if (query.matchStatus) {
+      params = params.set('matchStatus', query.matchStatus);
+    }
+    if (query.acceptedFrom) {
+      params = params.set('acceptedFrom', query.acceptedFrom);
+    }
+    if (query.acceptedTo) {
+      params = params.set('acceptedTo', query.acceptedTo);
+    }
+    return this.http.get<PaymentNotificationLogPage>(platformApiUrl('/api/v1/payment-notifications'), { params });
+  }
+
+  /** `transactionId` is the only query parameter; the FI business id goes in the path. */
+  getPaymentHistoryDetail(financialInstitutionId: string, transactionId: string) {
+    return this.http.get<PaymentNotificationLogEntry>(
+      platformApiUrl(`/api/v1/payment-notifications/${financialInstitutionId}`),
+      { params: new HttpParams().set('transactionId', transactionId) },
+    );
+  }
+
+  // --- Dashboard summary (v7.0 §18) -------------------------------------------
+
+  /** One fixed summary shape per `accountType` — see DashboardSummaryResponse's doc comment.
+   * No query parameters; the server derives everything from the session. */
+  getDashboardSummary() {
+    return this.http.get<DashboardSummaryResponse>(platformApiUrl('/api/v1/dashboard/summary'));
+  }
+
+  // --- Portal notification feed (v7.0 §19) ------------------------------------
+
+  listPortalNotifications(unreadOnly = false, cursor?: string) {
+    let params = new HttpParams().set('pageSize', '10').set('unreadOnly', String(unreadOnly));
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
+    return this.http.get<PortalNotificationPage>(platformApiUrl('/api/v1/notifications'), { params });
+  }
+
+  getPortalNotificationUnreadCount() {
+    return this.http.get<PortalNotificationUnreadCountResponse>(platformApiUrl('/api/v1/notifications/unread-count'));
+  }
+
+  /** No request body. Idempotent while the alert stays visible — a repeat keeps the original
+   * `readAt` rather than moving it forward. */
+  markPortalNotificationRead(notificationId: string) {
+    return this.http.post(platformApiUrl(`/api/v1/notifications/${notificationId}/read`), null);
   }
 
   // --- Merchant payment matching (v4.0 §14) -----------------------------------

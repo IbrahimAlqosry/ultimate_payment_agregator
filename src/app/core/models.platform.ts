@@ -84,6 +84,21 @@ export interface AuthMeResponse {
   permissions: string[];
 }
 
+/** GET /platform-operators/me (guide v7.0 §8.6) — the signed-in Platform Operator's own
+ * persisted identity. Any active role can call it, with no `platform.operators.read` grant
+ * required — unlike `GET /platform-operator-administration/operators/{userId}`, which stays
+ * scoped to the caller's own Platform account even for Admin. Exactly these seven fields: no
+ * name, phone, avatar, account ID, concurrency token, or CSRF token. */
+export interface PlatformOperatorSelfProfileResponse {
+  userId: string;
+  email: string;
+  role: PlatformOperatorRole;
+  status: 'active';
+  permissions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -625,6 +640,106 @@ export interface PaymentMatchResponse {
   matchedAt: string | null;
 }
 
+// --- Payment history (guide v7.0 §13.4-13.7) ----------------------------------
+// Merchant/FI browse their own accepted payments. Distinct from payment inquiry (a single
+// point-lookup by FI+transactionId, above): this is a filtered, paginated list of records that
+// already exist, using acceptance time (`acceptedAt`), not transaction time, as its window.
+
+export interface PaymentNotificationLogEntry {
+  financialInstitutionId: string;
+  merchantId: string;
+  paymentPointId: string;
+  transactionId: string;
+  transactionStatus: TransactionStatus;
+  transactionDate: string;
+  amount: number;
+  currency: PaymentCurrency;
+  pointNumber: string;
+  matchStatus: PaymentMatchStatus;
+  acceptedAt: string;
+}
+
+export interface PaymentNotificationLogPage {
+  items: PaymentNotificationLogEntry[];
+  /** Opaque, up to 1024 chars — not a UUID, unlike most other list cursors in this API. */
+  nextCursor: string | null;
+}
+
+/** All fields optional; omit unused ones entirely rather than sending empty strings. Send
+ * `acceptedFrom`/`acceptedTo` as explicit-UTC-offset ISO timestamps, not date-only strings. */
+export interface PaymentHistoryQuery {
+  cursor?: string;
+  pageSize?: number;
+  financialInstitutionId?: string;
+  paymentPointId?: string;
+  transactionId?: string;
+  transactionStatus?: TransactionStatus;
+  matchStatus?: PaymentMatchStatus;
+  acceptedFrom?: string;
+  acceptedTo?: string;
+}
+
+// --- Dashboard summary (guide v7.0 §18) ---------------------------------------
+// One fixed, non-configurable summary per account type — no date range, no monetary totals, no
+// drill-down endpoint. The three shapes share nothing but `accountType`/`generatedAt`; a UI must
+// branch on `accountType` and never assume a field from one shape exists on another.
+
+export interface DashboardPlatformSection {
+  /** `false` means "not accessible to this role" — render as an access-limited tile, not a 0. */
+  available: boolean;
+  pendingDecision: number | null;
+}
+
+export interface PlatformDashboardSummary {
+  accountType: 'platform';
+  generatedAt: string;
+  merchantApplications: DashboardPlatformSection;
+  financialInstitutionApplications: DashboardPlatformSection;
+  platformOperatorRequests: DashboardPlatformSection;
+}
+
+export interface DashboardPaymentPoints {
+  total: number;
+  pendingFinancialInstitution: number;
+  approved: number;
+  rejected: number;
+  disabled: number;
+}
+
+/** A fixed rolling 30-day window ending at `generatedAt`: `windowStart <= acceptedAt <
+ * windowEnd`. `paid`/`refunded` partition `total`; the four match-state counts independently
+ * also partition `total` — the two groups are not additive with each other. */
+export interface DashboardPaymentNotifications {
+  windowStart: string;
+  windowEnd: string;
+  total: number;
+  paid: number;
+  refunded: number;
+  unmatched: number;
+  matchedByTransactionId: number;
+  matchedByNotificationTap: number;
+  conflict: number;
+}
+
+export interface TenantDashboardSummaryBase {
+  generatedAt: string;
+  paymentPoints: DashboardPaymentPoints;
+  paymentNotifications: DashboardPaymentNotifications;
+}
+
+export interface MerchantDashboardSummary extends TenantDashboardSummaryBase {
+  accountType: 'merchant';
+}
+
+export interface FinancialInstitutionDashboardSummary extends TenantDashboardSummaryBase {
+  accountType: 'financialInstitution';
+}
+
+export type DashboardSummaryResponse =
+  | PlatformDashboardSummary
+  | MerchantDashboardSummary
+  | FinancialInstitutionDashboardSummary;
+
 // --- Merchant notification settings + Platform review (guide v4.0 §15) -------
 
 export type CallbackAuthenticationMode = 'basic' | 'oauth2ClientCredentials' | 'customHeader' | 'staticBearerJwt';
@@ -991,4 +1106,93 @@ export interface BootstrapReissueDetails {
 export interface BootstrapReissuePage {
   items: BootstrapReissueDetails[];
   nextCursor: string | null;
+}
+
+// --- Portal notification feed (guide v7.0 §19) --------------------------------
+// A persistent per-user alert inbox, shared by all three portals — separate from payment
+// history, dashboard counts, and audit search. The server supplies no display text: labels are
+// rendered client-side from the closed `kind`/`outcome`/`workflow` catalogs below. Read state is
+// per signed-in user, not per account — one user's read does not clear another's badge.
+
+export type PortalNotificationKind =
+  | 'paymentPointSubmitted'
+  | 'paymentPointApproved'
+  | 'paymentPointRejected'
+  | 'integrationClientCredentialsRotated'
+  | 'notificationEndpointApproved'
+  | 'notificationEndpointRejected'
+  | 'deliveryAuthenticationPaused'
+  | 'deliveryDeadLettered'
+  | 'deliveryRemediated'
+  | 'platformOperatorChangeApplied'
+  | 'merchantOnboardingApprovalSubmitted'
+  | 'financialInstitutionOnboardingApprovalSubmitted'
+  | 'erpSystemApprovalSubmitted'
+  | 'profileChangeApprovalSubmitted'
+  | 'integrationClientRotationApprovalSubmitted'
+  | 'notificationEndpointApprovalSubmitted'
+  | 'platformOperatorInvitationSubmitted'
+  | 'platformOperatorChangeSubmitted';
+
+export type PortalNotificationSeverity = 'info' | 'success' | 'warning' | 'error';
+
+export type PortalNotificationOutcome =
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'succeeded'
+  | 'paused'
+  | 'deadLettered'
+  | 'reactivated'
+  | 'suspended'
+  | 'permissionsChanged'
+  | 'roleChanged';
+
+/** Account events (the first 10 `PortalNotificationKind` values) always have `workflow: null`.
+ * Approval-submission alerts (the remaining 8) carry one of these — see the guide's kind/workflow
+ * table (§19.3) for which pairs with which. */
+export type PortalNotificationWorkflow =
+  | 'merchantOnboarding'
+  | 'financialInstitutionOnboarding'
+  | 'platformOperator'
+  | 'erpSystem'
+  | 'governedProfile'
+  | 'integrationClient'
+  | 'notificationEndpointConfiguration'
+  | null;
+
+export type PortalNotificationResourceType =
+  | 'paymentPoint'
+  | 'integrationClient'
+  | 'notificationEndpointConfiguration'
+  | 'notificationDelivery'
+  | 'platformOperatorInvitation'
+  | 'platformOperatorChange'
+  | 'approvalRequest';
+
+export interface PortalNotificationResource {
+  type: PortalNotificationResourceType;
+  id: string;
+}
+
+export interface PortalNotificationItem {
+  notificationId: string;
+  kind: PortalNotificationKind;
+  severity: PortalNotificationSeverity;
+  outcome: PortalNotificationOutcome;
+  workflow: PortalNotificationWorkflow;
+  resource: PortalNotificationResource;
+  occurredAt: string;
+  isRead: boolean;
+  readAt: string | null;
+}
+
+export interface PortalNotificationPage {
+  items: PortalNotificationItem[];
+  /** Opaque, exactly 34 characters — never construct one from an id or timestamp. */
+  nextCursor: string | null;
+}
+
+export interface PortalNotificationUnreadCountResponse {
+  count: number;
 }

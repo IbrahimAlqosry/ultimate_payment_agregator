@@ -1,0 +1,105 @@
+<section class="page">
+  <header class="page-head">
+    <h1>{{ (mode() === 'merchant' ? 'history.mineTitle' : 'history.institutionTitle') | transloco }}</h1>
+  </header>
+
+  <p class="info-banner">{{ (mode() === 'merchant' ? 'history.mineIntro' : 'history.institutionIntro') | transloco }}</p>
+
+  <div class="filters">
+    <input
+      class="filter"
+      type="text"
+      [value]="transactionId()"
+      (change)="transactionId.set($any($event.target).value); onFilterChange()"
+      [placeholder]="'history.transactionIdPh' | transloco"
+    />
+    <select class="filter" [value]="transactionStatus()" (change)="transactionStatus.set($any($event.target).value); onFilterChange()">
+      <option value="">{{ 'history.anyStatus' | transloco }}</option>
+      <option value="00002">{{ 'inquiry.status.00002' | transloco }}</option>
+      <option value="00007">{{ 'inquiry.status.00007' | transloco }}</option>
+    </select>
+    <select class="filter" [value]="matchStatus()" (change)="matchStatus.set($any($event.target).value); onFilterChange()">
+      <option value="">{{ 'history.anyMatch' | transloco }}</option>
+      <option value="unmatched">{{ 'inquiry.matchStatusValue.unmatched' | transloco }}</option>
+      <option value="matchedByTransactionId">{{ 'inquiry.matchStatusValue.matchedByTransactionId' | transloco }}</option>
+      <option value="matchedByNotificationTap">{{ 'inquiry.matchStatusValue.matchedByNotificationTap' | transloco }}</option>
+      <option value="conflict">{{ 'inquiry.matchStatusValue.conflict' | transloco }}</option>
+    </select>
+    <input
+      class="filter"
+      type="date"
+      [attr.aria-label]="'history.from' | transloco"
+      [value]="acceptedFrom()"
+      (change)="acceptedFrom.set($any($event.target).value); onFilterChange()"
+    />
+    <input
+      class="filter"
+      type="date"
+      [attr.aria-label]="'history.to' | transloco"
+      [value]="acceptedTo()"
+      (change)="acceptedTo.set($any($event.target).value); onFilterChange()"
+    />
+  </div>
+
+  <div class="card table-card">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="history.empty" (retry)="load()">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'inquiry.transactionId' | transloco }}</th>
+              <th>{{ (mode() === 'merchant' ? 'points.institution' : 'points.merchantId') | transloco }}</th>
+              <th>{{ 'points.code' | transloco }}</th>
+              <th>{{ 'inquiry.amount' | transloco }}</th>
+              <th>{{ 'inquiry.transactionStatusLabel' | transloco }}</th>
+              <th>{{ 'inquiry.matchStatusLabel' | transloco }}</th>
+              <th>{{ 'history.acceptedAt' | transloco }}</th>
+              @if (mode() === 'merchant') {
+                <th>{{ 'actions.column' | transloco }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.financialInstitutionId + row.transactionId) {
+              <tr>
+                <td class="mono">{{ row.transactionId }}</td>
+                <td class="mono muted">{{ mode() === 'merchant' ? row.financialInstitutionId : row.merchantId }}</td>
+                <td class="mono">{{ row.pointNumber }}</td>
+                <td>{{ row.amount }} {{ row.currency }}</td>
+                <td>{{ ('inquiry.status.' + row.transactionStatus) | transloco }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.ok]="row.matchStatus !== 'unmatched' && row.matchStatus !== 'conflict'"
+                    [class.warn]="row.matchStatus === 'unmatched'"
+                    [class.danger]="row.matchStatus === 'conflict'"
+                  >
+                    {{ ('inquiry.matchStatusValue.' + row.matchStatus) | transloco }}
+                  </span>
+                </td>
+                <td class="muted">{{ row.acceptedAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                @if (mode() === 'merchant') {
+                  <td>
+                    @if (row.matchStatus === 'unmatched') {
+                      <a class="btn-review" [routerLink]="'/payment-inquiry'" [queryParams]="matchQueryParams(row)">
+                        {{ 'inquiry.useForMatch' | transloco }}
+                      </a>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-foot">
+        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
+        @if (nextCursor()) {
+          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
+          </button>
+        }
+      </footer>
+    </app-data-state>
+  </div>
+</section>

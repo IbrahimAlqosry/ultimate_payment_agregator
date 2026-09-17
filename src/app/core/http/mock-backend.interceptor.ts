@@ -31,12 +31,10 @@ import { map, switchMap } from 'rxjs/operators';
 import { apiUrl, isApiRequest, requestPath } from './api-url';
 import {
   AUDIT_LOG,
-  buildDashboard,
   DEMO_ACCOUNTS,
   CREDENTIALS,
   ERPS,
   INSTITUTIONS,
-  INBOX,
   INTEGRATION_REQUESTS,
   INTEGRATION_USERS,
   MERCHANTS,
@@ -298,10 +296,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (req.method === 'GET' && path === apiUrl('/simulate/503')) {
     return fail(503, 'SERVICE_UNAVAILABLE');
-  }
-
-  if (req.method === 'GET' && path === apiUrl('/dashboard')) {
-    return ok(buildDashboard(user));
   }
 
   if (req.method === 'GET' && path === apiUrl('/profile')) {
@@ -704,10 +698,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       return true;
     });
     return ok(rows);
-  }
-
-  if (req.method === 'GET' && path === apiUrl('/inbox')) {
-    return ok(INBOX.filter((row) => row.audience === user.audience));
   }
 
   if (req.method === 'POST' && path === apiUrl('/approvals')) {

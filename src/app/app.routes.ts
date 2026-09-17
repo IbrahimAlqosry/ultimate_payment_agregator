@@ -237,6 +237,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/payment-points/real-payment-points').then((m) => m.RealPaymentPoints),
       },
       {
+        path: 'my-payment-history',
+        title: 'history.mineTitle',
+        ...merchantOnly,
+        data: { mode: 'merchant' },
+        loadComponent: () => import('./features/payment-points/payment-history').then((m) => m.PaymentHistory),
+      },
+      {
         path: 'payment-inquiry',
         title: 'inquiry.title',
         ...merchantOnly,
@@ -260,6 +267,13 @@ export const routes: Routes = [
         ...institutionOnly,
         data: { mode: 'institution' },
         loadComponent: () => import('./features/payment-points/real-payment-points').then((m) => m.RealPaymentPoints),
+      },
+      {
+        path: 'all-payment-history',
+        title: 'history.institutionTitle',
+        ...institutionOnly,
+        data: { mode: 'institution' },
+        loadComponent: () => import('./features/payment-points/payment-history').then((m) => m.PaymentHistory),
       },
       {
         path: 'notification-delivery',

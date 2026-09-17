@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormField, form, required } from '@angular/forms/signals';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
@@ -38,6 +39,7 @@ import { FieldError } from '@shared/field-error';
 export class PaymentInquiry implements OnInit {
   private readonly api = inject(PlatformApi);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly institutions = signal<FinancialInstitutionChoice[]>([]);
   readonly institutionsLoading = signal(true);
@@ -80,6 +82,29 @@ export class PaymentInquiry implements OnInit {
 
   ngOnInit(): void {
     this.loadInstitutions();
+    this.prefillMatchFromQueryParams();
+  }
+
+  /** payment-history.ts's "Use for match" link on an unmatched row carries the FI/transaction id
+   * (and the record's own amount/currency, matching `useForMatch()` below) via query params so
+   * the operator doesn't have to retype them — same idea as `useForMatch()`, just triggered from
+   * a different screen instead of a lookup result on this one. */
+  private prefillMatchFromQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const fi = params.get('fi');
+    const txn = params.get('txn');
+    if (!fi || !txn) {
+      return;
+    }
+    this.idempotencyKey = crypto.randomUUID();
+    this.lastSubmittedSignature = null;
+    this.matchForm().reset({
+      ...this.matchForm().value(),
+      financialInstitutionId: fi,
+      transactionId: txn,
+      currency: (params.get('currency') as PaymentCurrency) || 'YER',
+      expectedAmount: params.get('amount') ?? '',
+    });
   }
 
   private loadInstitutions(cursor?: string, acc: FinancialInstitutionChoice[] = []): void {

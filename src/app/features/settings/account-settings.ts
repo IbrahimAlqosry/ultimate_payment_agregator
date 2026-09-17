@@ -9,7 +9,7 @@ import { AtlasApi } from '@core/http/atlas-api';
 import { apiErrorMessageKey, MISSING_CONCURRENCY_TOKEN_KEY } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { AccountProfile } from '@core/models';
-import { MerchantProfileResponse } from '@core/models.platform';
+import { MerchantProfileResponse, PlatformOperatorSelfProfileResponse } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
 import { DataState } from '@shared/data-state';
 import { FieldError } from '@shared/field-error';
@@ -37,6 +37,11 @@ export class AccountSettings {
   readonly merchantApiError = signal<string | null>(null);
   private merchantConcurrencyToken: string | null = null;
   private merchantErpSystemId = '';
+
+  /** Real GET /platform-operators/me (guide v7.0 §8.6) — email/role/status/permissions for the
+   * "Profile Info" card's read-only fields. Any active Platform role can call it, unlike the
+   * directory endpoint, which stays scoped to the caller's own account even for Admin. */
+  readonly platformProfile = signal<PlatformOperatorSelfProfileResponse | null>(null);
 
   readonly merchantForm = form(
     signal({
@@ -193,7 +198,16 @@ export class AccountSettings {
     this.smsOn.set(profile.operator?.smsNotifications ?? false);
     if (profile.audience === 'merchant') {
       this.loadMerchantProfile();
+    } else if (profile.audience === 'operator') {
+      this.loadPlatformProfile();
     }
+  }
+
+  private loadPlatformProfile(): void {
+    this.platformApi.getMyPlatformProfile().subscribe({
+      next: (saved) => this.platformProfile.set(saved),
+      error: () => this.platformProfile.set(null),
+    });
   }
 
   private loadMerchantProfile(): void {

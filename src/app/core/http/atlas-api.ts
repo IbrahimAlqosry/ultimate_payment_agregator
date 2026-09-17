@@ -7,7 +7,6 @@ import {
   MerchantAccountDetails,
   OperatorAccountDetails,
   AuditEvent,
-  DashboardPayload,
   ErpDraft,
   ErpSystem,
   Institution,
@@ -16,7 +15,6 @@ import {
   IntegrationCredentials,
   IntegrationRequest,
   IntegrationUser,
-  InboxItem,
   Merchant,
   MerchantDraft,
   NotificationWebhook,
@@ -38,10 +36,6 @@ export interface ListQuery {
 @Injectable({ providedIn: 'root' })
 export class AtlasApi {
   private readonly http = inject(HttpClient);
-
-  dashboard() {
-    return this.http.get<DashboardPayload>(apiUrl('/dashboard'));
-  }
 
   operators(q = '', fail = false) {
     let params = new HttpParams();
@@ -135,10 +129,6 @@ export class AtlasApi {
       params = params.set('type', extras.type);
     }
     return this.http.get<AuditEvent[]>(apiUrl('/audit'), { params });
-  }
-
-  inbox() {
-    return this.http.get<InboxItem[]>(apiUrl('/inbox'));
   }
 
   settlements(institution = '') {

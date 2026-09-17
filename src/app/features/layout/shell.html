@@ -118,18 +118,22 @@
               <p class="inbox-empty">{{ 'inbox.empty' | transloco }}</p>
             } @else {
               <ul class="inbox-list">
-                @for (item of inboxItems(); track item.id) {
+                @for (item of inboxItems(); track item.notificationId) {
                   <li>
-                    <button class="inbox-item" type="button" [class.unread]="item.unread" (click)="openItem(item)">
-                      <strong>{{ item.titleKey | transloco: item.params }}</strong>
-                      <span>{{ item.bodyKey | transloco: item.params }}</span>
-                      <em>{{ relativeKey(item.at) | transloco: { n: relativeCount(item.at) } }}</em>
+                    <button class="inbox-item" type="button" [class.unread]="!item.isRead" (click)="openItem(item)">
+                      <strong>{{ ('notif.kind.' + item.kind) | transloco }}</strong>
+                      <span>{{ ('notif.outcome.' + item.outcome) | transloco }}</span>
+                      <em>{{ relativeKey(item.occurredAt) | transloco: { n: relativeCount(item.occurredAt) } }}</em>
                     </button>
                   </li>
                 }
               </ul>
             }
-            <button class="inbox-all" type="button" (click)="viewAll()">{{ 'inbox.viewAll' | transloco }}</button>
+            @if (hasMoreItems()) {
+              <button class="inbox-all" type="button" [disabled]="loadingMore()" (click)="loadMore()">
+                {{ (loadingMore() ? 'list.loading' : 'inbox.viewAll') | transloco }}
+              </button>
+            }
           </div>
         }
         <span class="vline" aria-hidden="true"></span>

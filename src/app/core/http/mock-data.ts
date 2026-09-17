@@ -2,14 +2,11 @@ import {
   AccountProfile,
   AuditEvent,
   AuthUser,
-  DashboardActivity,
-  DashboardPayload,
   ErpSystem,
   Institution,
   IntegrationCredentials,
   IntegrationRequest,
   IntegrationUser,
-  InboxItem,
   Merchant,
   NotificationWebhook,
   Operator,
@@ -278,146 +275,12 @@ export const AUDIT_LOG: AuditEvent[] = [
   { id: 'a-9', at: '2026-08-30T16:48:00.000Z', actor: 'Karim Haddad', role: 'checker', action: 'Rejected merchant', entity: 'Aden Fresh Fisheries', detail: 'Rejected FI Merchant Request: Aden Fresh Fisheries due to missing licensing', screen: 'Merchant Management', result: 'success', eventType: 'rejection', ipAddress: '192.168.1.5' },
 ];
 
-export const INBOX: InboxItem[] = [
-  {
-    id: 'in-1',
-    audience: 'operator',
-    titleKey: 'inbox.merchantPending.title',
-    bodyKey: 'inbox.merchantPending.body',
-    params: { name: 'Ibb Hypermarket' },
-    at: '2026-09-02T12:54:00.000Z',
-    unread: true,
-    href: '/merchants?tab=pending',
-  },
-  {
-    id: 'in-2',
-    audience: 'operator',
-    titleKey: 'inbox.fiExpiring.title',
-    bodyKey: 'inbox.fiExpiring.body',
-    params: { name: 'Yemen Kuwait Bank' },
-    at: '2026-09-02T11:59:00.000Z',
-    unread: false,
-    href: '/institutions?tab=pending',
-  },
-  {
-    id: 'in-3',
-    audience: 'operator',
-    titleKey: 'inbox.erpResubmitted.title',
-    bodyKey: 'inbox.erpResubmitted.body',
-    params: { name: 'SanaSoft ERP' },
-    at: '2026-09-02T09:59:00.000Z',
-    unread: false,
-    href: '/erp-systems?tab=pending',
-  },
-  {
-    id: 'in-4',
-    audience: 'operator',
-    titleKey: 'inbox.roleRequest.title',
-    bodyKey: 'inbox.roleRequest.body',
-    params: { name: 'Omar Saleh' },
-    at: '2026-09-01T12:59:00.000Z',
-    unread: false,
-    href: '/operators',
-  },
-  {
-    id: 'in-5',
-    audience: 'operator',
-    titleKey: 'inbox.auditFlag.title',
-    bodyKey: 'inbox.auditFlag.body',
-    params: { ip: '192.168.2.50' },
-    at: '2026-09-01T10:59:00.000Z',
-    unread: false,
-    href: '/reports',
-  },
-  {
-    id: 'in-6',
-    audience: 'merchant',
-    titleKey: 'inbox.paymentReceived.title',
-    bodyKey: 'inbox.paymentReceived.body',
-    params: { invoice: 'INV-88421' },
-    at: '2026-09-02T12:50:00.000Z',
-    unread: true,
-    href: '/notification-delivery',
-  },
-  {
-    id: 'in-7',
-    audience: 'merchant',
-    titleKey: 'inbox.pointApproved.title',
-    bodyKey: 'inbox.pointApproved.body',
-    params: { code: '10293' },
-    at: '2026-09-02T10:10:00.000Z',
-    unread: false,
-    href: '/my-payment-points',
-  },
-  {
-    id: 'in-8',
-    audience: 'institution',
-    titleKey: 'inbox.pointPending.title',
-    bodyKey: 'inbox.pointPending.body',
-    params: { name: 'Ibb Hypermarket' },
-    at: '2026-09-02T12:40:00.000Z',
-    unread: true,
-    href: '/pp-approvals',
-  },
-  {
-    id: 'in-9',
-    audience: 'institution',
-    titleKey: 'inbox.noteDelivered.title',
-    bodyKey: 'inbox.noteDelivered.body',
-    params: { invoice: 'INV-22018' },
-    at: '2026-09-02T09:20:00.000Z',
-    unread: false,
-    href: '/notifications',
-  },
-];
-
 export const SETTLEMENTS: Settlement[] = [
   { id: 'st-1', institutionName: 'Tadhamon Bank', merchantName: 'Al-Amal Pharmacies', occurredAt: '2026-08-31T16:00:00.000Z', amount: 48500, fee: 364, currency: 'YER', status: 'completed' },
   { id: 'st-2', institutionName: 'Tadhamon Bank', merchantName: 'Mukalla Clinics Group', occurredAt: '2026-08-30T19:44:00.000Z', amount: 72000, fee: 540, currency: 'YER', status: 'completed' },
   { id: 'st-3', institutionName: 'Tadhamon Bank', merchantName: 'Al-Saeed Trading House', occurredAt: '2026-08-30T18:02:00.000Z', amount: 950, fee: 7, currency: 'USD', status: 'completed' },
   { id: 'st-4', institutionName: 'CAC Bank', merchantName: 'Hodeidah Fuel Stations', occurredAt: '2026-08-31T10:05:00.000Z', amount: 3400, fee: 26, currency: 'SAR', status: 'completed' },
   { id: 'st-5', institutionName: 'Jawali Wallet', merchantName: 'Al-Amal Pharmacies', occurredAt: '2026-08-31T15:40:00.000Z', amount: 210.5, fee: 1.6, currency: 'SAR', status: 'pending' },
-];
-
-export const WEEKLY_ACTIVITY = [56, 91, 119, 70, 105, 126, 28];
-export const WEEKLY_HIGHLIGHT_INDEX = 2;
-
-export const FI_ACTIVITY: DashboardActivity[] = [
-  {
-    id: 'fa-1',
-    at: '2026-08-31T16:51:00.000Z',
-    activityKey: 'activity.ppApproved',
-    merchant: 'Al-Amal Pharmacies',
-    status: 'completed',
-  },
-  {
-    id: 'fa-2',
-    at: '2026-08-31T15:40:00.000Z',
-    activityKey: 'activity.noteDelivered',
-    merchant: 'Souq Taiz Electronics',
-    status: 'delivered',
-  },
-  {
-    id: 'fa-3',
-    at: '2026-08-31T14:08:00.000Z',
-    activityKey: 'activity.ppRejected',
-    merchant: 'Aden Fresh Fisheries',
-    status: 'rejected',
-  },
-  {
-    id: 'fa-4',
-    at: '2026-08-30T18:02:00.000Z',
-    activityKey: 'activity.ppApproved',
-    merchant: 'Mukalla Clinics Group',
-    status: 'completed',
-  },
-  {
-    id: 'fa-5',
-    at: '2026-08-30T09:16:00.000Z',
-    activityKey: 'activity.ppPending',
-    merchant: 'Ibb Hypermarket',
-    status: 'pending',
-  },
 ];
 
 export function profileFor(user: AuthUser): AccountProfile {
@@ -478,40 +341,3 @@ export function scopedNotifications(user: AuthUser, q = ''): PaymentNotification
   );
 }
 
-export function buildDashboard(user: AuthUser): DashboardPayload {
-  const orgPoints = user.orgName
-    ? PAYMENT_POINTS.filter((row) =>
-        user.audience === 'merchant'
-          ? row.merchantName === user.orgName
-          : row.institutionName === user.orgName,
-      )
-    : [];
-  const orgNotes = scopedNotifications(user);
-  // No fallback to INTEGRATION_USERS[0] — that would show a different org's integration status
-  // when orgName is missing (see scopedPoints()'s fail-closed comment).
-  const integration = user.orgName ? INTEGRATION_USERS.find((row) => row.organization === user.orgName) : undefined;
-
-  return {
-    audience: user.audience,
-    slaRate: 94,
-    slaOnTimeCount: 11,
-    slaOverdueCount: 1,
-    slaApprovedCount: 47,
-    slaTotalCount: 50,
-    pendingMerchantApprovals: MERCHANTS.filter((row) => row.status === 'pending').length,
-    pendingFiApprovals: INSTITUTIONS.filter((row) => row.status === 'pending').length,
-    pendingErpApprovals: ERPS.filter((row) => row.status === 'pending').length,
-    activeMerchants: MERCHANTS.filter((row) => row.status === 'approved').length,
-    weeklyActivity: WEEKLY_ACTIVITY,
-    pendingMerchants: MERCHANTS.filter((row) => row.status === 'pending'),
-    activePaymentPoints: orgPoints.filter((row) => row.status === 'approved').length,
-    pendingPaymentPoints: orgPoints.filter((row) => row.status === 'pending').length,
-    integrationUserStatus: integration?.status ?? 'inactive',
-    notificationUserStatus: 'approved',
-    recentNotifications: orgNotes.slice(0, 6),
-    pendingPpApprovals: orgPoints.filter((row) => row.status === 'pending').length,
-    approvedPaymentPoints: orgPoints.filter((row) => row.status === 'approved').length,
-    notificationsThisMonth: orgNotes.length + (user.audience === 'institution' ? 18 : 0),
-    recentActivity: FI_ACTIVITY,
-  };
-}

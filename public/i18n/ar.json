@@ -155,11 +155,13 @@
     "reports": "التقارير / سجل التدقيق",
     "settings": "إعدادات الحساب",
     "myPoints": "نقاط الدفع الخاصة بي",
+    "myPaymentHistory": "سجل المدفوعات",
     "paymentInquiry": "الاستعلام عن مدفوعات",
     "myIntegration": "مستخدم الربط الخاص بي",
     "notificationDelivery": "تسليم الإشعارات",
     "ppApprovals": "اعتماد نقاط الدفع",
     "allPoints": "كل نقاط الدفع",
+    "allPaymentHistory": "سجل المدفوعات",
     "notifications": "الإشعارات",
     "integrationUser": "مستخدم الربط",
     "institutionProfile": "ملف المؤسسة",
@@ -209,14 +211,6 @@
     },
     "overviewMerchant": "نظرة عامة على {{org}}",
     "overviewFi": "{{org}} — نظرة عامة",
-    "range": {
-      "label": "الفترة الزمنية",
-      "hour": "ساعة",
-      "day": "24س",
-      "today": "اليوم",
-      "week": "الأسبوع",
-      "month": "الشهر"
-    },
     "revenue": "الإشعارات (٧ أيام)",
     "orders": "طلبات معلّقة",
     "customers": "تجار نشطون",
@@ -225,35 +219,21 @@
     "pending": "طلبات معلّقة",
     "merchants": "تجار نشطون",
     "sla": "نقاط ضمن المهلة",
-    "slaTitle": "اتفاقية اعتماد نقطة الدفع",
-    "slaOnTime": "في الموعد",
     "slaWindow": "يوم عمل واحد لاعتماد نقطة الدفع",
-    "slaTarget": "هدف الاتفاقية",
-    "slaTargetValue": "يوم عمل واحد",
-    "slaOnTimeApprovals": "اعتمادات في الموعد ({{count}})",
-    "slaOverdueApprovals": "اعتمادات متأخرة ({{count}})",
-    "slaApprovedOf": "{{approved}} من {{total}} معتمد",
-    "slaProcessed": "عُولجت ضمن حدود الخدمة النشطة",
-    "week": "نشاط الأسبوع",
     "recent": "نقاط دفع بانتظار المصرف",
     "lowStock": "طلبات تجار معلّقة",
-    "recentNotes": "أحدث الإشعارات",
-    "recentActivity": "النشاط الأخير",
     "errors": "صفحات أخطاء HTTP",
     "errorsIntro": "هذه الأزرار تستدعي نقاط نهاية وهمية. معترض الأخطاء يوجّه كل حالة إلى صفحتها.",
+    "noAccess": "لا يوجد صلاحية وصول",
+    "generatedAt": "آخر تحديث {{at}}",
+    "paymentPointsTitle": "نقاط الدفع",
+    "paymentsTitle": "المدفوعات",
+    "windowLabel": "{{from}} – {{to}}",
     "kpi": {
       "pendingMerchants": "موافقات التجار المعلّقة",
       "pendingFis": "موافقات المؤسسات المعلّقة",
-      "pendingErps": "موافقات أنظمة ERP المعلّقة",
-      "activeMerchants": "التجار النشطون",
-      "activePoints": "نقاط الدفع النشطة",
-      "pendingPoints": "نقاط الدفع المعلّقة",
-      "integrationUser": "حالة مستخدم الربط",
-      "notificationUser": "حالة مستخدم الإشعارات",
-      "pendingPp": "اعتمادات النقاط المعلّقة",
-      "approvedPp": "نقاط الدفع المعتمدة",
-      "notesMonth": "إشعارات هذا الشهر",
-      "integrationActive": "حالة مستخدم الربط"
+      "pendingOperatorRequests": "طلبات المشغّلين المعلّقة",
+      "pointsTotal": "الإجمالي"
     }
   },
   "actions": {
@@ -416,6 +396,19 @@
     },
     "recordedAt": "تاريخ التسجيل",
     "matchedAt": "تاريخ المطابقة"
+  },
+  "history": {
+    "mineTitle": "سجل مدفوعاتي",
+    "mineIntro": "كل دفعة مقبولة مرتبطة بحسابك، عبر جميع البنوك والمحافظ الخاصة بك.",
+    "institutionTitle": "كل سجل المدفوعات",
+    "institutionIntro": "كل دفعة مقبولة مرتبطة بمؤسستك، عبر جميع التجار.",
+    "transactionIdPh": "ابحث برقم المعاملة",
+    "anyStatus": "أي حالة معاملة",
+    "anyMatch": "أي حالة مطابقة",
+    "from": "من",
+    "to": "إلى",
+    "empty": "لا توجد مدفوعات مقبولة تطابق هذا الفلتر.",
+    "acceptedAt": "تاريخ القبول"
   },
   "delivery": {
     "title": "استرداد التسليم",
@@ -874,6 +867,7 @@
     "smsNotifHint": "تنبيهات فورية عند تعديلات أمنية حرجة.",
     "profileInfo": "معلومات الملف",
     "emailAddress": "البريد الإلكتروني",
+    "status": "الحالة",
     "phoneNumber": "رقم الهاتف",
     "notifPrefs": "تفضيلات الإشعارات"
   },
@@ -1236,46 +1230,44 @@
   },
   "inbox": {
     "title": "الإشعارات",
-    "viewAll": "عرض الكل",
+    "viewAll": "تحميل المزيد",
     "empty": "لا توجد إشعارات بعد.",
     "minutesAgo": "منذ {{n}} د",
     "hoursAgo": "منذ {{n}} ساعة",
-    "daysAgo": "منذ {{n}} يوم",
-    "merchantPending": {
-      "title": "تاجر بانتظار المراجعة",
-      "body": "{{name}} بانتظار اعتماد المدقق."
+    "daysAgo": "منذ {{n}} يوم"
+  },
+  "notif": {
+    "kind": {
+      "paymentPointSubmitted": "تم تقديم نقطة دفع",
+      "paymentPointApproved": "اعتُمدت نقطة الدفع",
+      "paymentPointRejected": "رُفضت نقطة الدفع",
+      "integrationClientCredentialsRotated": "تم تدوير بيانات اعتماد الربط",
+      "notificationEndpointApproved": "اعتُمدت إعدادات الإشعارات",
+      "notificationEndpointRejected": "رُفضت إعدادات الإشعارات",
+      "deliveryAuthenticationPaused": "أُوقفت مصادقة التسليم مؤقتاً",
+      "deliveryDeadLettered": "التسليم يحتاج انتباهاً",
+      "deliveryRemediated": "تم تسجيل معالجة التسليم",
+      "platformOperatorChangeApplied": "تم تحديث حساب المشغّل",
+      "merchantOnboardingApprovalSubmitted": "قُدّم طلب تاجر للمراجعة",
+      "financialInstitutionOnboardingApprovalSubmitted": "قُدّم طلب مؤسسة مالية للمراجعة",
+      "erpSystemApprovalSubmitted": "قُدّم تغيير نظام ERP للمراجعة",
+      "profileChangeApprovalSubmitted": "قُدّم تغيير الملف للمراجعة",
+      "integrationClientRotationApprovalSubmitted": "قُدّم تدوير بيانات الاعتماد للمراجعة",
+      "notificationEndpointApprovalSubmitted": "قُدّمت إعدادات الإشعارات للمراجعة",
+      "platformOperatorInvitationSubmitted": "قُدّمت دعوة مشغّل للمراجعة",
+      "platformOperatorChangeSubmitted": "قُدّم تغيير مشغّل للمراجعة"
     },
-    "fiExpiring": {
-      "title": "عقد مؤسسة يحتاج انتباهاً",
-      "body": "{{name}} لديه عقد معلّق أو قارب على الانتهاء."
-    },
-    "erpResubmitted": {
-      "title": "أُعيد تقديم نظام ERP",
-      "body": "أُرسل {{name}} للمراجعة."
-    },
-    "roleRequest": {
-      "title": "دعوة مشغّل معلّقة",
-      "body": "{{name}} لم يُكمل أول تسجيل دخول."
-    },
-    "auditFlag": {
-      "title": "دخول غير معتاد",
-      "body": "سُجّل دخول إلى لوحة التحكم من {{ip}}."
-    },
-    "paymentReceived": {
-      "title": "استُلم إشعار دفع",
-      "body": "نُشرت الفاتورة {{invoice}} إلى نقطة نهاية نظام ERP."
-    },
-    "pointApproved": {
-      "title": "اعتُمدت نقطة الدفع",
-      "body": "النقطة {{code}} أصبحت نشطة."
-    },
-    "pointPending": {
-      "title": "نقطة دفع بانتظارك",
-      "body": "قدّم {{name}} نقطة تحتاج اعتماداً."
-    },
-    "noteDelivered": {
-      "title": "سُلّم الإشعار",
-      "body": "سُلّمت الفاتورة {{invoice}} بنجاح."
+    "outcome": {
+      "submitted": "بانتظار القرار",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "succeeded": "نجح",
+      "paused": "متوقف مؤقتاً",
+      "deadLettered": "يحتاج انتباهاً",
+      "reactivated": "أُعيد تفعيله",
+      "suspended": "موقوف",
+      "permissionsChanged": "تغيّرت الصلاحيات",
+      "roleChanged": "تغيّر الدور"
     }
   }
 }
