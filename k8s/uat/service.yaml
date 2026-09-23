@@ -1,0 +1,22 @@
+# NodePort, matching how the UAT cluster exposes everything else (payment-aggregator-api on
+# 30746, nexus on 32001-32003) -- the cluster has no ingress controller installed (confirmed
+# 2026-09-23: `kubectl get ingressclass` is empty), so ingress.yaml is currently unused.
+# Reachable on any node at http://<node-ip>:30080; the uatnoti.ultimate-pay.net DNS/Cloudflare
+# origin must forward to that.
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-console-uat
+  labels:
+    app: atlas-console
+    env: uat
+spec:
+  type: NodePort
+  selector:
+    app: atlas-console
+    env: uat
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+      protocol: TCP

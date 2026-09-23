@@ -1,0 +1,59 @@
+# UAT deployment for the Ultimate Pay frontend (atlas-console), served at
+# https://uatnoti.ultimate-pay.net -- calls https://uat-apinoti.ultimate-pay.net directly
+# (see src/environments/environment.uat.ts). Built/pushed via Dockerfile.uat.
+#
+# Apply with: kubectl apply -f k8s/uat/ [-n <your-namespace>]
+# No namespace is hardcoded here -- add `-n <namespace>` on apply, or add
+# `namespace: <name>` under each resource's metadata if you want it fixed in the file.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-console-uat
+  labels:
+    app: atlas-console
+    env: uat
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-console
+      env: uat
+  template:
+    metadata:
+      labels:
+        app: atlas-console
+        env: uat
+    spec:
+      containers:
+        - name: atlas-console
+          # Private cluster registry: Nexus 3, hosted Docker repo "docker" (path-based routing, so
+          # the repo name is part of the image path). Plain HTTP, reachable over the VPN only.
+          image: 10.225.151.51:32001/docker/atlas-console:uat
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      # The registry requires login. Create the secret once before applying:
+      #   kubectl create secret docker-registry uat-registry-creds \
+      #     --docker-server=10.225.151.51:32001 \
+      #     --docker-username=<user> --docker-password=<password>
+      imagePullSecrets:
+        - name: uat-registry-creds

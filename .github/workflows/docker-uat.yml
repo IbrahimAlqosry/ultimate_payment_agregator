@@ -1,0 +1,37 @@
+# NOT USABLE FOR THE CURRENT UAT CLUSTER -- kept for reference only.
+# It pushes to Docker Hub from a GitHub-hosted runner, but the UAT cluster pulls from the
+# private Nexus registry (10.225.151.51:32001/docker/atlas-console), which GitHub-hosted runners
+# can't reach (internal IP). Automating this needs a self-hosted runner inside the company
+# network -- see docs/UAT_Kubernetes_Deployment_Guide_AR.pdf, sections 17-19. Until then UAT is
+# deployed by hand (see the header of Dockerfile.uat).
+
+name: Build and push UAT image
+
+# Manual trigger only (Actions tab -> this workflow -> "Run workflow") -- deliberately not on
+# every push, since this Docker Hub image is meant to be deployed by hand via kubectl on the UAT
+# cluster, not auto-deployed. Add a `push:` trigger later if that becomes wanted.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.uat
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/atlas-console:uat
+            ${{ secrets.DOCKERHUB_USERNAME }}/atlas-console:${{ github.sha }}

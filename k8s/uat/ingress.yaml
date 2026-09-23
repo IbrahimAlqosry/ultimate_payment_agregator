@@ -1,0 +1,38 @@
+# CURRENTLY UNUSED: the UAT cluster has no ingress controller (`kubectl get ingressclass` is empty
+# as of 2026-09-23), so the site is exposed via the NodePort in service.yaml (30080) instead.
+# Apply this only if an nginx ingress controller gets installed.
+#
+# uatnoti.ultimate-pay.net is proxied through Cloudflare (confirmed live 2026-09-22: DNS
+# resolves to Cloudflare's edge, "Server: cloudflare" on the response). This Ingress listens on
+# plain HTTP, which works if Cloudflare's SSL/TLS mode for the domain is "Flexible" (Cloudflare
+# terminates TLS at its edge, talks HTTP to the origin). If it's set to "Full" or "Full
+# (strict)" instead, the origin must also serve HTTPS -- uncomment the tls: block below and
+# provide a cert (self-signed is enough for "Full"; a CA-signed/Cloudflare Origin cert is needed
+# for "Full (strict)"). Ask whoever manages the Cloudflare zone which mode is set before
+# assuming either way.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlas-console-uat
+  labels:
+    app: atlas-console
+    env: uat
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: uatnoti.ultimate-pay.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: atlas-console-uat
+                port:
+                  number: 80
+  # tls:
+  #   - hosts:
+  #       - uatnoti.ultimate-pay.net
+  #     secretName: atlas-console-uat-tls
