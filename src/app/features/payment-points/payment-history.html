@@ -25,20 +25,8 @@
       <option value="matchedByNotificationTap">{{ 'inquiry.matchStatusValue.matchedByNotificationTap' | transloco }}</option>
       <option value="conflict">{{ 'inquiry.matchStatusValue.conflict' | transloco }}</option>
     </select>
-    <input
-      class="filter"
-      type="date"
-      [attr.aria-label]="'history.from' | transloco"
-      [value]="acceptedFrom()"
-      (change)="acceptedFrom.set($any($event.target).value); onFilterChange()"
-    />
-    <input
-      class="filter"
-      type="date"
-      [attr.aria-label]="'history.to' | transloco"
-      [value]="acceptedTo()"
-      (change)="acceptedTo.set($any($event.target).value); onFilterChange()"
-    />
+    <app-date-filter placeholderKey="filter.fromDate" [value]="acceptedFrom()" (valueChange)="acceptedFrom.set($event); onFilterChange()" />
+    <app-date-filter placeholderKey="filter.toDate" [value]="acceptedTo()" (valueChange)="acceptedTo.set($event); onFilterChange()" />
   </div>
 
   <div class="card table-card">

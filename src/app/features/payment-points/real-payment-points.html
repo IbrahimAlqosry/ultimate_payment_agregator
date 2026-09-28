@@ -18,20 +18,8 @@
           <option [value]="status">{{ statusKey(status) | transloco }}</option>
         }
       </select>
-      <input
-        class="filter filter-plain"
-        type="date"
-        [attr.aria-label]="'filter.fromDate' | transloco"
-        [value]="draftFrom()"
-        (change)="draftFrom.set($any($event.target).value)"
-      />
-      <input
-        class="filter filter-plain"
-        type="date"
-        [attr.aria-label]="'filter.toDate' | transloco"
-        [value]="draftTo()"
-        (change)="draftTo.set($any($event.target).value)"
-      />
+      <app-date-filter placeholderKey="filter.fromDate" [value]="draftFrom()" (valueChange)="draftFrom.set($event)" />
+      <app-date-filter placeholderKey="filter.toDate" [value]="draftTo()" (valueChange)="draftTo.set($event)" />
       <div class="filter-actions">
         <button class="btn btn-ghost" type="button" (click)="clearFilters()">{{ 'filter.clear' | transloco }}</button>
         <button class="btn btn-primary" type="button" (click)="applyFilters()">{{ 'filter.apply' | transloco }}</button>

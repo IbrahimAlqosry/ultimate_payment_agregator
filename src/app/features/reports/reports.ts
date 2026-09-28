@@ -5,6 +5,7 @@ import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { AuditAction, AuditEntityType, AuditEvent, AuditOutcome } from '@core/models.platform';
 import { DataState } from '@shared/data-state';
+import { DateFilter } from '@shared/date-filter';
 
 /** Platform audit search (guide v5.0 §17) — server-side filtered, cursor-paginated, no total
  * count. There is no GET-by-ID: a row already carries its own complete detail, so "detail" is
@@ -12,7 +13,7 @@ import { DataState } from '@shared/data-state';
  * zero offset; the date inputs here are local-day boundaries converted to UTC on submit. */
 @Component({
   selector: 'app-reports',
-  imports: [TranslocoPipe, DatePipe, DataState],
+  imports: [TranslocoPipe, DatePipe, DataState, DateFilter],
   templateUrl: './reports.html',
   styleUrl: './reports.scss',
 })

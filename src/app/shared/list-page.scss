@@ -131,13 +131,6 @@
   padding: 16px 24px;
 }
 
-/* Date/text inputs share .filter's box but not its select chevron. */
-.filter.filter-plain {
-  background-image: none;
-  padding-inline-end: 14px;
-  min-width: 160px;
-}
-
 /* Prev / Next in a numbered pager. */
 .page-btn.wide {
   width: auto;

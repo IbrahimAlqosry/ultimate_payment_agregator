@@ -55,10 +55,17 @@ export class SetPassword {
     },
   );
 
+  /** Linked from the activation emails: `?type=institution&email=…` opens on the right tab with
+   * the email pre-filled (`type` defaults to merchant). */
   constructor() {
-    const email = this.route.snapshot.queryParamMap.get('email');
+    const params = this.route.snapshot.queryParamMap;
+    const email = params.get('email');
     if (email) {
       this.setPasswordForm.email().value.set(email);
+    }
+    const type = params.get('type');
+    if (type === 'institution' || type === 'merchant') {
+      this.audience.set(type);
     }
   }
 

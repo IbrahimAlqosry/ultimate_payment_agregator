@@ -8,6 +8,7 @@ import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { MerchantApplicationDetails, PaymentPoint, PaymentPointStatus } from '@core/models.platform';
 import { DataState } from '@shared/data-state';
+import { DateFilter } from '@shared/date-filter';
 import { MerchantLookup } from './merchant-lookup';
 
 type PointsMode = 'merchant' | 'institution';
@@ -27,7 +28,7 @@ const MAX_API_PAGES = 20;
  * The design's Point Type and Actioned By columns have no API source yet and are left out. */
 @Component({
   selector: 'app-real-payment-points',
-  imports: [DatePipe, RouterLink, TranslocoPipe, DataState],
+  imports: [DatePipe, RouterLink, TranslocoPipe, DataState, DateFilter],
   templateUrl: './real-payment-points.html',
   styleUrl: '../../shared/list-page.scss',
 })

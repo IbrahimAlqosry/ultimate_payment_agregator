@@ -9,20 +9,8 @@
 
   <div class="card filter-card">
     <div class="filters">
-      <input
-        class="filter"
-        type="date"
-        [attr.aria-label]="'filter.fromDate' | transloco"
-        [value]="from()"
-        (change)="from.set($any($event.target).value)"
-      />
-      <input
-        class="filter"
-        type="date"
-        [attr.aria-label]="'filter.toDate' | transloco"
-        [value]="to()"
-        (change)="to.set($any($event.target).value)"
-      />
+      <app-date-filter placeholderKey="filter.fromDate" [value]="from()" (valueChange)="from.set($event)" />
+      <app-date-filter placeholderKey="filter.toDate" [value]="to()" (valueChange)="to.set($event)" />
       <select class="filter" [value]="action()" (change)="action.set($any($event.target).value)">
         <option value="">{{ 'reports.allActions' | transloco }}</option>
         <optgroup [label]="'reports.actionGroup.session' | transloco">

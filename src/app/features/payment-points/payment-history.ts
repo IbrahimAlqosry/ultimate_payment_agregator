@@ -7,6 +7,7 @@ import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
 import { PaymentMatchStatus, PaymentNotificationLogEntry, TransactionStatus } from '@core/models.platform';
 import { DataState } from '@shared/data-state';
+import { DateFilter } from '@shared/date-filter';
 
 type HistoryMode = 'merchant' | 'institution';
 
@@ -18,7 +19,7 @@ type HistoryMode = 'merchant' | 'institution';
  * payment-inquiry.ts via "Use for match" rather than retyping the FI/transaction id. */
 @Component({
   selector: 'app-payment-history',
-  imports: [DatePipe, RouterLink, TranslocoPipe, DataState],
+  imports: [DatePipe, RouterLink, TranslocoPipe, DataState, DateFilter],
   templateUrl: './payment-history.html',
   styleUrl: '../../shared/list-page.scss',
 })
