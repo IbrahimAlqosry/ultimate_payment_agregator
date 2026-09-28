@@ -6,10 +6,10 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { EMPTY, expand, reduce } from 'rxjs';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { MerchantApplicationDetails, PaymentPoint, PaymentPointStatus } from '@core/models.platform';
+import { PaymentPoint, PaymentPointStatus } from '@core/models.platform';
+import { Counterparty } from '@shared/counterparty';
 import { DataState } from '@shared/data-state';
 import { DateFilter } from '@shared/date-filter';
-import { MerchantLookup } from './merchant-lookup';
 
 type PointsMode = 'merchant' | 'institution';
 type StatusFilter = PaymentPointStatus | 'all';
@@ -25,17 +25,17 @@ const MAX_API_PAGES = 20;
  *
  * The endpoint takes only `cursor` + `pageSize` — no status/date filters and no total count — so
  * the design's filter bar and numbered pager work client-side over every row, fetched up front.
- * The design's Point Type and Actioned By columns have no API source yet and are left out. */
+ * Counterparty names come from each row's `merchant` / `financialInstitution` summary (ID
+ * fallback). The design's Point Type and Actioned By columns have no API source yet. */
 @Component({
   selector: 'app-real-payment-points',
-  imports: [DatePipe, RouterLink, TranslocoPipe, DataState, DateFilter],
+  imports: [DatePipe, RouterLink, TranslocoPipe, Counterparty, DataState, DateFilter],
   templateUrl: './real-payment-points.html',
   styleUrl: '../../shared/list-page.scss',
 })
 export class RealPaymentPoints {
   private readonly api = inject(PlatformApi);
   private readonly route = inject(ActivatedRoute);
-  private readonly lookup = inject(MerchantLookup);
   readonly locale = inject(LocaleService);
 
   private readonly routeData = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
@@ -46,7 +46,6 @@ export class RealPaymentPoints {
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly rows = signal<PaymentPoint[]>([]);
-  readonly merchants = signal<Readonly<Record<string, MerchantApplicationDetails | null>>>({});
 
   /** Edited in the filter bar; only take effect on Apply. */
   readonly draftStatus = signal<StatusFilter>('all');
@@ -100,11 +99,6 @@ export class RealPaymentPoints {
           this.rows.set(rows);
           this.page.set(1);
           this.loading.set(false);
-          if (this.mode() === 'institution') {
-            this.lookup
-              .many(rows.map((row) => row.merchantId))
-              .subscribe(([id, merchant]) => this.merchants.update((all) => ({ ...all, [id]: merchant })));
-          }
         },
         error: () => {
           this.loading.set(false);

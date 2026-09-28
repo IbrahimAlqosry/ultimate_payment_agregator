@@ -43,13 +43,17 @@
           <tbody>
             @for (row of pageRows(); track row.id) {
               <tr>
-                @if (mode() === 'merchant') {
-                  <td class="mono muted">{{ row.financialInstitutionId }}</td>
-                } @else if (merchants()[row.merchantId]; as merchant) {
-                  <td><strong>{{ merchant.legalName }}</strong></td>
-                } @else {
-                  <td class="mono">{{ row.merchantId }}</td>
-                }
+                <td>
+                  @if (mode() === 'merchant') {
+                    <app-counterparty
+                      [name]="row.financialInstitution?.legalName"
+                      [institutionType]="row.financialInstitution?.institutionType"
+                      [id]="row.financialInstitutionId"
+                    />
+                  } @else {
+                    <app-counterparty [name]="row.merchant?.legalName" [id]="row.merchantId" />
+                  }
+                </td>
                 <td class="muted">{{ row.pointNumber }}</td>
                 <td>
                   <span class="badge" [class.ok]="row.status === 'approved'" [class.warn]="row.status === 'pendingFinancialInstitution'" [class.danger]="row.status === 'rejected' || row.status === 'disabled'">

@@ -17,21 +17,10 @@
     @if (point(); as p) {
       <article class="detail-card">
         <dl class="info-grid">
-          @if (merchant(); as m) {
-            <div>
-              <dt>{{ 'points.merchantName' | transloco }}</dt>
-              <dd>{{ m.legalName }}</dd>
-            </div>
-            <div>
-              <dt>{{ 'merchants.cr' | transloco }}</dt>
-              <dd>{{ m.commercialRegistrationNumber }}</dd>
-            </div>
-          } @else {
-            <div>
-              <dt>{{ 'points.merchantId' | transloco }}</dt>
-              <dd class="mono">{{ p.merchantId }}</dd>
-            </div>
-          }
+          <div>
+            <dt>{{ (p.merchant ? 'points.merchantName' : 'points.merchantId') | transloco }}</dt>
+            <dd><app-counterparty [name]="p.merchant?.legalName" [id]="p.merchantId" /></dd>
+          </div>
           <div>
             <dt>{{ 'points.code' | transloco }}</dt>
             <dd>{{ p.pointNumber }}</dd>
@@ -40,18 +29,6 @@
             <dt>{{ 'points.submittedDate' | transloco }}</dt>
             <dd>{{ p.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
           </div>
-          @if (merchant(); as m) {
-            <div>
-              <dt>{{ 'merchants.erpSystem' | transloco }}</dt>
-              <dd>
-                @if (erpName(); as name) {
-                  {{ name }}
-                } @else {
-                  <span class="mono">{{ m.erpSystemId }}</span>
-                }
-              </dd>
-            </div>
-          }
           @if (p.decidedAt) {
             <div>
               <dt>{{ 'detail.decidedAt' | transloco }}</dt>

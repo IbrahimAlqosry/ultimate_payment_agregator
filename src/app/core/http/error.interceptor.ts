@@ -1,4 +1,4 @@
-import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
@@ -9,11 +9,6 @@ import { apiErrorMessageKey } from './http-error';
 import { isPlatformApiRequest, platformApiUrl } from './platform-api-url';
 
 const STATUS_PATHS = new Set(['/401', '/404', '/423', '/501', '/503']);
-
-/** Opt a request out of the generic failure toast below — only for optional, best-effort reads
- * whose failure the screen already handles by falling back (e.g. enriching a row with merchant
- * details the signed-in actor may not be allowed to see). Session/outage redirects still apply. */
-export const SILENT_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
@@ -50,7 +45,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         void router.navigateByUrl('/503');
       } else if (error.status === 501 && !alreadyOnStatus) {
         void router.navigateByUrl('/501');
-      } else if (!onAuth && !req.context.get(SILENT_ERROR_TOAST)) {
+      } else if (!onAuth) {
         // Every other request error — any status, platform API or legacy, load or submit,
         // anywhere in the app — surfaces as one translated toast here, so no screen can ship a
         // silent or raw-text failure. Components still set their own inline apiError signal

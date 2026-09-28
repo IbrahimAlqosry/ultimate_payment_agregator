@@ -583,6 +583,19 @@ export interface CreatePaymentPointRequest {
 
 export type PaymentPointStatus = 'pendingFinancialInstitution' | 'approved' | 'rejected' | 'disabled';
 
+/** Counterparty display summaries (FIX-UI-ENRICH-01) on payment-point and payment-notification
+ * GETs: the *current* Onboarding legal name (and FI type). Display metadata only — IDs stay the
+ * canonical keys for links/selection/comparison. Either summary is `null` when the Onboarding
+ * profile is genuinely missing (show the ID instead); absent entirely on older backends. */
+export interface MerchantSummary {
+  legalName: string;
+}
+
+export interface FinancialInstitutionSummary {
+  legalName: string;
+  institutionType: PlatformInstitutionType;
+}
+
 export interface PaymentPoint {
   id: string;
   merchantId: string;
@@ -592,6 +605,8 @@ export interface PaymentPoint {
   rejectionReason: string | null;
   createdAt: string;
   decidedAt: string | null;
+  merchant?: MerchantSummary | null;
+  financialInstitution?: FinancialInstitutionSummary | null;
 }
 
 /** `GET /payment-points/pending-approval` (FI session) — only ever `pendingFinancialInstitution`
@@ -682,6 +697,8 @@ export interface PaymentNotificationLogEntry {
   pointNumber: string;
   matchStatus: PaymentMatchStatus;
   acceptedAt: string;
+  merchant?: MerchantSummary | null;
+  financialInstitution?: FinancialInstitutionSummary | null;
 }
 
 export interface PaymentNotificationLogPage {

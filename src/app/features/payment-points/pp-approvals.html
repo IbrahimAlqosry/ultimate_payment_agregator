@@ -23,11 +23,7 @@
           <tbody>
             @for (row of rows(); track row.id) {
               <tr>
-                @if (merchants()[row.merchantId]; as merchant) {
-                  <td><strong>{{ merchant.legalName }}</strong></td>
-                } @else {
-                  <td class="mono">{{ row.merchantId }}</td>
-                }
+                <td><app-counterparty [name]="row.merchant?.legalName" [id]="row.merchantId" /></td>
                 <td class="muted">{{ row.pointNumber }}</td>
                 <td class="muted">{{ row.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
                 <td class="num">

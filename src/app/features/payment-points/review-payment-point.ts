@@ -6,19 +6,19 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { MerchantApplicationDetails, PaymentPoint } from '@core/models.platform';
+import { PaymentPoint } from '@core/models.platform';
 import { ToastService } from '@core/notifications/toast.service';
+import { Counterparty } from '@shared/counterparty';
 import { DataState } from '@shared/data-state';
-import { MerchantLookup } from './merchant-lookup';
 
 /** FI review of one payment point — `GET /payment-points/{id}` + `POST …/{id}/decision`.
  * Single-approver (guide v6.0 §12.3): no maker-checker and no concurrency token, so the decision
- * applies immediately. Merchant name / CR / ERP come best-effort from MerchantLookup (falls back
- * to the raw merchant ID). The design's point type, linked account and submitter have no API
- * source yet, so they aren't shown. */
+ * applies immediately. The merchant name comes from the record's `merchant` summary (ID
+ * fallback). The design's CR number, ERP system, point type, linked account and submitter have
+ * no API source for an FI, so they aren't shown. */
 @Component({
   selector: 'app-review-payment-point',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, DataState],
+  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, Counterparty, DataState],
   templateUrl: './review-payment-point.html',
   styleUrl: '../../shared/form-page.scss',
 })
@@ -27,14 +27,11 @@ export class ReviewPaymentPoint implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
-  private readonly lookup = inject(MerchantLookup);
   readonly locale = inject(LocaleService);
 
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly point = signal<PaymentPoint | null>(null);
-  readonly merchant = signal<MerchantApplicationDetails | null>(null);
-  readonly erpName = signal<string | null>(null);
   readonly showReject = signal(false);
   readonly reason = signal('');
   readonly acting = signal(false);
@@ -60,7 +57,6 @@ export class ReviewPaymentPoint implements OnInit {
       next: (point) => {
         this.point.set(point);
         this.loading.set(false);
-        this.loadMerchant(point.merchantId);
       },
       error: () => {
         this.error.set(true);
@@ -95,17 +91,5 @@ export class ReviewPaymentPoint implements OnInit {
           this.load();
         },
       });
-  }
-
-  private loadMerchant(merchantId: string): void {
-    if (this.merchant()?.applicationId === merchantId) {
-      return;
-    }
-    this.lookup.merchant(merchantId).subscribe((merchant) => {
-      this.merchant.set(merchant);
-      if (merchant) {
-        this.lookup.erpNames().subscribe((names) => this.erpName.set(names.get(merchant.erpSystemId) ?? null));
-      }
-    });
   }
 }
