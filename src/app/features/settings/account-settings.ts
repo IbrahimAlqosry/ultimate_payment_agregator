@@ -169,10 +169,6 @@ export class AccountSettings {
     });
   }
 
-  simulate(status: 401 | 404 | 501 | 503): void {
-    this.api.simulate(status).subscribe({ error: () => undefined });
-  }
-
   private persistPrefs(): void {
     if (this.auth.readOnly()) {
       return;

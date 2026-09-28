@@ -1,5 +1,5 @@
 import { environment } from '@env/environment';
-import { requestPath } from './api-url';
+import { isSameOrigin, requestPath } from './api-url';
 
 /** See the matching comment in api-url.ts's baseHref() — same sub-path deploy problem, same fix.
  * Only applies when `environment.platformApiUrl` is itself relative (e.g. '/pa-api', to be
@@ -27,6 +27,9 @@ export function isPlatformApiRequest(url: string): boolean {
     // Absolute target: compare the full URL, not just its pathname — the base's own path is
     // empty here, so a pathname-only check would match nearly every request.
     return url === base || url.startsWith(`${base}/`);
+  }
+  if (!isSameOrigin(url)) {
+    return false;
   }
   const path = requestPath(url);
   return path === base || path.startsWith(`${base}/`);

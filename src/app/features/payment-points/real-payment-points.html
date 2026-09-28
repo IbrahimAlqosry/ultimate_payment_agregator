@@ -6,42 +6,85 @@
     }
   </header>
 
-  <p class="info-banner">{{ (mode() === 'merchant' ? 'points.mineIntro' : 'points.institutionIntro') | transloco }}</p>
+  @if (mode() === 'merchant') {
+    <p class="info-banner">{{ 'points.mineIntro' | transloco }}</p>
+  }
+
+  <div class="card filter-card">
+    <div class="filters">
+      <select class="filter" [value]="draftStatus()" (change)="draftStatus.set($any($event.target).value)" [attr.aria-label]="'filter.status' | transloco">
+        <option value="all">{{ 'filter.statusAll' | transloco }}</option>
+        @for (status of statusOptions; track status) {
+          <option [value]="status">{{ statusKey(status) | transloco }}</option>
+        }
+      </select>
+      <input
+        class="filter filter-plain"
+        type="date"
+        [attr.aria-label]="'filter.fromDate' | transloco"
+        [value]="draftFrom()"
+        (change)="draftFrom.set($any($event.target).value)"
+      />
+      <input
+        class="filter filter-plain"
+        type="date"
+        [attr.aria-label]="'filter.toDate' | transloco"
+        [value]="draftTo()"
+        (change)="draftTo.set($any($event.target).value)"
+      />
+      <div class="filter-actions">
+        <button class="btn btn-ghost" type="button" (click)="clearFilters()">{{ 'filter.clear' | transloco }}</button>
+        <button class="btn btn-primary" type="button" (click)="applyFilters()">{{ 'filter.apply' | transloco }}</button>
+      </div>
+    </div>
+  </div>
 
   <div class="card table-card">
-    <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="points.empty" (retry)="load()">
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="filtered().length === 0" emptyKey="points.empty" (retry)="load()">
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th>{{ (mode() === 'merchant' ? 'points.institution' : 'points.merchantName') | transloco }}</th>
               <th>{{ 'points.code' | transloco }}</th>
-              <th>{{ (mode() === 'merchant' ? 'points.institution' : 'points.merchantId') | transloco }}</th>
               <th>{{ 'points.status' | transloco }}</th>
               <th>{{ 'points.submitted' | transloco }}</th>
+              <th>{{ 'points.actionedDate' | transloco }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (row of rows(); track row.id) {
+            @for (row of pageRows(); track row.id) {
               <tr>
-                <td class="mono">{{ row.pointNumber }}</td>
-                <td class="mono muted">{{ mode() === 'merchant' ? row.financialInstitutionId : row.merchantId }}</td>
+                @if (mode() === 'merchant') {
+                  <td class="mono muted">{{ row.financialInstitutionId }}</td>
+                } @else if (merchants()[row.merchantId]; as merchant) {
+                  <td><strong>{{ merchant.legalName }}</strong></td>
+                } @else {
+                  <td class="mono">{{ row.merchantId }}</td>
+                }
+                <td class="muted">{{ row.pointNumber }}</td>
                 <td>
                   <span class="badge" [class.ok]="row.status === 'approved'" [class.warn]="row.status === 'pendingFinancialInstitution'" [class.danger]="row.status === 'rejected' || row.status === 'disabled'">
-                    {{ (row.status === 'approved' ? 'badge.active' : 'badge.' + row.status) | transloco }}
+                    {{ statusKey(row.status) | transloco }}
                   </span>
                 </td>
-                <td class="muted">{{ row.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
+                <td class="muted">{{ row.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                <td class="muted">{{ row.decidedAt ? (row.decidedAt | date: 'mediumDate' : undefined : locale.dateLocale()) : '—' }}</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
       <footer class="table-foot">
-        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
-        @if (nextCursor()) {
-          <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
-            {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
-          </button>
+        <p>{{ 'list.showingRecords' | transloco: { shown: pageRows().length, total: filtered().length } }}</p>
+        @if (pageCount() > 1) {
+          <nav class="pager" [attr.aria-label]="'list.pagination' | transloco">
+            <button class="page-btn wide" type="button" [disabled]="page() === 1" (click)="goTo(page() - 1)">{{ 'list.prev' | transloco }}</button>
+            @for (n of pageNumbers(); track n) {
+              <button class="page-btn" type="button" [class.active]="n === page()" [attr.aria-current]="n === page() ? 'page' : null" (click)="goTo(n)">{{ n }}</button>
+            }
+            <button class="page-btn wide" type="button" [disabled]="page() === pageCount()" (click)="goTo(page() + 1)">{{ 'list.next' | transloco }}</button>
+          </nav>
         }
       </footer>
     </app-data-state>

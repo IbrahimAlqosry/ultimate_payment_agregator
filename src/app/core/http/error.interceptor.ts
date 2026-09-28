@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
@@ -9,6 +9,11 @@ import { apiErrorMessageKey } from './http-error';
 import { isPlatformApiRequest, platformApiUrl } from './platform-api-url';
 
 const STATUS_PATHS = new Set(['/401', '/404', '/423', '/501', '/503']);
+
+/** Opt a request out of the generic failure toast below — only for optional, best-effort reads
+ * whose failure the screen already handles by falling back (e.g. enriching a row with merchant
+ * details the signed-in actor may not be allowed to see). Session/outage redirects still apply. */
+export const SILENT_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
@@ -23,12 +28,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       const pathname = requestPath(req.url);
+      // The platform check compares the full request URL, not its pathname: on UAT the API is
+      // cross-origin (platformApiUrl is absolute), so a pathname never starts with it and every
+      // auth call (wrong password, expired OTP, the /auth/me probe) was treated as a session
+      // loss — logged out and sent to /401 instead of showing the screen's own message.
       const onAuth =
         pathname.startsWith(`${apiUrl('/auth')}/`) ||
         pathname === apiUrl('/auth') ||
-        pathname.startsWith(`${platformApiUrl('/api/v1/auth')}/`);
+        (onPlatformApi && req.url.startsWith(`${platformApiUrl('/api/v1/auth')}/`));
       const alreadyOnStatus = STATUS_PATHS.has(router.url.split('?')[0] ?? '');
-      const simulated = /\/simulate\/(401|404|501|503)$/.exec(pathname);
 
       if (error.status === 423 && !alreadyOnStatus) {
         // OTP lockout on the real backend — stop attempts, no invented remaining-time counter.
@@ -42,13 +50,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         void router.navigateByUrl('/503');
       } else if (error.status === 501 && !alreadyOnStatus) {
         void router.navigateByUrl('/501');
-      } else if (
-        error.status === 404 &&
-        (simulated?.[1] === '404' || pathname.includes('/simulate/')) &&
-        !alreadyOnStatus
-      ) {
-        void router.navigateByUrl('/404');
-      } else if (!onAuth) {
+      } else if (!onAuth && !req.context.get(SILENT_ERROR_TOAST)) {
         // Every other request error — any status, platform API or legacy, load or submit,
         // anywhere in the app — surfaces as one translated toast here, so no screen can ship a
         // silent or raw-text failure. Components still set their own inline apiError signal

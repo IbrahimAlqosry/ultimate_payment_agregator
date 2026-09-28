@@ -137,6 +137,12 @@ export class AuthService {
    */
   restoreSession(): Observable<void> {
     const marker = this.readMarker();
+    // No marker = this tab never completed a login, so there is no session to restore — skip
+    // GET /auth/me entirely instead of firing a guaranteed 401 before the user has signed in.
+    // /auth/me is otherwise only called right after OTP verification (see verifyOtp()).
+    if (!marker) {
+      return of(undefined);
+    }
     return this.platformApi.getMe().pipe(
       switchMap((me) => this.buildUser(marker?.email ?? '', me)),
       tap((user) => {
@@ -218,8 +224,8 @@ export class AuthService {
    * optional. A profile-fetch failure degrades to no org name/id rather than failing the login. */
   private buildUser(email: string, me: AuthMeResponse): Observable<AuthUser> {
     const audience = audienceFromAccountType(me.accountType);
-    // Marker missing is a rare edge case (e.g. sessionStorage cleared but the cookie survived) —
-    // /auth/me itself never returns an email, so there is nothing better to show here.
+    // /auth/me itself never returns an email, so without one (shouldn't happen — restore only
+    // runs when the marker exists) there is nothing better to show here.
     const name = email ? displayNameFromEmail(email) : 'Account';
     const role: UserRole = audience === 'operator' ? (me.role ?? 'reader') : audience;
     const base: AuthUser = {

@@ -16,4 +16,6 @@ export const environment = {
    * requests fail with a CORS error in the browser console, that confirms it's not configured
    * yet; ask the backend team before assuming the frontend is at fault. */
   platformApiUrl: 'https://uat-apinoti.ultimate-pay.net',
+  /** The test backend accepts a fixed OTP (000000); UAT sends real OTPs, so the hint is off there. */
+  showTestOtpHint: false,
 };

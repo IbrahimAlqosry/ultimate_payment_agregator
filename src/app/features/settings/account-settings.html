@@ -277,18 +277,6 @@
             </article>
           </div>
         </div>
-        <article class="settings-card full flush diagnostics">
-          <div class="card-body padded">
-            <h3>{{ 'dashboard.errors' | transloco }}</h3>
-            <p class="muted">{{ 'dashboard.errorsIntro' | transloco }}</p>
-            <div class="error-actions">
-              <button class="btn btn-ghost" type="button" (click)="simulate(401)">{{ 'http.401' | transloco }}</button>
-              <button class="btn btn-ghost" type="button" (click)="simulate(404)">{{ 'http.404' | transloco }}</button>
-              <button class="btn btn-ghost" type="button" (click)="simulate(501)">{{ 'http.501' | transloco }}</button>
-              <button class="btn btn-ghost" type="button" (click)="simulate(503)">{{ 'http.503' | transloco }}</button>
-            </div>
-          </div>
-        </article>
       }
       </div>
     }

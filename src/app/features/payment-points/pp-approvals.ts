@@ -1,30 +1,27 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { apiErrorMessageKey } from '@core/http/http-error';
 import { PlatformApi } from '@core/http/platform-api';
 import { LocaleService } from '@core/i18n/locale.service';
-import { PaymentPoint } from '@core/models.platform';
-import { ToastService } from '@core/notifications/toast.service';
-import { ApprovalActions } from '@shared/approval-actions';
+import { MerchantApplicationDetails, PaymentPoint } from '@core/models.platform';
 import { DataState } from '@shared/data-state';
+import { MerchantLookup } from './merchant-lookup';
 
-/** Guide v6.0 §12.3 — `GET /payment-points/pending-approval` finally gives the FI a real queue,
- * replacing the earlier "decide by ID" workaround (see decide-payment-point.ts, still reachable
- * as a manual fallback). Direct FI action, not maker-checker: approve/reject applies immediately,
- * no concurrency token. A cursor is only valid while its row is still pending for this FI, so
- * every decision restarts paging from page one rather than patching the loaded row in place. */
+/** Guide v6.0 §12.3 — `GET /payment-points/pending-approval`, the FI's queue. Each row opens the
+ * Review screen (review-payment-point.ts), where the actual approve/reject happens. The API row
+ * only carries `merchantId` + `pointNumber`; merchant names are filled in best-effort through
+ * MerchantLookup, falling back to the ID. Point type / linked account have no source at all yet,
+ * so those design columns are left out. */
 @Component({
   selector: 'app-pp-approvals',
-  imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, DataState, ApprovalActions],
+  imports: [DatePipe, RouterLink, TranslocoPipe, DataState],
   templateUrl: './pp-approvals.html',
   styleUrl: '../../shared/list-page.scss',
 })
 export class PpApprovals {
   private readonly api = inject(PlatformApi);
-  private readonly toast = inject(ToastService);
+  private readonly lookup = inject(MerchantLookup);
   readonly locale = inject(LocaleService);
 
   readonly loading = signal(true);
@@ -32,11 +29,10 @@ export class PpApprovals {
   readonly error = signal(false);
   readonly rows = signal<PaymentPoint[]>([]);
   readonly nextCursor = signal<string | null>(null);
+  readonly merchants = signal<Readonly<Record<string, MerchantApplicationDetails | null>>>({});
 
-  readonly acting = signal(false);
-  readonly actionError = signal<string | null>(null);
-  readonly rejecting = signal<PaymentPoint | null>(null);
-  readonly reason = signal('');
+  /** Only the loaded pages are known — show "50+" while more pages remain. */
+  readonly pendingCount = computed(() => `${this.rows().length}${this.nextCursor() ? '+' : ''}`);
 
   constructor() {
     this.load();
@@ -50,6 +46,7 @@ export class PpApprovals {
         this.rows.set(page.items);
         this.nextCursor.set(page.nextCursor);
         this.loading.set(false);
+        this.enrich(page.items);
       },
       error: () => {
         this.loading.set(false);
@@ -69,47 +66,16 @@ export class PpApprovals {
         this.rows.update((existing) => [...existing, ...page.items]);
         this.nextCursor.set(page.nextCursor);
         this.loadingMore.set(false);
+        this.enrich(page.items);
       },
       error: () => this.loadingMore.set(false),
     });
   }
 
-  askReject(row: PaymentPoint): void {
-    this.reason.set('');
-    this.rejecting.set(row);
-  }
-
-  cancelReject(): void {
-    this.rejecting.set(null);
-    this.reason.set('');
-  }
-
-  confirmReject(): void {
-    const row = this.rejecting();
-    if (!row || !this.reason().trim()) {
-      return;
-    }
-    this.decide(row, 'rejected', this.reason().trim());
-    this.cancelReject();
-  }
-
-  decide(row: PaymentPoint, decision: 'approved' | 'rejected', rejectionReason?: string): void {
-    if (this.acting()) {
-      return;
-    }
-    this.acting.set(true);
-    this.actionError.set(null);
-    this.api.decidePaymentPoint(row.id, { decision, rejectionReason }).subscribe({
-      next: () => {
-        this.acting.set(false);
-        this.toast.decision('point', decision);
-        // A cursor is only valid while its row stays pending — restart from page one.
-        this.load();
-      },
-      error: (err) => {
-        this.acting.set(false);
-        this.actionError.set(apiErrorMessageKey(err));
-      },
-    });
+  private enrich(items: PaymentPoint[]): void {
+    const known = this.merchants();
+    this.lookup
+      .many(items.map((row) => row.merchantId).filter((id) => !(id in known)))
+      .subscribe(([id, merchant]) => this.merchants.update((all) => ({ ...all, [id]: merchant })));
   }
 }

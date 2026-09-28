@@ -222,8 +222,6 @@
     "slaWindow": "1 working day for payment-point approval",
     "recent": "Payment points awaiting the bank",
     "lowStock": "Merchant applications pending",
-    "errors": "HTTP error pages",
-    "errorsIntro": "These buttons hit dummy endpoints. The error interceptor routes each status to its page.",
     "noAccess": "No access",
     "generatedAt": "Updated {{at}}",
     "paymentPointsTitle": "Payment Points",
@@ -343,13 +341,15 @@
     "submitted": "Submitted",
     "mineTitle": "My Payment Points",
     "mineIntro": "Wallet numbers and merchant points for Al-Amal Pharmacies. The linked bank or wallet has one working day to approve.",
-    "approvalsIntro": "Pending points that Tadhamon Bank must approve or reject within one working day.",
-    "institutionTitle": "All Tadhamon payment points",
-    "institutionIntro": "Every merchant point and wallet number linked to Tadhamon Bank in the dummy set.",
-    "decideById": "Decide by ID",
-    "decideByIdCrumb": "Payment Point Approvals > Decide by ID",
-    "decideByIdHint": "Use this only if a point isn't showing in your list yet — paste its ID from the merchant and decide on it directly here.",
-    "decideAnother": "Decide Another"
+    "institutionTitle": "All Payment Points",
+    "approvalsTitle": "Pending Payment Point Approvals",
+    "submittedDate": "Submitted Date",
+    "reviewTitle": "Review Payment Point Request",
+    "reviewCrumb": "Payment Point Approvals > Review Request",
+    "pendingReview": "Pending Review",
+    "reviewWarning": "Verify the wallet/account number matches the merchant's registered bank details before approving.",
+    "merchantName": "Merchant Name",
+    "actionedDate": "Actioned Date"
   },
   "inquiry": {
     "title": "Payment Inquiry",
@@ -923,7 +923,11 @@
     "showingOperators": "Showing {{shown}} of {{total}} platform operators",
     "showingPending": "Showing {{shown}} of {{total}} pending applications",
     "loadMore": "Load more",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "showingRecords": "Showing {{shown}} of {{total}} records",
+    "prev": "Prev",
+    "next": "Next",
+    "pagination": "Pagination"
   },
   "appStatus": {
     "awaitingMaker": "Awaiting Maker review",
@@ -1028,12 +1032,6 @@
     "packed": "In review",
     "shipped": "Live",
     "cancelled": "Rejected"
-  },
-  "http": {
-    "401": "401 Unauthorized",
-    "404": "404 Not found",
-    "501": "501 Not implemented",
-    "503": "503 Unavailable"
   },
   "toast": {
     "okTitle": "All set",

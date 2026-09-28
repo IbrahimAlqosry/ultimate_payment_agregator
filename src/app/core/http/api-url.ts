@@ -27,8 +27,24 @@ export function isApiRequest(url: string): boolean {
   if (/^https?:\/\//i.test(base)) {
     return url === base || url.startsWith(`${base}/`);
   }
+  // A relative base means "this app's own origin". Without this check, a cross-origin call whose
+  // path merely starts the same way was matched too — on the UAT root deploy (base "/api") every
+  // real `https://uat-apinoti…/api/v1/…` request was swallowed by the mock backend and answered
+  // 401 in-browser, never reaching the network.
+  if (!isSameOrigin(url)) {
+    return false;
+  }
   const path = requestPath(url);
   return path === base || path.startsWith(`${base}/`);
+}
+
+/** True for relative URLs and absolute ones pointing at the page's own origin. */
+export function isSameOrigin(url: string): boolean {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return true;
+  }
 }
 
 /** Pathname of a relative or absolute HTTP URL (`/api/dashboard`). */

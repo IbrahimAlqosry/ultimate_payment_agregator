@@ -250,10 +250,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/payment-points/payment-inquiry').then((m) => m.PaymentInquiry),
       },
       {
-        path: 'pp-approvals/decide',
-        title: 'points.decideById',
+        path: 'pp-approvals/:id',
+        title: 'points.reviewTitle',
         ...institutionOnly,
-        loadComponent: () => import('./features/payment-points/decide-payment-point').then((m) => m.DecidePaymentPoint),
+        loadComponent: () => import('./features/payment-points/review-payment-point').then((m) => m.ReviewPaymentPoint),
       },
       {
         path: 'pp-approvals',

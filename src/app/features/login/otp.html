@@ -30,7 +30,9 @@
       }
     </div>
     <app-field-error [state]="otpForm.code()" />
-    <p class="otp-demo">{{ 'otp.demoHint' | transloco }}</p>
+    @if (showTestOtpHint) {
+      <p class="otp-demo">{{ 'otp.demoHint' | transloco }}</p>
+    }
 
     @if (apiError()) {
       <p class="form-error" role="alert">{{ 'otp.invalid' | transloco }}</p>

@@ -346,22 +346,6 @@
   padding-top: 0;
 }
 
-.diagnostics {
-  margin-top: 0;
-}
-
-.diagnostics h3 {
-  font-size: 0.9rem;
-  margin-bottom: 6px;
-}
-
-.error-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
 @media (max-width: 960px) {
   .settings-split {
     flex-direction: column;

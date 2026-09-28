@@ -285,18 +285,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return fail(401, 'UNAUTHORIZED');
   }
 
-  if (req.method === 'GET' && path === apiUrl('/simulate/401')) {
-    return fail(401, 'UNAUTHORIZED');
-  }
-  if (req.method === 'GET' && path === apiUrl('/simulate/404')) {
-    return fail(404, 'NOT_FOUND');
-  }
-  if (req.method === 'GET' && path === apiUrl('/simulate/501')) {
-    return fail(501, 'NOT_IMPLEMENTED');
-  }
-  if (req.method === 'GET' && path === apiUrl('/simulate/503')) {
-    return fail(503, 'SERVICE_UNAVAILABLE');
-  }
 
   if (req.method === 'GET' && path === apiUrl('/profile')) {
     return ok(currentProfile(user));

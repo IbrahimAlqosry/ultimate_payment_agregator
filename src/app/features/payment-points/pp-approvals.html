@@ -1,14 +1,12 @@
 <section class="page">
   <header class="page-head">
-    <h1>{{ 'nav.ppApprovals' | transloco }}</h1>
-    <a class="btn-review" routerLink="/pp-approvals/decide">{{ 'points.decideById' | transloco }}</a>
+    <div class="title-row">
+      <h1>{{ 'points.approvalsTitle' | transloco }}</h1>
+      @if (!loading() && !error()) {
+        <span class="count-badge">{{ 'requests.pendingBadge' | transloco: { count: pendingCount() } }}</span>
+      }
+    </div>
   </header>
-
-  <p class="info-banner">{{ 'points.approvalsIntro' | transloco }}</p>
-
-  @if (actionError(); as message) {
-    <p class="form-error" role="alert">{{ message | transloco }}</p>
-  }
 
   <div class="card table-card">
     <app-data-state [loading]="loading()" [error]="error()" [empty]="rows().length === 0" emptyKey="points.approvalsEmpty" (retry)="load()">
@@ -16,61 +14,38 @@
         <table>
           <thead>
             <tr>
+              <th>{{ 'points.merchantName' | transloco }}</th>
               <th>{{ 'points.code' | transloco }}</th>
-              <th>{{ 'points.merchantId' | transloco }}</th>
-              <th>{{ 'points.submitted' | transloco }}</th>
+              <th>{{ 'points.submittedDate' | transloco }}</th>
               <th class="num">{{ 'actions.column' | transloco }}</th>
             </tr>
           </thead>
           <tbody>
             @for (row of rows(); track row.id) {
               <tr>
-                <td class="mono">{{ row.pointNumber }}</td>
-                <td class="mono muted">{{ row.merchantId }}</td>
-                <td class="muted">{{ row.createdAt | date: 'medium' : undefined : locale.dateLocale() }}</td>
-                <td>
-                  <app-approval-actions
-                    variant="decide"
-                    [show]="!acting()"
-                    (approve)="decide(row, 'approved')"
-                    (reject)="askReject(row)"
-                  />
+                @if (merchants()[row.merchantId]; as merchant) {
+                  <td><strong>{{ merchant.legalName }}</strong></td>
+                } @else {
+                  <td class="mono">{{ row.merchantId }}</td>
+                }
+                <td class="muted">{{ row.pointNumber }}</td>
+                <td class="muted">{{ row.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</td>
+                <td class="num">
+                  <a class="btn-review soft" [routerLink]="['/pp-approvals', row.id]">{{ 'actions.review' | transloco }}</a>
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-      <footer class="table-foot">
-        <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
-        @if (nextCursor()) {
+      @if (nextCursor()) {
+        <footer class="table-foot">
+          <p>{{ 'list.showing' | transloco: { shown: rows().length, total: rows().length } }}</p>
           <button class="page-btn" type="button" [disabled]="loadingMore()" (click)="loadMore()">
             {{ (loadingMore() ? 'list.loading' : 'list.loadMore') | transloco }}
           </button>
-        }
-      </footer>
+        </footer>
+      }
     </app-data-state>
   </div>
 </section>
-
-@if (rejecting(); as row) {
-  <div class="overlay-modal">
-    <button class="overlay-backdrop" type="button" (click)="cancelReject()" [attr.aria-label]="'actions.cancel' | transloco"></button>
-    <article class="overlay-panel" role="dialog" aria-modal="true">
-      <header class="overlay-head">
-        <h2>{{ 'actions.reject' | transloco }} — <span class="mono">{{ row.pointNumber }}</span></h2>
-        <button type="button" class="overlay-close" (click)="cancelReject()">✕</button>
-      </header>
-      <label class="form-field">
-        <span>{{ 'detail.rejectionReason' | transloco }}</span>
-        <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3"></textarea>
-      </label>
-      <div class="overlay-actions">
-        <button class="btn-text" type="button" (click)="cancelReject()">{{ 'actions.cancel' | transloco }}</button>
-        <button class="btn btn-danger" type="button" [disabled]="!reason().trim()" (click)="confirmReject()">
-          {{ 'actions.confirmReject' | transloco }}
-        </button>
-      </div>
-    </article>
-  </div>
-}

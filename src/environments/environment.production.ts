@@ -10,4 +10,6 @@ export const environment = {
    * 'http://localhost:8080' — that path depends on backend CORS support that isn't there yet
    * (confirmed live: 405 on the CORS preflight OPTIONS request). */
   platformApiUrl: '/pa-api',
+  /** The test backend accepts a fixed OTP (000000); UAT sends real OTPs, so the hint is off there. */
+  showTestOtpHint: true,
 };

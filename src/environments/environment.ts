@@ -13,4 +13,6 @@ export const environment = {
    * missing CORS configuration — never point this at a raw cross-origin URL.
    */
   platformApiUrl: '/pa-api',
+  /** The test backend accepts a fixed OTP (000000); UAT sends real OTPs, so the hint is off there. */
+  showTestOtpHint: true,
 };

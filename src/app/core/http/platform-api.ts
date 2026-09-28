@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -80,6 +80,7 @@ import {
   SelfServiceMerchantOnboardingRequest,
   VerifyOtpRequest,
 } from '@core/models.platform';
+import { SILENT_ERROR_TOAST } from './error.interceptor';
 import { platformApiUrl } from './platform-api-url';
 
 function pageParams(query: PagedQuery = {}): HttpParams {
@@ -202,9 +203,12 @@ export class PlatformApi {
     });
   }
 
-  getMerchantApplication(applicationId: string) {
+  /** `silent` skips the global failure toast — for best-effort lookups (the FI's payment-point
+   * review enriching a `merchantId`), where the caller falls back quietly on 403/404. */
+  getMerchantApplication(applicationId: string, options: { silent?: boolean } = {}) {
     return this.http.get<MerchantApplicationDetails>(
       platformApiUrl(`/api/v1/merchant-onboarding/applications/${applicationId}`),
+      { context: new HttpContext().set(SILENT_ERROR_TOAST, options.silent ?? false) },
     );
   }
 

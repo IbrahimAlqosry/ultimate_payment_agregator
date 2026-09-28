@@ -180,10 +180,6 @@ export class AtlasApi {
     return this.http.post(apiUrl('/approvals'), { entity, id, decision });
   }
 
-  simulate(status: 401 | 404 | 501 | 503) {
-    return this.http.get(apiUrl(`/simulate/${status}`));
-  }
-
   private params(query: ListQuery): HttpParams {
     let params = new HttpParams();
     if (query.q) {

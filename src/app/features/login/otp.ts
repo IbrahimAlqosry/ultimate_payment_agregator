@@ -3,6 +3,7 @@ import { form, minLength, pattern, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '@env/environment';
 import { AuthService } from '@core/auth/auth.service';
 import { submitChecked } from '@core/forms/submit-checked';
 import { apiErrorMessageKey } from '@core/http/http-error';
@@ -24,6 +25,9 @@ export class Otp implements OnDestroy {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private timerId = 0;
+
+  /** Off in the UAT build, where the backend sends real OTPs. */
+  readonly showTestOtpHint = environment.showTestOtpHint;
 
   readonly digits = signal(['', '', '', '', '', '']);
   readonly apiError = signal(false);

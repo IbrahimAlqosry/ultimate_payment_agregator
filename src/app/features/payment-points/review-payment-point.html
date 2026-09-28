@@ -1,0 +1,104 @@
+<section class="page">
+  <p class="crumb">{{ 'points.reviewCrumb' | transloco }}</p>
+  <a class="back-link" routerLink="/pp-approvals">
+    <img src="icons/arrow-left.svg" width="14" height="14" alt="" />
+    {{ 'detail.backToPending' | transloco }}
+  </a>
+  <header class="page-head">
+    <h1>{{ 'points.reviewTitle' | transloco }}</h1>
+    @if (point(); as p) {
+      <span class="badge" [class.warn]="p.status === 'pendingFinancialInstitution'" [class.ok]="p.status === 'approved'" [class.danger]="p.status === 'rejected' || p.status === 'disabled'">
+        {{ (p.status === 'pendingFinancialInstitution' ? 'points.pendingReview' : p.status === 'approved' ? 'badge.active' : 'badge.' + p.status) | transloco }}
+      </span>
+    }
+  </header>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="!loading() && !point()" emptyKey="detail.missing" (retry)="load()">
+    @if (point(); as p) {
+      <article class="detail-card">
+        <dl class="info-grid">
+          @if (merchant(); as m) {
+            <div>
+              <dt>{{ 'points.merchantName' | transloco }}</dt>
+              <dd>{{ m.legalName }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'merchants.cr' | transloco }}</dt>
+              <dd>{{ m.commercialRegistrationNumber }}</dd>
+            </div>
+          } @else {
+            <div>
+              <dt>{{ 'points.merchantId' | transloco }}</dt>
+              <dd class="mono">{{ p.merchantId }}</dd>
+            </div>
+          }
+          <div>
+            <dt>{{ 'points.code' | transloco }}</dt>
+            <dd>{{ p.pointNumber }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'points.submittedDate' | transloco }}</dt>
+            <dd>{{ p.createdAt | date: 'mediumDate' : undefined : locale.dateLocale() }}</dd>
+          </div>
+          @if (merchant(); as m) {
+            <div>
+              <dt>{{ 'merchants.erpSystem' | transloco }}</dt>
+              <dd>
+                @if (erpName(); as name) {
+                  {{ name }}
+                } @else {
+                  <span class="mono">{{ m.erpSystemId }}</span>
+                }
+              </dd>
+            </div>
+          }
+          @if (p.decidedAt) {
+            <div>
+              <dt>{{ 'detail.decidedAt' | transloco }}</dt>
+              <dd>{{ p.decidedAt | date: 'medium' : undefined : locale.dateLocale() }}</dd>
+            </div>
+          }
+          @if (p.rejectionReason) {
+            <div>
+              <dt>{{ 'detail.rejectionReason' | transloco }}</dt>
+              <dd>{{ p.rejectionReason }}</dd>
+            </div>
+          }
+        </dl>
+
+        @if (actionError(); as message) {
+          <p class="form-error" role="alert">{{ message | transloco }}</p>
+        }
+
+        @if (isPending()) {
+          <p class="warn-note">
+            <img src="icons/shield-alert.svg" width="16" height="16" alt="" />
+            <span>{{ 'points.reviewWarning' | transloco }}</span>
+          </p>
+          <hr class="card-divider" />
+          <div class="form-actions">
+            <button class="btn-reject" type="button" [disabled]="acting()" (click)="showReject.set(!showReject())">
+              {{ 'actions.rejectRequest' | transloco }}
+            </button>
+            <button class="cta" type="button" [disabled]="acting()" (click)="decide('approved')">
+              {{ (acting() && !showReject() ? 'onboard.submitting' : 'actions.approveRequest') | transloco }}
+            </button>
+          </div>
+          @if (showReject()) {
+            <div class="reject-panel">
+              <label class="form-field">
+                <span class="reject-label">{{ 'detail.rejectionReason' | transloco }}</span>
+                <textarea [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3" [disabled]="acting()"></textarea>
+              </label>
+              <div>
+                <button class="cta cta-danger" type="button" [disabled]="!reason().trim() || acting()" (click)="decide('rejected')">
+                  {{ 'actions.confirmReject' | transloco }}
+                </button>
+              </div>
+            </div>
+          }
+        }
+      </article>
+    }
+  </app-data-state>
+</section>
