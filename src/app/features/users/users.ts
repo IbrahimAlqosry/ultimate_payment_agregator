@@ -15,6 +15,7 @@ import {
 import { ToastService } from '@core/notifications/toast.service';
 import { ApprovalActions } from '@shared/approval-actions';
 import { DataState } from '@shared/data-state';
+import { definitionFor, NormalizedCatalog, normalizeCatalog } from './permission-catalog';
 
 type OperatorTab = 'all' | 'requests';
 
@@ -29,7 +30,7 @@ type OperatorTab = 'all' | 'requests';
   selector: 'app-users',
   imports: [DatePipe, FormsModule, RouterLink, TranslocoPipe, ApprovalActions, DataState],
   templateUrl: './users.html',
-  styleUrl: '../../shared/list-page.scss',
+  styleUrls: ['../../shared/list-page.scss', './users.scss'],
 })
 export class Users {
   private readonly api = inject(PlatformApi);
@@ -57,6 +58,10 @@ export class Users {
   readonly requestsNextCursor = signal<string | null>(null);
   readonly pendingCount = computed(() => this.requests().filter((row) => row.status === 'pendingChecker').length);
 
+  /** Request whose proposed result (role + complete grants) is expanded for review. */
+  readonly expanded = signal<string | null>(null);
+  readonly catalog = signal<NormalizedCatalog | null>(null);
+
   readonly rejecting = signal<PlatformOperatorChangeDetails | null>(null);
   readonly reason = signal('');
   readonly actionError = signal<string | null>(null);
@@ -75,6 +80,8 @@ export class Users {
     this.tab.set(tab);
     if (tab === 'requests' && !this.requestsLoaded()) {
       this.loadRequests();
+      // Labels only — the review falls back to raw keys if the catalog isn't readable.
+      this.api.getOperatorPermissionCatalog().subscribe({ next: (raw) => this.catalog.set(normalizeCatalog(raw)) });
     }
     if (updateUrl) {
       void this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge' });
@@ -152,6 +159,25 @@ export class Users {
       },
       error: () => this.requestsLoadingMore.set(false),
     });
+  }
+
+  toggleReview(row: PlatformOperatorChangeDetails): void {
+    this.expanded.update((current) => (current === row.requestId ? null : row.requestId));
+  }
+
+  labelFor(key: string): string {
+    const catalog = this.catalog();
+    return (catalog && definitionFor(catalog, key)?.label) || key;
+  }
+
+  /** Changes whose outcome includes a permission set (suspension/reactivation don't). */
+  carriesPermissions(row: PlatformOperatorChangeDetails): boolean {
+    return row.changeType === 'invitation' || row.changeType === 'role' || row.changeType === 'permissions';
+  }
+
+  /** A pre-snapshot role request: its `[]` isn't a proposed set, and approval is refused (409). */
+  isLegacy(row: PlatformOperatorChangeDetails): boolean {
+    return row.changeType === 'role' && row.permissionsCaptured === false;
   }
 
   askReject(row: PlatformOperatorChangeDetails): void {

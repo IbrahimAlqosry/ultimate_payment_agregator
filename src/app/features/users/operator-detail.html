@@ -45,7 +45,7 @@
           } @else {
             <div class="chip-row">
               @for (p of op.permissions; track p) {
-                <span class="chip mono">{{ p }}</span>
+                <span class="chip" [title]="p">{{ labelFor(p) }}</span>
               }
             </div>
           }
@@ -73,22 +73,87 @@
             @if (changeType() === 'role') {
               <label class="form-field">
                 <span class="caps">{{ 'onboard.assignRole' | transloco }}</span>
-                <select [ngModel]="newRole()" (ngModelChange)="newRole.set($event)">
+                <select [ngModel]="newRole()" (ngModelChange)="setNewRole($event)">
                   @for (r of roles; track r) {
                     <option [value]="r">{{ ('role.' + r) | transloco }}</option>
                   }
                 </select>
               </label>
+
+              @if (newRole() === op.role) {
+                <p class="field-hint">{{ 'perms.pickDifferentRole' | transloco }}</p>
+              } @else if (catalog()) {
+                @if (roleDropped().length === 0) {
+                  <p class="field-hint">
+                    {{ 'perms.retainAll' | transloco: { count: op.permissions.length, role: ('role.' + newRole() | transloco) } }}
+                  </p>
+                  @if (op.permissions.length) {
+                    <ul class="perm-grants">
+                      @for (key of op.permissions; track key) {
+                        <li>{{ labelFor(key) }} <code>{{ key }}</code></li>
+                      }
+                    </ul>
+                  }
+                  <label class="checkbox-line">
+                    <input type="checkbox" [checked]="roleReplacement() !== null" (change)="toggleAlsoChangePermissions($any($event.target).checked)" />
+                    <span>{{ 'perms.alsoChange' | transloco }}</span>
+                  </label>
+                } @else {
+                  <div class="warn-note perm-review" role="alert">
+                    <strong>{{ 'perms.replacementTitle' | transloco }}</strong>
+                    <span>{{ 'perms.replacementBody' | transloco: { role: ('role.' + newRole() | transloco) } }}</span>
+                    <ul class="perm-grants">
+                      @for (key of op.permissions; track key) {
+                        <li [class.dropped]="roleDropped().includes(key)">{{ labelFor(key) }} <code>{{ key }}</code></li>
+                      }
+                    </ul>
+                    @if (roleReplacement() === null) {
+                      <div class="perm-review-actions">
+                        <button type="button" class="btn btn-ghost" (click)="keepApplicable()">{{ 'perms.keepApplicable' | transloco }}</button>
+                        @if (defaultsFor(newRole()).length) {
+                          <button type="button" class="btn btn-ghost" (click)="useNewRoleDefaults()">
+                            {{ 'perms.replaceWithDefaults' | transloco: { role: ('role.' + newRole() | transloco) } }}
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+                @if (roleReplacement(); as replacement) {
+                  <p class="field-hint">{{ 'perms.replacementHint' | transloco: { role: ('role.' + newRole() | transloco) } }}</p>
+                  <app-permission-picker
+                    [definitions]="definitionsFor(newRole())"
+                    [selected]="replacement"
+                    [role]="newRole()"
+                    [defaults]="defaultsFor(newRole())"
+                    (selectedChange)="roleReplacement.set($event)"
+                  />
+                }
+              }
             } @else if (changeType() === 'permissions') {
               <p class="field-hint">{{ 'detail.permissionsReplaceHint' | transloco }}</p>
-              <div class="chip-row">
-                @for (p of catalog(); track p) {
-                  <label class="perm-chip" [class.active]="selectedPermissions().includes(p)">
-                    <input type="checkbox" [checked]="selectedPermissions().includes(p)" (change)="togglePermission(p)" />
-                    <span class="mono">{{ p }}</span>
-                  </label>
-                }
-              </div>
+              @if (storedInapplicable().length) {
+                <div class="warn-note perm-review">
+                  <strong>{{ 'perms.storedTitle' | transloco }}</strong>
+                  <span>{{ 'perms.storedBody' | transloco: { role: ('role.' + op.role | transloco) } }}</span>
+                  <ul class="perm-review-list">
+                    @for (key of storedInapplicable(); track key) {
+                      <li>{{ labelFor(key) }} <code>{{ key }}</code></li>
+                    }
+                  </ul>
+                </div>
+              }
+              @if (catalog()) {
+                <app-permission-picker
+                  [definitions]="definitionsFor(op.role)"
+                  [selected]="permissionsToSubmit()"
+                  [role]="op.role"
+                  [defaults]="defaultsFor(op.role)"
+                  (selectedChange)="selectedPermissions.set($event)"
+                />
+              } @else {
+                <p class="field-hint">{{ 'list.loading' | transloco }}</p>
+              }
             } @else if (changeType() === 'suspension') {
               <p class="field-hint">{{ 'detail.suspensionHint' | transloco }}</p>
             } @else {
@@ -102,7 +167,7 @@
               <p class="note-box">{{ 'detail.changeProposedNote' | transloco }}</p>
             }
             <div class="form-actions end">
-              <button class="cta" type="button" [disabled]="submitting()" (click)="propose()">
+              <button class="cta" type="button" [disabled]="submitting() || !canSubmit()" (click)="propose()">
                 {{ (submitting() ? 'detail.proposing' : 'detail.submitProposal') | transloco }}
               </button>
             </div>

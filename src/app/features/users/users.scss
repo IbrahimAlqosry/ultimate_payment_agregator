@@ -1,0 +1,69 @@
+/* Checker/Admin review of a pending operator request: the proposed role and complete grant set
+   are shown together before Approve/Reject. */
+.review-row td {
+  background: #faf9f7;
+  padding: 16px 24px;
+}
+
+.review-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+}
+
+.review-grid dt,
+.review-label {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7e7676;
+}
+
+.review-grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.review-perms {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px 24px;
+  font-size: 13px;
+}
+
+.review-perms code {
+  font-size: 11px;
+  color: #7e7676;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.warn-inline {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef5ec;
+  border: 1px solid #e67e22;
+  color: #b45309;
+  font-size: 13px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+}

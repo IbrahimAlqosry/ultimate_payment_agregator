@@ -1133,7 +1133,6 @@
     "roleReader": "View permissions only",
     "roleAdmin": "Full system configurations",
     "grantPermissions": "Grant Permissions",
-    "grantPermissionsHint": "Send the complete grant set this operator should have. An empty selection grants no permission-protected actions.",
     "back": "Back",
     "sendInvite": "Send Invitation",
     "pointTitle": "Add Payment Point",
@@ -1267,5 +1266,40 @@
       "permissionsChanged": "Permissions changed",
       "roleChanged": "Role changed"
     }
+  },
+  "perms": {
+    "selectedCount": "{{count}} of {{total}} selected",
+    "useDefaults": "Use {{role}} defaults",
+    "clearAll": "Clear all",
+    "emptyHint": "No permissions selected. The operator will only have basic account access. This is allowed.",
+    "pickerHint": "Only permissions a {{role}} can hold are listed.",
+    "reviewTitle": "Review permissions for the new role",
+    "reviewBody": "These selected permissions don't apply to {{role}}. Remove or replace them before sending:",
+    "removeThem": "Remove them",
+    "replaceWithDefaults": "Replace with {{role}} defaults",
+    "keepRole": "Keep {{role}}",
+    "catalogError": "Couldn't load the permission list.",
+    "error": {
+      "permissionsInapplicable": "Some permissions don't apply to the selected role. Review the list and try again.",
+      "permissionReplacementRequired": "The current permissions can't all be kept for the new role. Choose a replacement set.",
+      "stale": "This operator was changed in the meantime. The latest details have been reloaded. Review and submit again."
+    },
+    "pickDifferentRole": "Choose a different role to propose a change.",
+    "retainAll": "All {{count}} current permissions also apply to {{role}} and will be kept:",
+    "alsoChange": "Also change permissions in this request",
+    "replacementTitle": "Permissions need review",
+    "replacementBody": "The crossed-out permissions can't be kept with {{role}}. Choose a replacement set:",
+    "keepApplicable": "Keep only the ones that still apply",
+    "replacementHint": "Permissions after the change (only those a {{role}} can hold):",
+    "storedTitle": "Stored permissions this role can't use",
+    "storedBody": "The operator holds these grants, which a {{role}} can't use. This change will leave them out:",
+    "hide": "Hide",
+    "resultingRole": "Resulting role",
+    "roleUnchanged": "Unchanged",
+    "resultingPermissions": "Resulting permissions",
+    "legacyRequest": "This request was created before permission snapshots existed, so it can't be approved. Reject it and ask the Maker to submit a fresh request.",
+    "emptySet": "No permissions (intentionally empty)",
+    "sourceExplicit": "Permission set chosen by the Maker.",
+    "sourceRetained": "The operator's current permissions, kept through the role change."
   }
 }

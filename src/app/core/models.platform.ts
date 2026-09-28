@@ -298,6 +298,10 @@ export interface ProblemDetails {
   instance: string;
   traceId: string;
   errors?: Record<string, string[]>;
+  /** Machine-readable reason on some `400`s, e.g. `permissionsInapplicable`. */
+  code?: string;
+  /** Known permission keys that don't fit the target role (with the two permission codes). */
+  inapplicablePermissions?: string[];
 }
 
 export interface PagedQuery {
@@ -428,6 +432,13 @@ export interface PlatformOperatorChangeDetails {
   decidedAt: string | null;
   completedAt: string | null;
   concurrencyToken: string | null;
+  /** Permission-assignment update: `true` when the Maker chose `permissions` explicitly (an
+   * invitation, a permissions change, or a role change with a replacement set). */
+  permissionsExplicit?: boolean;
+  /** `true` when `permissions` is a trustworthy snapshot of the proposed set (a role-only change
+   * captures the retained grants). `false` marks a legacy role request that can't be approved —
+   * its `[]` is not a proposed empty set. Absent on backends older than this contract. */
+  permissionsCaptured?: boolean;
 }
 
 export interface PlatformOperatorChangePage {
@@ -448,8 +459,22 @@ export interface PlatformOperatorChangeInput {
   permissions?: string[];
 }
 
+/** One grant's policy metadata — `allowedRoles` is authoritative for which target roles may
+ * hold it. `label`/`description` come from the backend (English only). */
+export interface PlatformOperatorPermissionDefinition {
+  key: string;
+  label: string;
+  description: string;
+  allowedRoles: PlatformOperatorRole[];
+}
+
+/** `GET /platform-operator-administration/permissions`. `definitions`/`defaultsByRole` arrived
+ * with the permission-assignment contract; older backends return only `permissions`. */
 export interface PlatformOperatorPermissionCatalog {
   permissions: string[];
+  definitions?: PlatformOperatorPermissionDefinition[];
+  /** Optional starting selection per role — never a required set. */
+  defaultsByRole?: Partial<Record<PlatformOperatorRole, string[]>>;
 }
 
 export interface PlatformOperatorInvitationAcceptanceRequest {

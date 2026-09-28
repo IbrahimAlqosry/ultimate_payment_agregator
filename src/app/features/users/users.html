@@ -99,15 +99,59 @@
                       {{ ('users.requestStatus.' + row.status) | transloco }}
                     </span>
                   </td>
-                  <td>
-                    <app-approval-actions
-                      variant="decide"
-                      [show]="row.status === 'pendingChecker' && auth.canApprove('operator')"
-                      (approve)="decide(row, 'approved')"
-                      (reject)="askReject(row)"
-                    />
+                  <td class="num">
+                    <button class="btn-review" type="button" [attr.aria-expanded]="expanded() === row.requestId" (click)="toggleReview(row)">
+                      {{ (expanded() === row.requestId ? 'perms.hide' : 'actions.review') | transloco }}
+                    </button>
                   </td>
                 </tr>
+                @if (expanded() === row.requestId) {
+                  <tr class="review-row">
+                    <td colspan="6">
+                      <div class="review-panel">
+                        <dl class="review-grid">
+                          <div>
+                            <dt>{{ 'users.changeType' | transloco }}</dt>
+                            <dd>{{ ('users.changeTypeValue.' + row.changeType) | transloco }}</dd>
+                          </div>
+                          <div>
+                            <dt>{{ 'perms.resultingRole' | transloco }}</dt>
+                            <dd>{{ row.requestedRole ? (('role.' + row.requestedRole) | transloco) : ('perms.roleUnchanged' | transloco) }}</dd>
+                          </div>
+                        </dl>
+
+                        @if (carriesPermissions(row)) {
+                          <p class="review-label">{{ 'perms.resultingPermissions' | transloco }}</p>
+                          @if (isLegacy(row)) {
+                            <p class="warn-inline" role="alert">{{ 'perms.legacyRequest' | transloco }}</p>
+                          } @else if (row.permissions.length === 0) {
+                            <p class="muted">{{ 'perms.emptySet' | transloco }}</p>
+                          } @else {
+                            <ul class="review-perms">
+                              @for (key of row.permissions; track key) {
+                                <li>{{ labelFor(key) }} <code>{{ key }}</code></li>
+                              }
+                            </ul>
+                          }
+                          @if (!isLegacy(row) && row.permissionsExplicit === true) {
+                            <p class="muted small">{{ 'perms.sourceExplicit' | transloco }}</p>
+                          } @else if (!isLegacy(row) && row.permissionsCaptured === true) {
+                            <p class="muted small">{{ 'perms.sourceRetained' | transloco }}</p>
+                          }
+                        }
+
+                        @if (row.status === 'pendingChecker' && auth.canApprove('operator')) {
+                          <div class="review-actions">
+                            @if (!isLegacy(row)) {
+                              <button class="btn btn-primary" type="button" (click)="decide(row, 'approved')">{{ 'actions.approve' | transloco }}</button>
+                            }
+                            <button class="btn btn-ghost" type="button" (click)="askReject(row)">{{ 'actions.reject' | transloco }}</button>
+                          </div>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>

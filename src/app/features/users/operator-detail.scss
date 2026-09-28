@@ -36,3 +36,57 @@
   border-color: #1fa64d;
   background: #e8f6ed;
 }
+
+/* Grants that don't fit the (new) target role — shown for an explicit remove/replace decision. */
+.perm-review {
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.perm-review-list {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.perm-review-list code,
+.perm-grants code {
+  font-size: 11px;
+  color: #7e7676;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.perm-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.perm-grants {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.perm-grants li.dropped {
+  color: #c0392b;
+  text-decoration: line-through;
+}
+
+.checkbox-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.checkbox-line input {
+  accent-color: #1fa64d;
+}
