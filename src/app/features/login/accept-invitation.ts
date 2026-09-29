@@ -39,6 +39,20 @@ export class AcceptInvitation {
     );
   });
 
+  /** The invitation email links here as `/accept-invitation#invitation=<secret>`. A URL fragment
+   * is never sent to any server (so the secret stays out of server/CDN logs and Referer headers);
+   * `?invitation=` is accepted too. Once read, it's stripped from the address bar and history. */
+  constructor() {
+    const url = new URL(window.location.href);
+    const secret = new URLSearchParams(url.hash.slice(1)).get('invitation') ?? url.searchParams.get('invitation');
+    if (secret) {
+      this.form.invitationSecret().value.set(secret);
+      url.hash = '';
+      url.searchParams.delete('invitation');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search);
+    }
+  }
+
   async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.apiError.set(false);
