@@ -3,6 +3,8 @@
 .review-row td {
   background: #faf9f7;
   padding: 16px 24px;
+  /* Table cells are nowrap globally; the review panel's text and grant cards must wrap. */
+  white-space: normal;
 }
 
 .review-panel {
@@ -33,13 +35,46 @@
   font-weight: 600;
 }
 
+.review-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  margin-inline-start: 6px;
+  border-radius: 999px;
+  background: #e8f6ed;
+  color: #1fa64d;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+/* One small card per grant: label on top, stable key underneath. */
 .review-perms {
+  list-style: none;
   margin: 0;
-  padding-inline-start: 18px;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 4px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.review-perms li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #ece6e6;
+  border-radius: 8px;
+}
+
+.review-perms .perm-label {
   font-size: 13px;
+  font-weight: 600;
+  color: #1c1c1d;
 }
 
 .review-perms code {
@@ -47,6 +82,7 @@
   color: #7e7676;
   direction: ltr;
   unicode-bidi: isolate;
+  overflow-wrap: anywhere;
 }
 
 .warn-inline {

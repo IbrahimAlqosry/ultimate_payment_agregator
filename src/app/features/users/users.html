@@ -121,7 +121,12 @@
                         </dl>
 
                         @if (carriesPermissions(row)) {
-                          <p class="review-label">{{ 'perms.resultingPermissions' | transloco }}</p>
+                          <p class="review-label">
+                            {{ 'perms.resultingPermissions' | transloco }}
+                            @if (!isLegacy(row)) {
+                              <span class="review-count">{{ row.permissions.length }}</span>
+                            }
+                          </p>
                           @if (isLegacy(row)) {
                             <p class="warn-inline" role="alert">{{ 'perms.legacyRequest' | transloco }}</p>
                           } @else if (row.permissions.length === 0) {
@@ -129,7 +134,10 @@
                           } @else {
                             <ul class="review-perms">
                               @for (key of row.permissions; track key) {
-                                <li>{{ labelFor(key) }} <code>{{ key }}</code></li>
+                                <li [title]="key">
+                                  <span class="perm-label">{{ labelFor(key) }}</span>
+                                  <code>{{ key }}</code>
+                                </li>
                               }
                             </ul>
                           }
